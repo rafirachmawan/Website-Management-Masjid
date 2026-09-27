@@ -1,0 +1,542 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { announcements as initialAnnouncements } from "@/lib/mock-data";
+import { formatDate } from "@/lib/utils";
+import type { Announcement } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Megaphone,
+  Plus,
+  MagnifyingGlass,
+  Funnel,
+  Eye,
+  PencilSimple,
+  Trash,
+  DotsThreeVertical,
+  Calendar,
+  User,
+  WarningCircle,
+  CheckCircle,
+  BellSimpleRinging,
+  Broadcast,
+} from "@phosphor-icons/react";
+
+export function AnnouncementsPage() {
+  const [data, setData] = useState<Announcement[]>(initialAnnouncements);
+  const [search, setSearch] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
+    priority: "normal" as "normal" | "important" | "urgent",
+    author: "Pengurus Masjid",
+    imageUrl: "",
+  });
+
+  const filteredAnnouncements = useMemo(() => {
+    return data.filter((item) => {
+      const matchSearch =
+        item.title.toLowerCase().includes(search.toLowerCase()) ||
+        item.content.toLowerCase().includes(search.toLowerCase()) ||
+        item.author.toLowerCase().includes(search.toLowerCase());
+      const matchPriority =
+        priorityFilter === "all" || item.priority === priorityFilter;
+      return matchSearch && matchPriority;
+    });
+  }, [data, search, priorityFilter]);
+
+  const urgentCount = data.filter((a) => a.priority === "urgent").length;
+  const importantCount = data.filter((a) => a.priority === "important").length;
+  const normalCount = data.filter((a) => a.priority === "normal").length;
+
+  const handleOpenAdd = () => {
+    setIsEditMode(false);
+    setFormData({
+      title: "",
+      content: "",
+      priority: "normal",
+      author: "Pengurus Masjid",
+      imageUrl: "",
+    });
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (ann: Announcement) => {
+    setIsEditMode(true);
+    setSelectedAnnouncement(ann);
+    setFormData({
+      title: ann.title,
+      content: ann.content,
+      priority: ann.priority,
+      author: ann.author,
+      imageUrl: ann.imageUrl || "",
+    });
+    setIsFormModalOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formData.title || !formData.content) return;
+    if (isEditMode && selectedAnnouncement) {
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === selectedAnnouncement.id
+            ? { ...item, ...formData }
+            : item
+        )
+      );
+    } else {
+      const newAnn: Announcement = {
+        id: `ann-${Date.now()}`,
+        ...formData,
+        publishedAt: new Date().toISOString(),
+      };
+      setData((prev) => [newAnn, ...prev]);
+    }
+    setIsFormModalOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (!selectedAnnouncement) return;
+    setData((prev) => prev.filter((item) => item.id !== selectedAnnouncement.id));
+    setIsDeleteModalOpen(false);
+    setSelectedAnnouncement(null);
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return (
+          <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 dark:border-red-800 gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+            Mendesak
+          </Badge>
+        );
+      case "important":
+        return (
+          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 border-amber-200 dark:border-amber-800 gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            Penting
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="gap-1 font-medium text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+            Biasa
+          </Badge>
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Pengumuman
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Kelola warta, siaran informasi, dan berita kegiatan untuk jamaah
+          </p>
+        </div>
+        <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
+          <Plus className="w-4 h-4" />
+          <span>Buat Pengumuman</span>
+        </Button>
+      </div>
+
+      {/* Stats Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-border shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Total Pengumuman
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-foreground">
+                {data.length}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Aktif & ditayangkan</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Megaphone className="w-6 h-6" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Mendesak
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-red-600">
+                {urgentCount}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Butuh perhatian jamaah</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center text-red-600">
+              <WarningCircle className="w-6 h-6" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Penting
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-amber-600">
+                {importantCount}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Agenda & kegiatan utama</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+              <BellSimpleRinging className="w-6 h-6" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Informasi Umum
+              </p>
+              <h3 className="text-2xl font-bold mt-1 text-foreground">
+                {normalCount}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">Pemberitahuan rutin</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+              <Broadcast className="w-6 h-6" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <Card className="border-border shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Cari judul pengumuman, isi pesan, atau pembuat..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={priorityFilter} onValueChange={(val) => setPriorityFilter(val || "all")}>
+                <SelectTrigger className="w-40">
+                  <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Prioritas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Prioritas</SelectItem>
+                  <SelectItem value="urgent">Mendesak</SelectItem>
+                  <SelectItem value="important">Penting</SelectItem>
+                  <SelectItem value="normal">Biasa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Announcements List */}
+      <div className="space-y-4">
+        {filteredAnnouncements.length === 0 ? (
+          <Card className="border-border border-dashed py-12 text-center shadow-none">
+            <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-3">
+                <Megaphone className="w-6 h-6" />
+              </div>
+              <h3 className="font-semibold text-foreground">Tidak Ada Pengumuman</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tidak ada pengumuman yang sesuai dengan kriteria pencarian Anda.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          filteredAnnouncements.map((item) => (
+            <Card
+              key={item.id}
+              className="border-border hover:border-primary/40 transition-all shadow-sm overflow-hidden group"
+            >
+              <CardContent className="p-5">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {getPriorityBadge(item.priority)}
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatDate(item.publishedAt)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="w-3.5 h-3.5" />
+                        {item.author}
+                      </span>
+                    </div>
+
+                    <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                      {item.title}
+                    </h2>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                      {item.content}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 self-end md:self-start shrink-0 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedAnnouncement(item);
+                        setIsViewModalOpen(true);
+                      }}
+                      className="gap-1.5 h-8 text-xs"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Lihat
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenEdit(item)}
+                      className="gap-1.5 h-8 text-xs"
+                    >
+                      <PencilSimple className="w-3.5 h-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedAnnouncement(item);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Modal: View Detail */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-137.5">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              {selectedAnnouncement && getPriorityBadge(selectedAnnouncement.priority)}
+            </div>
+            <DialogTitle className="text-xl font-bold leading-snug">
+              {selectedAnnouncement?.title}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+              <span>Ditulis oleh: {selectedAnnouncement?.author}</span>
+              <span>•</span>
+              <span>
+                {selectedAnnouncement && formatDate(selectedAnnouncement.publishedAt)}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <div className="p-4 bg-muted/40 rounded-xl border border-border">
+              <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+                {selectedAnnouncement?.content}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewModalOpen(false)}
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Create & Edit Announcement */}
+      <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
+        <DialogContent className="sm:max-w-140">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditMode ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
+            </DialogTitle>
+            <DialogDescription>
+              Isi formulir di bawah ini untuk mempublikasikan pengumuman ke jamaah.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Judul Pengumuman <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: Pengajian Rutin Ba'da Maghrib"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  Prioritas Informasi
+                </label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(val) => {
+                    if (val) setFormData({ ...formData, priority: val as "normal" | "important" | "urgent" });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Biasa</SelectItem>
+                    <SelectItem value="important">Penting</SelectItem>
+                    <SelectItem value="urgent">Mendesak</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  Penulis / Sumber
+                </label>
+                <input
+                  type="text"
+                  value={formData.author}
+                  onChange={(e) =>
+                    setFormData({ ...formData, author: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Isi Pengumuman Lengkap <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={5}
+                placeholder="Tuliskan isi pengumuman lengkap secara jelas..."
+                value={formData.content}
+                onChange={(e) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsFormModalOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button onClick={handleSave} disabled={!formData.title || !formData.content}>
+              {isEditMode ? "Simpan Perubahan" : "Terbitkan Pengumuman"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Confirm Delete */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-105">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash className="w-5 h-5" />
+              Hapus Pengumuman?
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm leading-relaxed">
+              Apakah Anda yakin ingin menghapus pengumuman &quot;
+              <strong className="text-foreground">
+                {selectedAnnouncement?.title}
+              </strong>
+              &quot;? Pengumuman tidak akan tampil lagi di halaman profil publik.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Ya, Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
