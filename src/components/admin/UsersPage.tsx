@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { officials as initialOfficials } from "@/lib/mock-data";
+import { useApi, apiSend } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
-import { PageHeader } from "@/components/admin/PageHeader";
 import type { Official } from "@/types";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -43,8 +44,11 @@ import {
 } from "@phosphor-icons/react";
 
 export function UsersPage() {
-  const [data, setData] = useState<Official[]>(initialOfficials);
+  const { data: officials, refresh } = useApi<Official[]>("/api/officials");
   const [search, setSearch] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedOfficial, setSelectedOfficial] = useState<Official | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -61,6 +65,8 @@ export function UsersPage() {
     status: "active" as "active" | "inactive",
     avatar: "",
   });
+
+  const data = officials ?? [];
 
   const filteredOfficials = useMemo(() => {
     return data.filter((item) => {
@@ -110,30 +116,42 @@ export function UsersPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.role) return;
-    if (isEditMode && selectedOfficial) {
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === selectedOfficial.id ? { ...item, ...formData } : item
-        )
-      );
-    } else {
-      const newOfficial: Official = {
-        id: `off-${Date.now()}`,
-        ...formData,
-        joinedDate: new Date().toISOString().split("T")[0],
-      };
-      setData((prev) => [newOfficial, ...prev]);
+    setIsSaving(true);
+    setFormError(null);
+    try {
+      if (isEditMode && selectedOfficial) {
+        await apiSend(`/api/officials/${selectedOfficial.id}`, "PUT", formData);
+      } else {
+        await apiSend("/api/officials", "POST", {
+          ...formData,
+          joinedDate: new Date().toISOString().split("T")[0],
+        });
+      }
+      refresh();
+      setIsFormModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menyimpan pengurus.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsFormModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedOfficial) return;
-    setData((prev) => prev.filter((item) => item.id !== selectedOfficial.id));
-    setIsDeleteModalOpen(false);
-    setSelectedOfficial(null);
+    setIsDeleting(true);
+    setFormError(null);
+    try {
+      await apiSend(`/api/officials/${selectedOfficial.id}`, "DELETE");
+      refresh();
+      setIsDeleteModalOpen(false);
+      setSelectedOfficial(null);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menghapus pengurus.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getRoleBadge = (systemRole: string) => {
@@ -164,6 +182,15 @@ export function UsersPage() {
         );
     }
   };
+
+  if (!officials) {
+    return (
+      <div className="space-y-6" aria-label="Memuat pengurus">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -490,15 +517,28 @@ export function UsersPage() {
             </div>
           </div>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsFormModalOpen(false)}
+              disabled={isSaving}
             >
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={!formData.name || !formData.role}>
-              {isEditMode ? "Simpan Perubahan" : "Tambah Pengurus"}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !formData.name || !formData.role}
+            >
+              {isSaving ? "Menyimpan..." : isEditMode ? "Simpan Perubahan" : "Tambah Pengurus"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -521,15 +561,25 @@ export function UsersPage() {
             </DialogDescription>
           </DialogHeader>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
             >
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Ya, Hapus
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,8 @@
-import { activities } from "@/lib/mock-data";
+"use client";
+
+// Data dikirim sebagai prop dari `app/page.tsx` (Server Component) — tidak ada
+// fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
+// React Context internal.
 import type { Activity } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import {
@@ -196,7 +200,7 @@ function AgendaRow({ activity }: { activity: Activity }) {
   );
 }
 
-export function ActivitiesSection() {
+export function ActivitiesSection({ activities }: { activities: Activity[] }) {
   const sorted = [...activities].sort((a, b) => +new Date(a.date) - +new Date(b.date));
   const [featured, ...rest] = sorted;
 

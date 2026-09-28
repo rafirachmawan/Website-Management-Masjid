@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { transactions, categories, chartData, financialSummary, mosqueProfile } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
+import type {
+  Transaction,
+  Category,
+  ChartDataPoint,
+  FinancialSummary,
+  MosqueProfile,
+} from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
@@ -185,7 +193,7 @@ function ReportSummaryStats({
 
 // ─── Trend Chart (Area) ──────────────────────────────────────────────────────
 
-function TrendChart({ data }: { data: typeof chartData }) {
+function TrendChart({ data }: { data: ChartDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data} margin={{ top: 12, right: 24, left: -5, bottom: 4 }}>
@@ -228,7 +236,7 @@ function TrendChart({ data }: { data: typeof chartData }) {
 
 // ─── Bar Comparison Chart ────────────────────────────────────────────────────
 
-function ComparisonBarChart({ data }: { data: typeof chartData }) {
+function ComparisonBarChart({ data }: { data: ChartDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 12, right: 24, left: -5, bottom: 4 }} barGap={4}>
@@ -328,9 +336,11 @@ function CategoryPieChart({
 
 function CategorySummaryTable({
   filteredTxns,
+  categories,
   type,
 }: {
-  filteredTxns: typeof transactions;
+  filteredTxns: Transaction[];
+  categories: Category[];
   type: "income" | "expense";
 }) {
   const filtered = filteredTxns.filter((t) => t.type === type);
@@ -440,7 +450,7 @@ function CategorySummaryTable({
 
 // ─── Monthly Summary Table ───────────────────────────────────────────────────
 
-function MonthlySummaryTable({ data }: { data: typeof chartData }) {
+function MonthlySummaryTable({ data }: { data: ChartDataPoint[] }) {
   const totalIncome = data.reduce((s, d) => s + d.income, 0);
   const totalExpense = data.reduce((s, d) => s + d.expense, 0);
 
@@ -525,6 +535,18 @@ type PeriodType = "monthly" | "yearly" | "custom";
 type ChartType = "area" | "bar";
 
 export function ReportsPage() {
+  const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
+  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
+  const { data: fetchedChart } = useApi<ChartDataPoint[]>("/api/chart");
+  const { data: fetchedSummary } = useApi<FinancialSummary>("/api/financial-summary");
+  const { data: fetchedProfile } = useApi<MosqueProfile>("/api/mosque-profile");
+
+  const transactions = fetchedTransactions ?? [];
+  const categories = fetchedCategories ?? [];
+  const chartData = fetchedChart ?? [];
+  const financialSummary = fetchedSummary;
+  const mosqueProfile = fetchedProfile;
+
   const [periodType, setPeriodType] = useState<PeriodType>("yearly");
   const [selectedMonth, setSelectedMonth] = useState("9"); // September
   const [selectedYear] = useState("2026");
@@ -590,6 +612,15 @@ export function ReportsPage() {
         fill: PIE_COLORS_EXPENSE[i % PIE_COLORS_EXPENSE.length],
       }));
   }, [filteredTxns]);
+
+  if (!fetchedTransactions || !fetchedCategories || !fetchedChart || !financialSummary || !mosqueProfile) {
+    return (
+      <div className="space-y-6" aria-label="Memuat laporan keuangan">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -790,7 +821,7 @@ export function ReportsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <CategorySummaryTable filteredTxns={filteredTxns} type="income" />
+            <CategorySummaryTable filteredTxns={filteredTxns} categories={categories} type="income" />
           </CardContent>
         </Card>
 
@@ -807,7 +838,7 @@ export function ReportsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <CategorySummaryTable filteredTxns={filteredTxns} type="expense" />
+            <CategorySummaryTable filteredTxns={filteredTxns} categories={categories} type="expense" />
           </CardContent>
         </Card>
       </div>

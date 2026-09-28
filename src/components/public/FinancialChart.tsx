@@ -14,7 +14,6 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { chartData } from "@/lib/mock-data";
 import type { ChartDataPoint } from "@/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency as libFormatCurrency } from "@/lib/utils";
@@ -208,7 +207,7 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
   }
 }
 
-export function FinancialChart() {
+export function FinancialChart({ chartData }: { chartData: ChartDataPoint[] }) {
   const [chartType, setChartType] = useState<ChartType>("area");
 
   return (

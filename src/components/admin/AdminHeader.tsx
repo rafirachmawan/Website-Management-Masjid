@@ -80,14 +80,21 @@ export function AdminHeader() {
           </Button>
 
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="/avatar.png" alt={user.name} />
-                  <AvatarFallback className="bg-primary/10 text-primary">{user.initials}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
+            {/* CATATAN: pakai `render`, bukan-child. DropdownMenuTrigger dari
+                base-ui sudah merender <button> sendiri; menaruh <Button> di
+                dalamnya membuat <button> di dalam <button> → hydration error. */}
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src="/avatar.png" alt={user.name} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {user.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              }
+            />
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
@@ -96,25 +103,38 @@ export function AdminHeader() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/admin/profile" className="flex items-center gap-2 w-full">
-                  <User className="w-4 h-4" />
-                  Profil
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link href="/admin/settings" className="flex items-center gap-2 w-full">
-                  <Gear className="w-4 h-4" />
-                  Pengaturan
-                </Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/admin/profile"
+                    className="flex w-full items-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    Profil
+                  </Link>
+                }
+              />
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href="/admin/settings"
+                    className="flex w-full items-center gap-2"
+                  >
+                    <Gear className="w-4 h-4" />
+                    Pengaturan
+                  </Link>
+                }
+              />
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                <button className="flex items-center gap-2 w-full">
-                  <SignOut className="w-4 h-4" />
-                  Keluar
-                </button>
-              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                render={
+                  <button type="button" className="flex w-full items-center gap-2">
+                    <SignOut className="w-4 h-4" />
+                    Keluar
+                  </button>
+                }
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

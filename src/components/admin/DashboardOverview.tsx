@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { mosqueProfile, financialSummary, transactions, chartData, announcements } from "@/lib/mock-data";
+import { useApi } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
+import type {
+  MosqueProfile,
+  FinancialSummary,
+  Transaction,
+  ChartDataPoint,
+  Announcement,
+} from "@/types";
 import {
   Card,
   CardContent,
@@ -133,10 +141,10 @@ function StatCard({
   );
 }
 
-function MiniChart() {
+function MiniChart({ data }: { data: ChartDataPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={230}>
-      <AreaChart data={chartData.slice(-6)} margin={{ top: 12, right: 24, left: -5, bottom: 4 }}>
+      <AreaChart data={data.slice(-6)} margin={{ top: 12, right: 24, left: -5, bottom: 4 }}>
         <defs>
           <linearGradient id="colorIncomeMini" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={COLORS.income} stopOpacity={0.25} />
@@ -191,8 +199,8 @@ function MiniChart() {
   );
 }
 
-function RecentTransactions() {
-  const recentTxns = transactions.slice(0, 5);
+function RecentTransactions({ items }: { items: Transaction[] }) {
+  const recentTxns = items.slice(0, 5);
 
   return (
     <Card className="hover:border-primary/20 transition-all">
@@ -323,7 +331,7 @@ function QuickActions() {
   );
 }
 
-function UpcomingAnnouncements() {
+function UpcomingAnnouncements({ items }: { items: Announcement[] }) {
   return (
     <Card className="hover:border-primary/20 transition-all">
       <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between space-y-0">
@@ -337,7 +345,7 @@ function UpcomingAnnouncements() {
         </Link>
       </CardHeader>
       <CardContent className="p-5 pt-0 space-y-2.5">
-        {announcements.slice(0, 3).map((ann) => (
+        {items.slice(0, 3).map((ann) => (
           <div
             key={ann.id}
             className="flex items-start gap-3 p-3 rounded-xl border border-border/70 hover:bg-muted/40 transition-colors"
@@ -365,6 +373,22 @@ function UpcomingAnnouncements() {
 }
 
 export function DashboardOverview() {
+  const { data: mosqueProfile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const { data: financialSummary } = useApi<FinancialSummary>("/api/financial-summary");
+  const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
+  const { data: chartData } = useApi<ChartDataPoint[]>("/api/chart");
+  const { data: announcements } = useApi<Announcement[]>("/api/announcements");
+
+  if (!mosqueProfile || !financialSummary || !fetchedTransactions || !chartData || !announcements) {
+    return (
+      <div className="space-y-6" aria-label="Memuat dashboard">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={5} />
+      </div>
+    );
+  }
+
+  const transactions = fetchedTransactions;
   const { currentBalance, monthlyIncome, monthlyExpense } = financialSummary;
 
   return (
@@ -459,18 +483,18 @@ export function DashboardOverview() {
               </div>
             </CardHeader>
             <CardContent className="p-5 pt-3">
-              <MiniChart />
+              <MiniChart data={chartData} />
             </CardContent>
           </Card>
 
           {/* Recent Transactions */}
-          <RecentTransactions />
+          <RecentTransactions items={transactions} />
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           <QuickActions />
-          <UpcomingAnnouncements />
+          <UpcomingAnnouncements items={announcements} />
         </div>
       </div>
     </div>

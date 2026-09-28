@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { transactions } from "@/lib/mock-data";
 import type { Transaction, PeriodFilter } from "@/types";
 import { formatCurrency, formatShortDate } from "@/lib/utils";
 import {
@@ -34,7 +33,7 @@ interface SortState {
 
 const ITEMS_PER_PAGE = 10;
 
-export function TransactionTable() {
+export function TransactionTable({ transactions }: { transactions: Transaction[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("monthly");
   const [sortState, setSortState] = useState<SortState>({ key: "date", direction: "desc" });

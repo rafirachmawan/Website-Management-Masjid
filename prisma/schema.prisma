@@ -1,0 +1,115 @@
+// Skema database lokal (SQLite) — single-file, tanpa server.
+// Dijaga via migration: `npm run db:migrate`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Profil masjid — satu baris (id = "main"). Template multi-masjid:
+// satu database = satu masjid.
+model MosqueProfile {
+  id              String  @id @default("main")
+  name            String
+  shortName       String
+  address         String
+  phone           String
+  email           String
+  latitude        Float
+  longitude       Float
+  timezone        String
+  establishedYear Int
+  description     String
+  logoUrl         String?
+  coverImageUrl   String?
+  heroImages      Json?
+}
+
+model Category {
+  id           String        @id
+  name         String
+  type         String // "income" | "expense"
+  icon         String?
+  color        String?
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  date        String // yyyy-mm-dd (zona masjid)
+  type        String // "income" | "expense"
+  category    String // label denormalisasi — sesuai kontrak frontend
+  categoryId  String
+  categoryRef Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  amount      Int // rupiah, tanpa sen
+  description String
+  proofUrl    String?
+  recordedBy  String
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  imageUrl    String?
+  priority    String   @default("normal") // normal | important | urgent
+  publishedAt DateTime @default(now())
+  author      String
+
+  @@index([publishedAt])
+}
+
+model Activity {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  date        String // yyyy-mm-dd
+  time        String
+  location    String
+  organizer   String
+  imageUrl    String?
+
+  @@index([date])
+}
+
+model Official {
+  id         String @id @default(cuid())
+  name       String
+  role       String
+  systemRole String @default("pengurus") // superadmin | admin | bendahara | pengurus
+  phone      String
+  email      String @unique
+  status     String @default("active") // active | inactive
+  joinedDate String // yyyy-mm-dd
+  avatar     String?
+}
+
+model PrayerDay {
+  date      String       @id // yyyy-mm-dd
+  hijriDate String
+  sunrise   String // HH:MM
+  prayers   PrayerTime[]
+}
+
+model PrayerTime {
+  id        Int       @id @default(autoincrement())
+  dayDate   String
+  day       PrayerDay @relation(fields: [dayDate], references: [date], onDelete: Cascade)
+  order     Int
+  name      String
+  arabic    String
+  time      String // HH:MM
+  isCurrent Boolean   @default(false)
+  isNext    Boolean   @default(false)
+
+  @@index([dayDate])
+}

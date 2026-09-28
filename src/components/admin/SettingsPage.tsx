@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { mosqueProfile as initialProfile, categories } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { useApi, apiSend } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
+import type { MosqueProfile, Category } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
@@ -34,7 +36,19 @@ import {
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const [profile, setProfile] = useState(initialProfile);
+  const { data: fetchedProfile, refresh: refreshProfile } = useApi<MosqueProfile>(
+    "/api/mosque-profile",
+  );
+  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
+  const categories = fetchedCategories ?? [];
+  const [profile, setProfile] = useState<MosqueProfile | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Profil diambil ulang dari server saat tombol Simpan ditekan.
+  useEffect(() => {
+    if (fetchedProfile && !profile) setProfile(fetchedProfile);
+  }, [fetchedProfile, profile]);
   const [isSaved, setIsSaved] = useState(false);
 
   // Financial Settings State
@@ -58,7 +72,7 @@ export function SettingsPage() {
 
   const handleAddHeroImage = (urlToAdd?: string) => {
     const url = (urlToAdd || newImageUrl).trim();
-    if (!url) return;
+    if (!url || !profile) return;
     const currentImages = profile.heroImages || [];
     setProfile({
       ...profile,
@@ -68,6 +82,7 @@ export function SettingsPage() {
   };
 
   const handleRemoveHeroImage = (indexToRemove: number) => {
+    if (!profile) return;
     const currentImages = profile.heroImages || [];
     setProfile({
       ...profile,
@@ -75,11 +90,27 @@ export function SettingsPage() {
     });
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    Object.assign(initialProfile, profile);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    if (!profile) return;
+    setIsSavingProfile(true);
+    setProfileError(null);
+    try {
+      const saved = await apiSend<MosqueProfile>("/api/mosque-profile", "PUT", {
+        ...profile,
+        logoUrl: profile.logoUrl ?? "",
+        coverImageUrl: profile.coverImageUrl ?? "",
+        heroImages: profile.heroImages ?? [],
+      });
+      setProfile(saved);
+      refreshProfile();
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Gagal menyimpan profil masjid.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleSaveFinance = (e: React.FormEvent) => {
@@ -96,6 +127,15 @@ export function SettingsPage() {
       setTimeout(() => setIsSaved(false), 3000);
     }
   };
+
+  if (!profile) {
+    return (
+      <div className="space-y-6" aria-label="Memuat pengaturan">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -344,10 +384,19 @@ export function SettingsPage() {
                   </div>
                 </div>
 
+                {profileError && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                  >
+                    {profileError}
+                  </p>
+                )}
+
                 <div className="pt-3 flex justify-end">
-                  <Button type="submit" className="gap-2">
+                  <Button type="submit" className="gap-2" disabled={isSavingProfile}>
                     <FloppyDisk className="w-4 h-4" />
-                    <span>Simpan Profil</span>
+                    <span>{isSavingProfile ? "Menyimpan..." : "Simpan Profil"}</span>
                   </Button>
                 </div>
               </form>

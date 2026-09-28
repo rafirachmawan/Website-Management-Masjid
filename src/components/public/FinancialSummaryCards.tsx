@@ -1,5 +1,10 @@
-import { financialSummary } from "@/lib/mock-data";
-import { formatCurrency, cn } from "@/lib/utils";
+"use client";
+
+// Data dikirim sebagai prop dari `app/page.tsx` (Server Component) — tidak ada
+// fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
+// React Context internal.
+import type { FinancialSummary } from "@/types";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import {
   ShieldCheck,
   ArrowUpRight,
@@ -94,7 +99,13 @@ function FlowRow({
   );
 }
 
-export function FinancialSummaryCards() {
+export function FinancialSummaryCards({
+  financialSummary,
+  latestRecorder,
+}: {
+  financialSummary: FinancialSummary;
+  latestRecorder?: string;
+}) {
   const { currentBalance, monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense } =
     financialSummary;
   const surplus = monthlyIncome - monthlyExpense;
@@ -200,7 +211,11 @@ export function FinancialSummaryCards() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
                   </span>
-                  Live • 27 Sep 2026
+                  Diperbarui {formatDate(financialSummary.lastUpdated, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
                 </p>
               </div>
 
@@ -210,7 +225,9 @@ export function FinancialSummaryCards() {
               <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-relaxed text-white/75">
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="h-4 w-4 text-emerald-300" aria-hidden="true" />
-                  Dicatat Ust. Ahmad (Bendahara)
+                  {latestRecorder
+                    ? `Dicatat ${latestRecorder}`
+                    : "Belum ada transaksi tercatat"}
                 </span>
                 <span aria-hidden="true" className="text-white/30">•</span>
                 <span>Dapat ditelusuri ke bukti</span>

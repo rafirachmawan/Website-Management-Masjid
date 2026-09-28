@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { announcements as initialAnnouncements } from "@/lib/mock-data";
+import { useApi, apiSend } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
-import { PageHeader } from "@/components/admin/PageHeader";
 import type { Announcement } from "@/types";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -54,8 +55,11 @@ import {
 } from "@phosphor-icons/react";
 
 export function AnnouncementsPage() {
-  const [data, setData] = useState<Announcement[]>(initialAnnouncements);
+  const { data: announcements, refresh } = useApi<Announcement[]>("/api/announcements");
   const [search, setSearch] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -71,6 +75,8 @@ export function AnnouncementsPage() {
     author: "Pengurus Masjid",
     imageUrl: "",
   });
+
+  const data = announcements ?? [];
 
   const filteredAnnouncements = useMemo(() => {
     return data.filter((item) => {
@@ -113,32 +119,39 @@ export function AnnouncementsPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.content) return;
-    if (isEditMode && selectedAnnouncement) {
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === selectedAnnouncement.id
-            ? { ...item, ...formData }
-            : item
-        )
-      );
-    } else {
-      const newAnn: Announcement = {
-        id: `ann-${Date.now()}`,
-        ...formData,
-        publishedAt: new Date().toISOString(),
-      };
-      setData((prev) => [newAnn, ...prev]);
+    setIsSaving(true);
+    setFormError(null);
+    try {
+      if (isEditMode && selectedAnnouncement) {
+        await apiSend(`/api/announcements/${selectedAnnouncement.id}`, "PUT", formData);
+      } else {
+        await apiSend("/api/announcements", "POST", formData);
+      }
+      refresh();
+      setIsFormModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menyimpan pengumuman.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsFormModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedAnnouncement) return;
-    setData((prev) => prev.filter((item) => item.id !== selectedAnnouncement.id));
-    setIsDeleteModalOpen(false);
-    setSelectedAnnouncement(null);
+    setIsDeleting(true);
+    setFormError(null);
+    try {
+      await apiSend(`/api/announcements/${selectedAnnouncement.id}`, "DELETE");
+      refresh();
+      setIsDeleteModalOpen(false);
+      setSelectedAnnouncement(null);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menghapus pengumuman.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -166,6 +179,15 @@ export function AnnouncementsPage() {
         );
     }
   };
+
+  if (!announcements) {
+    return (
+      <div className="space-y-6" aria-label="Memuat pengumuman">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -490,15 +512,32 @@ export function AnnouncementsPage() {
             </div>
           </div>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsFormModalOpen(false)}
+              disabled={isSaving}
             >
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={!formData.title || !formData.content}>
-              {isEditMode ? "Simpan Perubahan" : "Terbitkan Pengumuman"}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !formData.title || !formData.content}
+            >
+              {isSaving
+                ? "Menyimpan..."
+                : isEditMode
+                  ? "Simpan Perubahan"
+                  : "Terbitkan Pengumuman"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -521,15 +560,25 @@ export function AnnouncementsPage() {
             </DialogDescription>
           </DialogHeader>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
             >
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Ya, Hapus
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

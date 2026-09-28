@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { weeklyPrayerSchedule, mosqueProfile } from "@/lib/mock-data";
-import type { DailyPrayerSchedule } from "@/types";
+import type { DailyPrayerSchedule, MosqueProfile } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sun, Moon, Star, Clock, Timer, SunHorizon, MapPin } from "@phosphor-icons/react";
@@ -16,16 +15,16 @@ const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   Isya: Star,
 };
 
-const TZ = mosqueProfile.timezone || "Asia/Jakarta";
+const DEFAULT_TZ = "Asia/Jakarta";
 
 function toMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
 
-function jakartaParts(d: Date): { h: number; m: number; s: number } {
+function jakartaParts(d: Date, tz: string): { h: number; m: number; s: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: TZ,
+    timeZone: tz,
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -35,9 +34,9 @@ function jakartaParts(d: Date): { h: number; m: number; s: number } {
   return { h: get("hour") % 24, m: get("minute"), s: get("second") };
 }
 
-function jakartaTodayISO(d: Date): string {
+function jakartaTodayISO(d: Date, tz: string): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ,
+    timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -192,7 +191,13 @@ function Timetable({
   );
 }
 
-export function PrayerScheduleSection() {
+export function PrayerScheduleSection({
+  profile,
+  prayer: prayerData,
+}: {
+  profile: MosqueProfile;
+  prayer: { today: DailyPrayerSchedule; week: DailyPrayerSchedule[] };
+}) {
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
@@ -202,7 +207,10 @@ export function PrayerScheduleSection() {
     return () => clearInterval(id);
   }, []);
 
-  const todayISO = mounted ? jakartaTodayISO(now) : null;
+  const tz = profile?.timezone ?? DEFAULT_TZ;
+  const weeklyPrayerSchedule = prayerData?.week ?? [];
+
+  const todayISO = mounted ? jakartaTodayISO(now, tz) : null;
   const todayIndex = todayISO
     ? weeklyPrayerSchedule.findIndex((s) => s.date === todayISO)
     : -1;
@@ -222,7 +230,7 @@ export function PrayerScheduleSection() {
   let nowMinLive: number | null = null;
 
   if (todaySchedule && mounted) {
-    const { h, m, s } = jakartaParts(now);
+    const { h, m, s } = jakartaParts(now, tz);
     const nowMin = h * 60 + m;
     nowMinLive = nowMin;
     const mins = PRAYER_ORDER.map(
@@ -274,6 +282,23 @@ export function PrayerScheduleSection() {
       progressPct: Math.round(Math.min(1, Math.max(0, progress)) * 100),
       nowLabel: `${pad(h)}:${pad(m)}`,
     };
+  }
+
+  if (weeklyPrayerSchedule.length === 0) {
+    return (
+      <section
+        id="jadwal-sholat"
+        aria-labelledby="prayer-heading"
+        className="scroll-mt-24 bg-background py-16 md:py-20"
+      >
+        <div className="container mx-auto px-4 md:px-6 lg:px-8">
+          <p className="text-sm text-muted-foreground">
+            Jadwal sholat belum tersedia. Jalankan <code>npm run db:seed</code> untuk
+            mengisinya.
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -380,7 +405,7 @@ export function PrayerScheduleSection() {
 
           <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            Mengikuti lokasi {mosqueProfile.name} — Jakarta • Zona WIB • Diperbarui setiap hari.
+            Mengikuti lokasi {profile.name} — Jakarta • Zona WIB • Diperbarui setiap hari.
           </p>
         </Tabs>
       </div>

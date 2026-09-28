@@ -1,4 +1,8 @@
-import { announcements } from "@/lib/mock-data";
+"use client";
+
+// Data dikirim sebagai prop dari `app/page.tsx` (Server Component) — tidak ada
+// fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
+// React Context internal.
 import type { Announcement } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -146,7 +150,11 @@ function LowerCard({ announcement }: { announcement: Announcement }) {
   );
 }
 
-export function AnnouncementsSection() {
+export function AnnouncementsSection({
+  announcements,
+}: {
+  announcements: Announcement[];
+}) {
   const sorted = [...announcements].sort((a, b) => {
     const w = PRIORITY_WEIGHT[a.priority as Priority] - PRIORITY_WEIGHT[b.priority as Priority];
     if (w !== 0) return w;

@@ -1,4 +1,9 @@
-import { mosqueProfile } from "@/lib/mock-data";
+"use client";
+
+// Data profil dikirim sebagai prop dari `app/page.tsx` (Server Component) —
+// tidak ada fetch di browser. Komponen ini tetap Client Component karena
+// @phosphor-icons/react memakai React Context internal.
+import type { MosqueProfile } from "@/types";
 import { Envelope, Phone, MapPin, FacebookLogo, InstagramLogo, YoutubeLogo, TwitterLogo } from "@phosphor-icons/react";
 
 const socialLinks = [
@@ -21,7 +26,7 @@ const navigation = {
   ],
 };
 
-export function Footer() {
+export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile }) {
   const currentYear = new Date().getFullYear();
 
   return (

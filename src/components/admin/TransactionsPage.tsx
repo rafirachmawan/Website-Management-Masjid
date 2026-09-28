@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { transactions, categories, financialSummary } from "@/lib/mock-data";
+import { useApi, apiSend } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatCurrency, formatDate, formatShortDate, cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
@@ -69,11 +70,11 @@ import {
   Image as ImageIcon,
   Warning,
 } from "@phosphor-icons/react";
-import type { Transaction } from "@/types";
+import type { Transaction, Category } from "@/types";
 
 // ─── Stat Cards ──────────────────────────────────────────────────────────────
 
-function TransactionStats() {
+function TransactionStats({ transactions }: { transactions: Transaction[] }) {
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -143,9 +144,11 @@ function TransactionStats() {
 
 function TransactionDetailDialog({
   transaction,
+  categories,
   children,
 }: {
   transaction: Transaction;
+  categories: Category[];
   children: React.ReactNode;
 }) {
   const category = categories.find((c) => c.id === transaction.categoryId);
@@ -273,12 +276,32 @@ function DetailItem({
 function DeleteConfirmDialog({
   transaction,
   children,
+  onDeleted,
 }: {
   transaction: Transaction;
   children: React.ReactNode;
+  onDeleted: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await apiSend(`/api/transactions/${transaction.id}`, "DELETE");
+      onDeleted();
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus transaksi.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={children as React.ReactElement} />
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
@@ -287,7 +310,7 @@ function DeleteConfirmDialog({
             Hapus Transaksi?
           </DialogTitle>
           <DialogDescription>
-            Transaksi ini akan dihapus secara soft-delete dan bisa dipulihkan oleh Superadmin.
+            Transaksi ini akan dihapus permanen dari database lokal.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-4 my-2">
@@ -304,11 +327,20 @@ function DeleteConfirmDialog({
             </p>
           </div>
         </div>
+        {error && (
+          <p className="text-xs font-medium text-destructive" role="alert">{error}</p>
+        )}
         <DialogFooter className="gap-2 sm:gap-0">
           <DialogClose render={<Button variant="ghost" size="sm">Batal</Button>} />
-          <Button variant="destructive" size="sm" className="gap-1.5">
+          <Button
+            variant="destructive"
+            size="sm"
+            className="gap-1.5"
+            disabled={deleting}
+            onClick={handleDelete}
+          >
             <Trash className="w-4 h-4" />
-            Ya, Hapus
+            {deleting ? "Menghapus..." : "Ya, Hapus"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -318,7 +350,15 @@ function DeleteConfirmDialog({
 
 // ─── Row Action Menu ─────────────────────────────────────────────────────────
 
-function RowActions({ transaction }: { transaction: Transaction }) {
+function RowActions({
+  transaction,
+  categories,
+  onDeleted,
+}: {
+  transaction: Transaction;
+  categories: Category[];
+  onDeleted: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -330,7 +370,7 @@ function RowActions({ transaction }: { transaction: Transaction }) {
         }
       />
       <DropdownMenuContent align="end" className="w-44">
-        <TransactionDetailDialog transaction={transaction}>
+        <TransactionDetailDialog transaction={transaction} categories={categories}>
           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
             <Eye className="w-4 h-4 mr-2" />
             Lihat Detail
@@ -341,7 +381,7 @@ function RowActions({ transaction }: { transaction: Transaction }) {
           Edit
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DeleteConfirmDialog transaction={transaction}>
+        <DeleteConfirmDialog transaction={transaction} onDeleted={onDeleted}>
           <DropdownMenuItem
             onSelect={(e) => e.preventDefault()}
             className="text-destructive focus:text-destructive"
@@ -438,6 +478,10 @@ type SortField = "date" | "amount" | "category";
 type SortDirection = "asc" | "desc";
 
 export function TransactionsPage() {
+  const { data: fetchedTransactions, refresh } = useApi<Transaction[]>("/api/transactions");
+  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
+  const transactions = fetchedTransactions ?? [];
+  const categories = fetchedCategories ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -521,7 +565,16 @@ export function TransactionsPage() {
   const availableCategories = useMemo(() => {
     const usedCategoryIds = new Set(transactions.map((t) => t.categoryId));
     return categories.filter((c) => usedCategoryIds.has(c.id));
-  }, []);
+  }, [transactions, categories]);
+
+  if (!fetchedTransactions || !fetchedCategories) {
+    return (
+      <div className="space-y-6" aria-label="Memuat transaksi kas">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -546,7 +599,7 @@ export function TransactionsPage() {
       />
 
       {/* ── Stats ────────────────────────────────────────────────────────── */}
-      <TransactionStats />
+      <TransactionStats transactions={transactions} />
 
       {/* ── Filters & Table ──────────────────────────────────────────────── */}
       <Card className="overflow-hidden">
@@ -811,7 +864,7 @@ export function TransactionsPage() {
 
                           {/* Actions */}
                           <TableCell className="py-3.5 pr-5 text-center">
-                            <RowActions transaction={txn} />
+                            <RowActions transaction={txn} categories={categories} onDeleted={refresh} />
                           </TableCell>
                         </TableRow>
                       );

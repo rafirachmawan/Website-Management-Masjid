@@ -8,7 +8,10 @@ import type {
   FinancialSummary,
   ChartDataPoint,
   Official,
-} from "@/types";
+} from "../src/types";
+
+// Data awal (dummy) — dipakai SEKALI oleh `npm run db:seed`.
+// Setelah seed, sumber kebenaran = database (dev.db), bukan file ini.
 
 export const mosqueProfile: MosqueProfile = {
   name: "Masjid Ar-Rahman",

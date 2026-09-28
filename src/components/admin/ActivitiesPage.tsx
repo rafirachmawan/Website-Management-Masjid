@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { activities as initialActivities } from "@/lib/mock-data";
+import { useApi, apiSend } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
-import { PageHeader } from "@/components/admin/PageHeader";
 import type { Activity } from "@/types";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -45,8 +46,11 @@ import {
 } from "@phosphor-icons/react";
 
 export function ActivitiesPage() {
-  const [data, setData] = useState<Activity[]>(initialActivities);
+  const { data: activities, refresh } = useApi<Activity[]>("/api/activities");
   const [search, setSearch] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -64,6 +68,8 @@ export function ActivitiesPage() {
     organizer: "Pengurus Masjid",
     imageUrl: "",
   });
+
+  const data = activities ?? [];
 
   const todayStr = "2026-09-27";
 
@@ -123,30 +129,49 @@ export function ActivitiesPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.date) return;
-    if (isEditMode && selectedActivity) {
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === selectedActivity.id ? { ...item, ...formData } : item
-        )
-      );
-    } else {
-      const newAct: Activity = {
-        id: `act-${Date.now()}`,
-        ...formData,
-      };
-      setData((prev) => [newAct, ...prev]);
+    setIsSaving(true);
+    setFormError(null);
+    try {
+      if (isEditMode && selectedActivity) {
+        await apiSend(`/api/activities/${selectedActivity.id}`, "PUT", formData);
+      } else {
+        await apiSend("/api/activities", "POST", formData);
+      }
+      refresh();
+      setIsFormModalOpen(false);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menyimpan kegiatan.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsFormModalOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedActivity) return;
-    setData((prev) => prev.filter((item) => item.id !== selectedActivity.id));
-    setIsDeleteModalOpen(false);
-    setSelectedActivity(null);
+    setIsDeleting(true);
+    setFormError(null);
+    try {
+      await apiSend(`/api/activities/${selectedActivity.id}`, "DELETE");
+      refresh();
+      setIsDeleteModalOpen(false);
+      setSelectedActivity(null);
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : "Gagal menghapus kegiatan.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
+
+  if (!activities) {
+    return (
+      <div className="space-y-6" aria-label="Memuat agenda kegiatan">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -528,15 +553,28 @@ export function ActivitiesPage() {
             </div>
           </div>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsFormModalOpen(false)}
+              disabled={isSaving}
             >
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={!formData.title || !formData.date}>
-              {isEditMode ? "Simpan Perubahan" : "Simpan Kegiatan"}
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !formData.title || !formData.date}
+            >
+              {isSaving ? "Menyimpan..." : isEditMode ? "Simpan Perubahan" : "Simpan Kegiatan"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -559,15 +597,25 @@ export function ActivitiesPage() {
             </DialogDescription>
           </DialogHeader>
 
+          {formError && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+            >
+              {formError}
+            </p>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
             >
               Batal
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Ya, Hapus
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Menghapus..." : "Ya, Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>

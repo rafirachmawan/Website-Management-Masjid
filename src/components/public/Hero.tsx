@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { mosqueProfile, prayerSchedule } from "@/lib/mock-data";
+import type { MosqueProfile, DailyPrayerSchedule } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 
-export function Hero() {
+export function Hero({
+  profile: mosqueProfile,
+  prayer,
+}: {
+  profile: MosqueProfile;
+  prayer: { today: DailyPrayerSchedule; week: DailyPrayerSchedule[] };
+}) {
   // Background images from admin / mosque profile
   const images =
     mosqueProfile.heroImages && mosqueProfile.heroImages.length > 0
@@ -31,6 +37,23 @@ export function Hero() {
 
     return () => clearInterval(timer);
   }, [isSlider, goToNext]);
+
+  if (!mosqueProfile || !prayer) {
+    return (
+      <header
+        aria-label="Memuat sambutan masjid"
+        className="relative flex min-h-svh flex-col items-center justify-center py-14 md:py-16"
+      >
+        <div className="w-full max-w-2xl animate-pulse space-y-4 px-4" aria-hidden="true">
+          <div className="mx-auto h-8 w-56 rounded-lg bg-muted" />
+          <div className="mx-auto h-14 w-3/4 rounded-xl bg-muted" />
+          <div className="mx-auto h-4 w-1/2 rounded bg-muted" />
+        </div>
+      </header>
+    );
+  }
+
+  const prayerSchedule = prayer.today;
 
   return (
     <header className="relative overflow-hidden isolate flex min-h-svh flex-col py-14 md:py-16 transition-colors">

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { prayerSchedule, weeklyPrayerSchedule, mosqueProfile } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { useApi } from "@/lib/api";
+import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
+import type { DailyPrayerSchedule } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
@@ -35,7 +37,16 @@ import {
 } from "@phosphor-icons/react";
 
 export function PrayerSchedulePage() {
-  const [schedule, setSchedule] = useState(prayerSchedule);
+  const { data: prayerData } = useApi<{
+    today: DailyPrayerSchedule;
+    week: DailyPrayerSchedule[];
+  }>("/api/prayer-schedule");
+
+  const [schedule, setSchedule] = useState<DailyPrayerSchedule | null>(null);
+
+  useEffect(() => {
+    if (prayerData?.today && !schedule) setSchedule(prayerData.today);
+  }, [prayerData, schedule]);
   const [offsets, setOffsets] = useState({
     Subuh: 2,
     Dzuhur: 2,
@@ -88,6 +99,17 @@ export function PrayerSchedulePage() {
         return <Clock className="w-6 h-6 text-primary" />;
     }
   };
+
+  if (!prayerData || !schedule) {
+    return (
+      <div className="space-y-6" aria-label="Memuat jadwal sholat">
+        <DataSkeleton lines={2} className="max-w-md" />
+        <DataSkeleton lines={6} />
+      </div>
+    );
+  }
+
+  const weeklyPrayerSchedule = prayerData.week;
 
   return (
     <div className="space-y-6">
@@ -152,7 +174,7 @@ export function PrayerSchedulePage() {
                 </span>
               </div>
               <h2 className="font-display text-2xl font-semibold text-balance text-foreground">
-                Jadwal Waktu Sholat {mosqueProfile.name}
+                Jadwal Waktu Sholat Masjid Ar-Rahman
               </h2>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5" />
