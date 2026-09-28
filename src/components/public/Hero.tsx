@@ -89,13 +89,25 @@ export function Hero() {
       {/* ─── Main Content ───────────────────────────────────────────────────── */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10 flex flex-1 flex-col">
         <div className="max-w-4xl mx-auto w-full flex flex-1 flex-col justify-center text-center -translate-y-5 md:-translate-y-8">
+          {/* Sapaan Arab — hangat & khas masjid */}
+          <p
+            lang="ar"
+            dir="rtl"
+            aria-label="Bismillahirrahmanirrahim"
+            className="font-arabic text-2xl text-primary md:text-3xl"
+          >
+            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          </p>
+          <p className="eyebrow-friendly mx-auto mt-4 border border-primary/25 bg-primary/[0.06] text-primary">
+            Selamat datang di rumah ibadah kita
+          </p>
           {/* Heading */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-[1.15]">
+          <h1 className="font-display text-display-fluid mt-4 font-semibold text-foreground mb-6">
             {mosqueProfile.name}
           </h1>
 
           {/* Description */}
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed font-normal">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed md:leading-loose font-normal">
             Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan
             penyaluran dana tercatat tertib untuk kemaslahatan jamaah.
           </p>

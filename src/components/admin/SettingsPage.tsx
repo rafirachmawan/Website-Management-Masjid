@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { mosqueProfile as initialProfile, categories } from "@/lib/mock-data";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -99,16 +100,10 @@ export function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Pengaturan Sistem
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Konfigurasi profil masjid, rekening donasi, transparansi publik, dan keamanan akun
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Pengaturan Sistem"
+        description="Konfigurasi profil masjid, rekening donasi, transparansi publik, dan keamanan akun"
+      />
 
       {/* Success Notification Alert */}
       {isSaved && (

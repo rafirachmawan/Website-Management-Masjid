@@ -221,7 +221,7 @@ export function FinancialChart() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="flex flex-col gap-4 border-b border-border/70 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6 md:pb-5">
             <div className="min-w-0 max-w-xl">
-              <h2 id="chart-heading" className="text-xl font-bold tracking-tight text-balance text-foreground md:text-2xl">
+              <h2 id="chart-heading" className="font-display text-balance text-2xl font-semibold text-foreground md:text-[1.7rem] md:leading-snug">
                 Grafik Keuangan Bulanan
               </h2>
               <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-muted-foreground">

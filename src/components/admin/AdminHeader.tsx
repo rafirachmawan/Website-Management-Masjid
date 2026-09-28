@@ -1,6 +1,6 @@
 "use client";
 
-import { List, Bell, Moon, Sun, User, SignOut, CaretDown } from "@phosphor-icons/react";
+import { List, Bell, Moon, Sun, User, SignOut, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,10 +50,10 @@ export function AdminHeader() {
             <span className="text-sm text-muted-foreground">Admin</span>
             {breadcrumbs.length > 0 && (
               <>
-                <CaretDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                <CaretRight className="w-3.5 h-3.5 text-muted-foreground/60" aria-hidden="true" />
                 {breadcrumbs.map((crumb, i) => (
                   <span key={crumb.href} className="flex items-center gap-1">
-                    {i > 0 && <CaretDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />}
+                    {i > 0 && <CaretRight className="w-3.5 h-3.5 text-muted-foreground/60" aria-hidden="true" />}
                     {crumb.isLast ? (
                       <span className="text-sm font-medium text-foreground">{crumb.label}</span>
                     ) : (

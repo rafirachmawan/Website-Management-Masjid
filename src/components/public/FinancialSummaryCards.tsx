@@ -125,7 +125,7 @@ export function FinancialSummaryCards() {
             </p>
             <h2
               id="summary-heading"
-              className="mt-3 text-balance text-3xl font-extrabold tracking-tight text-foreground md:text-4xl md:leading-[1.1]"
+              className="font-display text-h2-fluid mt-3 font-semibold text-foreground"
             >
               Ringkasan Keuangan
             </h2>

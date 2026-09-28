@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { transactions, categories, financialSummary } from "@/lib/mock-data";
 import { formatCurrency, formatDate, formatShortDate, cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -525,28 +526,24 @@ export function TransactionsPage() {
   return (
     <div className="space-y-6">
       {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Transaksi Kas
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Kelola catatan pemasukan dan pengeluaran kas masjid
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Link href="/admin/transactions/new?type=income">
-            <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
-              <Plus className="w-4 h-4" />
-              Transaksi Baru
+      <PageHeader
+        title="Transaksi Kas"
+        description="Kelola catatan pemasukan dan pengeluaran kas masjid"
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
+              <Download className="w-4 h-4" />
+              Export
             </Button>
-          </Link>
-        </div>
-      </div>
+            <Link href="/admin/transactions/new?type=income">
+              <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
+                <Plus className="w-4 h-4" />
+                Transaksi Baru
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* ── Stats ────────────────────────────────────────────────────────── */}
       <TransactionStats />

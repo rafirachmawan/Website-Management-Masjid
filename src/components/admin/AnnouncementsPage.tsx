@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { announcements as initialAnnouncements } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import type { Announcement } from "@/types";
 import {
   Card,
@@ -169,20 +170,16 @@ export function AnnouncementsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Pengumuman
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola warta, siaran informasi, dan berita kegiatan untuk jamaah
-          </p>
-        </div>
-        <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
-          <Plus className="w-4 h-4" />
-          <span>Buat Pengumuman</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Pengumuman"
+        description="Kelola warta, siaran informasi, dan berita kegiatan untuk jamaah"
+        actions={
+          <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
+            <Plus className="w-4 h-4" />
+            <span>Buat Pengumuman</span>
+          </Button>
+        }
+      />
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -192,7 +189,7 @@ export function AnnouncementsPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Total Pengumuman
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {data.length}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Aktif & ditayangkan</p>
@@ -209,7 +206,7 @@ export function AnnouncementsPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Mendesak
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-red-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-red-600">
                 {urgentCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Butuh perhatian jamaah</p>
@@ -226,7 +223,7 @@ export function AnnouncementsPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Penting
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-amber-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-amber-600">
                 {importantCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Agenda & kegiatan utama</p>
@@ -243,7 +240,7 @@ export function AnnouncementsPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Informasi Umum
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {normalCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Pemberitahuan rutin</p>

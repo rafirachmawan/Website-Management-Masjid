@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { transactions, categories, chartData, financialSummary, mosqueProfile } from "@/lib/mock-data";
 import { formatCurrency, cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -593,24 +594,22 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Laporan Keuangan</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Ringkasan dan analisis keuangan masjid {mosqueProfile.shortName}
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
-            <Printer className="w-4 h-4" />
-            Cetak
-          </Button>
-          <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
-            <Download className="w-4 h-4" />
-            Export PDF
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Laporan Keuangan"
+        description={`Ringkasan dan analisis keuangan masjid ${mosqueProfile.shortName}`}
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
+              <Printer className="w-4 h-4" />
+              Cetak
+            </Button>
+            <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
+              <Download className="w-4 h-4" />
+              Export PDF
+            </Button>
+          </>
+        }
+      />
 
       {/* ── Period Selector ───────────────────────────────────────────── */}
       <Card className="hover:border-primary/20 transition-all">

@@ -87,7 +87,7 @@ function FeaturedCard({ activity }: { activity: Activity }) {
         <p className="text-xs font-semibold tracking-wider text-primary uppercase">
           Sorotan kegiatan
         </p>
-        <h3 className="mt-2 text-balance text-2xl font-extrabold leading-[1.15] tracking-tight text-foreground md:text-[1.75rem]">
+        <h3 className="font-display title-hover mt-2 text-balance text-2xl font-semibold leading-[1.2] text-foreground md:text-[1.75rem]">
           <a
             href="#kegiatan"
             aria-label={`Detail kegiatan: ${activity.title}`}
@@ -221,7 +221,7 @@ export function ActivitiesSection() {
             </p>
             <h2
               id="activities-heading"
-              className="mt-3 text-balance text-3xl font-extrabold tracking-tight text-foreground md:text-4xl md:leading-[1.1]"
+              className="font-display text-h2-fluid mt-3 font-semibold text-foreground"
             >
               Kegiatan Masjid
             </h2>

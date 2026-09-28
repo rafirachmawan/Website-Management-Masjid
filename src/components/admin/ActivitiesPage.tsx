@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { activities as initialActivities } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import type { Activity } from "@/types";
 import {
   Card,
@@ -150,20 +151,16 @@ export function ActivitiesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Agenda Kegiatan
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola jadwal kajian, kegiatan hari besar Islam, dan aktivitas sosial masjid
-          </p>
-        </div>
-        <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
-          <Plus className="w-4 h-4" />
-          <span>Tambah Kegiatan</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Agenda Kegiatan"
+        description="Kelola jadwal kajian, kegiatan hari besar Islam, dan aktivitas sosial masjid"
+        actions={
+          <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
+            <Plus className="w-4 h-4" />
+            <span>Tambah Kegiatan</span>
+          </Button>
+        }
+      />
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -173,7 +170,7 @@ export function ActivitiesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Total Agenda
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {data.length}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Kegiatan terdaftar</p>
@@ -190,7 +187,7 @@ export function ActivitiesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Akan Datang
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-emerald-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-emerald-600">
                 {upcomingCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Siap diselenggarakan</p>
@@ -207,7 +204,7 @@ export function ActivitiesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Telah Terlaksana
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-muted-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-muted-foreground">
                 {completedCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Arsip kegiatan lampau</p>

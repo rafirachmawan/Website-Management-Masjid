@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { officials as initialOfficials } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import type { Official } from "@/types";
 import {
   Card,
@@ -167,20 +168,16 @@ export function UsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Struktur Pengurus & Pengguna
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola data Dewan Kemakmuran Masjid (DKM), takmir, dan hak akses sistem informasi
-          </p>
-        </div>
-        <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
-          <UserPlus className="w-4 h-4" />
-          <span>Tambah Pengurus</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="Struktur Pengurus & Pengguna"
+        description="Kelola data Dewan Kemakmuran Masjid (DKM), takmir, dan hak akses sistem informasi"
+        actions={
+          <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
+            <UserPlus className="w-4 h-4" />
+            <span>Tambah Pengurus</span>
+          </Button>
+        }
+      />
 
       {/* Stats Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -190,7 +187,7 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Total Pengurus
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {data.length}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Struktur takmir DKM</p>
@@ -207,7 +204,7 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Pengurus Aktif
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-emerald-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-emerald-600">
                 {activeCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Status aktif bertugas</p>
@@ -224,7 +221,7 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Pengelola Kas & Web
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-sky-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-sky-600">
                 {adminCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Akses bendahara & admin</p>
@@ -241,7 +238,7 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Penanggung Jawab Utama
               </p>
-              <h3 className="text-2xl font-bold mt-1 text-purple-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-purple-600">
                 {superAdminCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Ketua DKM (Superadmin)</p>

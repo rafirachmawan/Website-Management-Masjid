@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { prayerSchedule, weeklyPrayerSchedule, mosqueProfile } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
@@ -91,35 +92,31 @@ export function PrayerSchedulePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Jadwal Sholat & Waktu Ibadah
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Pengaturan waktu azan otomatis, koreksi ihtiyati, jeda iqamah, dan sinkronisasi Kemenag
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSaveSettings()}
-            className="gap-2"
-          >
-            <ArrowsClockwise className="w-4 h-4" />
-            Sinkronkan Jadwal
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSaveSettings}
-            className="gap-2"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Simpan Pengaturan
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Jadwal Sholat & Waktu Ibadah"
+        description="Pengaturan waktu azan otomatis, koreksi ihtiyati, jeda iqamah, dan sinkronisasi Kemenag"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSaveSettings()}
+              className="gap-2"
+            >
+              <ArrowsClockwise className="w-4 h-4" />
+              Sinkronkan Jadwal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSaveSettings}
+              className="gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Simpan Pengaturan
+            </Button>
+          </>
+        }
+      />
 
       {/* Success Alert Banner */}
       {isSaved && (
@@ -154,7 +151,7 @@ export function PrayerSchedulePage() {
                   {schedule.hijriDate}
                 </span>
               </div>
-              <h2 className="text-2xl font-bold text-foreground">
+              <h2 className="font-display text-2xl font-semibold text-balance text-foreground">
                 Jadwal Waktu Sholat {mosqueProfile.name}
               </h2>
               <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
@@ -209,7 +206,14 @@ export function PrayerSchedulePage() {
                 <div className="flex justify-center mb-2">
                   {getPrayerIcon(prayer.name)}
                 </div>
-                <span className="text-xs font-medium text-muted-foreground block">
+                <span
+                  lang="ar"
+                  dir="rtl"
+                  aria-hidden="true"
+                  className={`font-arabic block text-lg leading-relaxed ${
+                    prayer.isCurrent ? "text-primary-foreground/85" : "text-muted-foreground"
+                  }`}
+                >
                   {prayer.arabic}
                 </span>
                 <span
@@ -220,7 +224,7 @@ export function PrayerSchedulePage() {
                   {prayer.name}
                 </span>
                 <span
-                  className={`text-2xl font-black mt-1 block tracking-tight ${
+                  className={`text-2xl font-black mt-1 block tracking-tight tabular-nums ${
                     prayer.isCurrent ? "text-primary-foreground" : "text-primary"
                   }`}
                 >

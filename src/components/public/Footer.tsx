@@ -45,7 +45,7 @@ export function Footer() {
                 <span className="text-sm font-bold text-white">AR</span>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">{mosqueProfile.name}</h3>
+                <h3 className="font-display text-[15px] font-semibold text-white">{mosqueProfile.name}</h3>
                 <p className="text-xs text-white/55">Didirikan {mosqueProfile.establishedYear}</p>
               </div>
             </div>

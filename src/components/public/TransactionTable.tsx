@@ -129,7 +129,7 @@ export function TransactionTable() {
     >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="mb-8 max-w-2xl md:mb-10">
-          <h2 id="transactions-heading" className="text-2xl font-bold tracking-tight text-balance text-foreground md:text-3xl">
+          <h2 id="transactions-heading" className="font-display text-balance text-2xl font-semibold text-foreground md:text-[1.7rem] md:leading-snug">
             Rincian Transaksi Kas
           </h2>
           <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-muted-foreground md:text-base">

@@ -69,11 +69,11 @@ export function Sidebar() {
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <span className="text-primary font-bold text-sm">AR</span>
               </div>
-              <span className="font-semibold text-foreground">Ar-Rahman</span>
+              <span className="font-display text-[15px] font-semibold text-foreground">Ar-Rahman</span>
             </Link>
           )}
           {isMobile && (
-            <span className="font-semibold text-foreground">Ar-Rahman</span>
+            <span className="font-display text-[15px] font-semibold text-foreground">Ar-Rahman</span>
           )}
           <button
             onClick={() => {
@@ -110,13 +110,13 @@ export function Sidebar() {
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  (collapsed || isMobile) && "justify-center"
+                  collapsed && !isMobile && "justify-center"
                 )}
                 aria-current={isActive ? "page" : undefined}
-                title={(collapsed || isMobile) ? item.name : undefined}
+                title={collapsed && !isMobile ? item.name : undefined}
               >
                 <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
-                {!collapsed && !isMobile && <span>{item.name}</span>}
+                {(isMobile || !collapsed) && <span>{item.name}</span>}
               </Link>
             );
           })}
@@ -130,12 +130,12 @@ export function Sidebar() {
             onClick={handleNavClick}
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-              (collapsed || isMobile) && "justify-center"
+              collapsed && !isMobile && "justify-center"
             )}
-            title={(collapsed || isMobile) ? "Lihat halaman publik" : undefined}
+            title={collapsed && !isMobile ? "Lihat halaman publik" : undefined}
           >
             <Layout className="w-5 h-5 shrink-0" aria-hidden="true" />
-            {!collapsed && !isMobile && <span>Lihat Publik</span>}
+            {(isMobile || !collapsed) && <span>Lihat Publik</span>}
           </Link>
         </div>
       </div>

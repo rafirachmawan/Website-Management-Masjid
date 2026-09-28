@@ -18,21 +18,20 @@ export default function Home() {
         <Hero />
       </div>
       <main className="flex flex-1 flex-col">
+        {/* Ibadah dulu: jadwal sholat langsung setelah hero */}
+        <PrayerScheduleSection />
         {/* Keuangan: ringkasan + grafik + rincian — sesuai menu Navbar */}
-        <div id="keuangan" className="flex scroll-mt-20 flex-col bg-background">
+        <div id="keuangan" className="flex scroll-mt-20 flex-col border-t border-border/60 bg-background">
           <FinancialSummaryCards />
           <FinancialChart />
           <TransactionTable />
         </div>
-        {/* Informasi & ibadah */}
+        {/* Informasi */}
         <div id="informasi" className="flex scroll-mt-20 flex-col">
           <div className="border-y border-border/60 bg-muted/40">
             <AnnouncementsSection />
           </div>
           <ActivitiesSection />
-          <div className="border-t border-border/60 bg-muted/40">
-            <PrayerScheduleSection />
-          </div>
         </div>
       </main>
       <Footer />

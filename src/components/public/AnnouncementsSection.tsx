@@ -63,7 +63,7 @@ function FeaturedCard({ announcement }: { announcement: Announcement }) {
       </div>
       <div className="flex flex-1 flex-col p-5 md:p-6">
         <Meta announcement={announcement} />
-        <h3 className="mt-3 text-balance text-xl font-bold leading-tight tracking-tight text-foreground transition-colors group-hover:text-primary md:text-2xl">
+        <h3 className="font-display title-hover mt-3 text-balance text-xl font-semibold leading-snug text-foreground transition-colors group-hover:text-primary md:text-2xl">
           <a href="#pengumuman" aria-label={`Baca selengkapnya: ${announcement.title}`}>
             {announcement.title}
           </a>
@@ -74,7 +74,7 @@ function FeaturedCard({ announcement }: { announcement: Announcement }) {
         </p>
         <a
           href="#pengumuman"
-          className="mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary"
+          className="link-lively mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary"
         >
           Baca selengkapnya
           <CaretRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
@@ -169,7 +169,7 @@ export function AnnouncementsSection() {
         <div className="mx-auto mb-8 max-w-2xl text-center md:mb-10">
           <h2
             id="announcements-heading"
-            className="text-balance text-2xl font-bold uppercase tracking-tight text-primary md:text-3xl"
+            className="font-display text-h2-fluid font-semibold text-foreground"
           >
             Berita Terbaru
           </h2>

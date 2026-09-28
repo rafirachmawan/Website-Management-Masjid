@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Coins,
   TrendUp,
@@ -369,30 +370,28 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Ringkasan keuangan dan aktivitas masjid {mosqueProfile.shortName}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/admin/reports/export"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all duration-200 shadow-2xs hover:shadow-xs"
-          >
-            <Download className="w-4 h-4 text-muted-foreground" />
-            Export PDF
-          </Link>
-          <Link
-            href="/admin/transactions/new?type=income"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-xs hover:shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Transaksi Baru
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description={`Ringkasan keuangan dan aktivitas masjid ${mosqueProfile.shortName}`}
+        actions={
+          <>
+            <Link
+              href="/admin/reports/export"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all duration-200 shadow-2xs hover:shadow-xs"
+            >
+              <Download className="w-4 h-4 text-muted-foreground" />
+              Export PDF
+            </Link>
+            <Link
+              href="/admin/transactions/new?type=income"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-xs hover:shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Transaksi Baru
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

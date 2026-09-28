@@ -12,6 +12,7 @@ type MenuItem = { name: string; href: string; children?: MenuChild[] };
 
 const MENU: MenuItem[] = [
   { name: "Beranda", href: "#beranda" },
+  { name: "Jadwal Sholat", href: "#jadwal-sholat" },
   {
     name: "Keuangan",
     href: "#keuangan",
@@ -23,7 +24,6 @@ const MENU: MenuItem[] = [
   },
   { name: "Berita", href: "#pengumuman" },
   { name: "Kegiatan", href: "#kegiatan" },
-  { name: "Jadwal Sholat", href: "#jadwal-sholat" },
   { name: "Kontak", href: "#kontak" },
 ];
 
@@ -52,10 +52,11 @@ export function Navbar() {
             )}
           </button>
 
-          {/* Desktop menu: sejajar satu baris tanpa scroll horizontal */}
-          <ul className="hidden items-center justify-center lg:flex lg:gap-x-0.5 lg:gap-y-1 xl:gap-x-1">
+          {/* Desktop menu: satu basis tinggi & display untuk semua item
+              agar tombol dropdown sejajar presisi dengan link biasa */}
+          <ul className="hidden items-center justify-center lg:flex lg:gap-x-0.5 xl:gap-x-1">
             {MENU.map((item) => (
-              <li key={item.name} className="group relative">
+              <li key={item.name} className="group relative flex items-center">
                 {item.children ? (
                   <>
                     <button
@@ -66,10 +67,10 @@ export function Navbar() {
                       onBlur={(e) => {
                         if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) setOpenDrop(null);
                       }}
-                      className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-[12px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary xl:px-3 xl:text-[13px]"
+                      className="inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-sm font-semibold tracking-normal text-foreground transition-all duration-200 hover:bg-primary/[0.07] hover:text-primary active:scale-[0.98] xl:px-4"
                     >
                       {item.name}
-                      <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      <CaretDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     </button>
                     <ul
                       className={cn(
@@ -92,7 +93,7 @@ export function Navbar() {
                 ) : (
                   <a
                     href={item.href}
-                    className="block whitespace-nowrap rounded-md px-2 py-2 text-[12px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary xl:px-3 xl:text-[13px]"
+                    className="inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-sm font-semibold tracking-normal text-foreground transition-all duration-200 hover:bg-primary/[0.07] hover:text-primary active:scale-[0.98] xl:px-4"
                   >
                     {item.name}
                   </a>
@@ -102,7 +103,7 @@ export function Navbar() {
           </ul>
 
           {/* Mobile label */}
-          <p className="text-sm font-semibold uppercase tracking-wide text-foreground lg:hidden">
+          <p className="text-sm font-semibold tracking-normal text-foreground lg:hidden">
             Menu
           </p>
           <span className="w-9 lg:hidden" aria-hidden="true" />
@@ -121,7 +122,7 @@ export function Navbar() {
                           type="button"
                           aria-expanded={openDrop === item.name}
                           onClick={() => setOpenDrop((v) => (v === item.name ? null : item.name))}
-                          className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-semibold uppercase tracking-wide text-foreground hover:bg-muted"
+                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground hover:bg-muted"
                         >
                           {item.name}
                           <CaretDown
@@ -155,7 +156,7 @@ export function Navbar() {
                     ) : (
                       <a
                         href={item.href}
-                        className="block rounded-lg px-3 py-2.5 text-sm font-semibold uppercase tracking-wide text-foreground hover:bg-muted hover:text-primary"
+                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground hover:bg-muted hover:text-primary"
                       >
                         {item.name}
                       </a>
