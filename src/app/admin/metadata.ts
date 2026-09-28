@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "Admin Dashboard | Keuangan Masjid Al-Ikhlas",
+    default: "Admin Dashboard | Keuangan Masjid Ar-Rahman",
     template: "%s | Admin Keuangan Masjid",
   },
   description: "Panel admin untuk mengelola keuangan, pengumuman, kegiatan, dan pengurus masjid.",

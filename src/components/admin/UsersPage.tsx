@@ -482,7 +482,7 @@ export function UsersPage() {
                 </label>
                 <input
                   type="email"
-                  placeholder="email@masjidalikhlas.or.id"
+                  placeholder="email@masjidarrahman.or.id"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })

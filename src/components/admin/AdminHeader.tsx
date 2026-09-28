@@ -14,7 +14,7 @@ import { useSidebar } from "./AdminLayout";
 const user = {
   name: "Ust. Ahmad",
   role: "Bendahara",
-  email: "ahmad@masjidalikhlas.or.id",
+  email: "ahmad@masjidarrahman.or.id",
   initials: "UA",
 };
 

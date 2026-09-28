@@ -59,7 +59,7 @@ export function ActivitiesPage() {
     description: "",
     date: new Date().toISOString().split("T")[0],
     time: "19:30 - 21:00",
-    location: "Masjid Al-Ikhlas (Ruang Utama)",
+    location: "Masjid Ar-Rahman (Ruang Utama)",
     organizer: "Pengurus Masjid",
     imageUrl: "",
   });
@@ -100,7 +100,7 @@ export function ActivitiesPage() {
       description: "",
       date: new Date().toISOString().split("T")[0],
       time: "19:30 - 21:00",
-      location: "Masjid Al-Ikhlas (Ruang Utama)",
+      location: "Masjid Ar-Rahman (Ruang Utama)",
       organizer: "Pengurus Masjid",
       imageUrl: "",
     });
@@ -490,7 +490,7 @@ export function ActivitiesPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Contoh: Masjid Al-Ikhlas (Ruang Utama)"
+                  placeholder="Contoh: Masjid Ar-Rahman (Ruang Utama)"
                   value={formData.location}
                   onChange={(e) =>
                     setFormData({ ...formData, location: e.target.value })

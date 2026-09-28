@@ -5,9 +5,6 @@ import { mosqueProfile, prayerSchedule } from "@/lib/mock-data";
 import { formatDate, cn } from "@/lib/utils";
 
 export function Hero() {
-  const currentPrayer = prayerSchedule.prayers.find((p) => p.isCurrent);
-  const nextPrayer = prayerSchedule.prayers.find((p) => p.isNext);
-
   // Background images from admin / mosque profile
   const images =
     mosqueProfile.heroImages && mosqueProfile.heroImages.length > 0
@@ -107,60 +104,10 @@ export function Hero() {
           </h1>
 
           {/* Description */}
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
-            Setiap rupiah yang masuk dan keluar dicatat dengan jelas. Laporan
-            keuangan terbuka untuk umum, demi kepercayaan dan kebersamaan
-            jamaah.
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed font-normal">
+            Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan
+            penyaluran dana tercatat tertib untuk kemaslahatan jamaah.
           </p>
-
-          {/* Highlight Cards */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-stretch justify-center gap-3 sm:gap-4 mb-10">
-            <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm hover:border-primary/40 transition-colors whitespace-nowrap">
-              <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                Saldo Saat Ini
-              </span>
-              <span
-                className="text-lg sm:text-xl font-bold text-foreground tabular-nums"
-                id="current-balance"
-              >
-                Rp 87.450.000
-              </span>
-            </div>
-
-            {currentPrayer && (
-              <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-primary/10 backdrop-blur-md border border-primary/30 shadow-sm whitespace-nowrap">
-                <span className="text-xs sm:text-sm font-medium text-primary">
-                  Sedang Waktu
-                </span>
-                <span className="text-lg sm:text-xl font-bold text-primary tabular-nums">
-                  {currentPrayer.name} {currentPrayer.time}
-                </span>
-                <span
-                  className="text-xs sm:text-sm font-semibold text-primary/70"
-                  aria-hidden="true"
-                >
-                  {currentPrayer.arabic}
-                </span>
-              </div>
-            )}
-
-            {nextPrayer && (
-              <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm whitespace-nowrap">
-                <span className="text-xs sm:text-sm font-medium text-muted-foreground">
-                  Berikutnya
-                </span>
-                <span className="text-lg sm:text-xl font-medium text-foreground tabular-nums">
-                  {nextPrayer.name} {nextPrayer.time}
-                </span>
-                <span
-                  className="text-xs sm:text-sm text-muted-foreground"
-                  aria-hidden="true"
-                >
-                  {nextPrayer.arabic}
-                </span>
-              </div>
-            )}
-          </div>
 
           {/* Footer Metadata */}
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted-foreground border-t border-border/70 pt-6">

@@ -27,6 +27,17 @@ const COLORS = {
   balance: "oklch(0.55 0.15 85)",
 };
 
+// Ringkas label sumbu agar tidak terpotong di ruang sempit.
+// 74.500.000 menjadi 74,5 jt. Tooltip tetap memakai nominal penuh.
+function formatAxisCompact(value: number): string {
+  const abs = Math.abs(value);
+  const tidy = (n: string) => n.replace(".", ",").replace(",0", "");
+  if (abs >= 1_000_000_000) return `${tidy((value / 1_000_000_000).toFixed(1))} M`;
+  if (abs >= 1_000_000) return `${tidy((value / 1_000_000).toFixed(1))} jt`;
+  if (abs >= 1_000) return `${tidy((value / 1_000).toFixed(1))} rb`;
+  return `${value}`;
+}
+
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
   if (!active || !payload) return null;
 
@@ -67,8 +78,10 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
         tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
         axisLine={false}
         tickLine={false}
-        tickFormatter={(value) => libFormatCurrency(value).replace("Rp", "").trim()}
-        width={64}
+        tickFormatter={(value: number) => formatAxisCompact(value)}
+        width={52}
+        tickCount={6}
+        domain={[0, "auto"]}
       />
       <Tooltip content={<CustomTooltip />} />
     </>
@@ -173,7 +186,7 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) => libFormatCurrency(value).replace("Rp", "").trim()}
+              tickFormatter={(value: number) => formatAxisCompact(value)}
             />
             <YAxis
               dataKey="period"

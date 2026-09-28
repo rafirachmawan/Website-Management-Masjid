@@ -67,13 +67,13 @@ export function Sidebar() {
           {!collapsed && !isMobile && (
             <Link href="/admin" className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="text-primary font-bold text-sm">AI</span>
+                <span className="text-primary font-bold text-sm">AR</span>
               </div>
-              <span className="font-semibold text-foreground">Al-Ikhlas</span>
+              <span className="font-semibold text-foreground">Ar-Rahman</span>
             </Link>
           )}
           {isMobile && (
-            <span className="font-semibold text-foreground">Al-Ikhlas</span>
+            <span className="font-semibold text-foreground">Ar-Rahman</span>
           )}
           <button
             onClick={() => {

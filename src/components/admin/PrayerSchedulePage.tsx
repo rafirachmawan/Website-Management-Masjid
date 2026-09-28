@@ -413,7 +413,7 @@ export function PrayerSchedulePage() {
             Jadwal Sholat 7 Hari Mendatang
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Kalender jadwal sholat mingguan Masjid Al-Ikhlas
+            Kalender jadwal sholat mingguan Masjid Ar-Rahman
           </p>
         </CardHeader>
         <CardContent>

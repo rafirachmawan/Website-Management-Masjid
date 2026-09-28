@@ -40,7 +40,7 @@ export function SettingsPage() {
   const [financeConfig, setFinanceConfig] = useState({
     bankName: "Bank Syariah Indonesia (BSI)",
     accountNumber: "7123-4567-8901",
-    accountHolder: "DKM Masjid Al-Ikhlas Kemang",
+    accountHolder: "DKM Masjid Ar-Rahman Kemang",
     minBalanceAlert: 10000000,
     publicTransparency: true,
     showDonationQRIS: true,
