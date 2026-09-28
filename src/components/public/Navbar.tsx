@@ -4,45 +4,27 @@ import { useState } from "react";
 import { CaretDown, List, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
-// TODO(admin): ubah daftar menu dan href sesuai halaman yang dikelola admin.
-// Semua href "#" adalah placeholder. BERITA menunjuk ke #pengumuman,
-// KONTAK menunjuk ke #kontak footer. Sisanya menunggu halaman CMS.
+// Menu diselaraskan dengan isi halaman publik yang benar-benar ada
+// (PRODUCT.md): hero, ringkasan, grafik, transaksi, pengumuman, kegiatan,
+// jadwal sholat, kontak. Tidak ada halaman Profil/Virtual Tour/Wisata/Aula/Reservasi.
 type MenuChild = { name: string; href: string };
 type MenuItem = { name: string; href: string; children?: MenuChild[] };
 
 const MENU: MenuItem[] = [
+  { name: "Beranda", href: "#beranda" },
   {
-    name: "Profil",
-    href: "#profil",
+    name: "Keuangan",
+    href: "#keuangan",
     children: [
-      { name: "Sejarah", href: "#" },
-      { name: "Visi Misi", href: "#" },
-      { name: "Pengurus Takmir", href: "#" },
-      { name: "Fasilitas", href: "#" },
+      { name: "Ringkasan Kas", href: "#ringkasan" },
+      { name: "Grafik Bulanan", href: "#grafik" },
+      { name: "Rincian Transaksi", href: "#transaksi" },
     ],
   },
-  { name: "Virtual Tour", href: "#virtual-tour" },
-  {
-    name: "Wisata",
-    href: "#wisata",
-    children: [
-      { name: "Paket Wisata", href: "#" },
-      { name: "Galeri", href: "#" },
-    ],
-  },
-  {
-    name: "Pendidikan",
-    href: "#pendidikan",
-    children: [
-      { name: "TPA", href: "#" },
-      { name: "Tahfidz", href: "#" },
-      { name: "Kajian Rutin", href: "#" },
-    ],
-  },
-  { name: "Aula", href: "#aula" },
   { name: "Berita", href: "#pengumuman" },
+  { name: "Kegiatan", href: "#kegiatan" },
+  { name: "Jadwal Sholat", href: "#jadwal-sholat" },
   { name: "Kontak", href: "#kontak" },
-  { name: "Reservasi", href: "#reservasi" },
 ];
 
 export function Navbar() {
@@ -70,10 +52,10 @@ export function Navbar() {
             )}
           </button>
 
-          {/* Desktop menu: satu baris, geser horizontal bila sempit */}
-          <ul className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto lg:flex">
+          {/* Desktop menu: sejajar satu baris tanpa scroll horizontal */}
+          <ul className="hidden items-center justify-center lg:flex lg:gap-x-0.5 lg:gap-y-1 xl:gap-x-1">
             {MENU.map((item) => (
-              <li key={item.name} className="group relative shrink-0">
+              <li key={item.name} className="group relative">
                 {item.children ? (
                   <>
                     <button
@@ -84,7 +66,7 @@ export function Navbar() {
                       onBlur={(e) => {
                         if (!e.currentTarget.parentElement?.contains(e.relatedTarget)) setOpenDrop(null);
                       }}
-                      className="flex items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary"
+                      className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-[12px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary xl:px-3 xl:text-[13px]"
                     >
                       {item.name}
                       <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -110,7 +92,7 @@ export function Navbar() {
                 ) : (
                   <a
                     href={item.href}
-                    className="block whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary"
+                    className="block whitespace-nowrap rounded-md px-2 py-2 text-[12px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:bg-muted hover:text-primary xl:px-3 xl:text-[13px]"
                   >
                     {item.name}
                   </a>
