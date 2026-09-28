@@ -10,15 +10,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   BarChart,
   Bar,
 } from "recharts";
-import { chartData, formatCurrency } from "@/lib/mock-data";
+import { chartData } from "@/lib/mock-data";
 import type { ChartDataPoint } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency as libFormatCurrency } from "@/lib/utils";
 
 type ChartType = "area" | "line" | "bar";
@@ -54,12 +52,6 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType }) {
-  const chartConfig = {
-    income: { label: "Pemasukan", color: COLORS.income },
-    expense: { label: "Pengeluaran", color: COLORS.expense },
-    balance: { label: "Saldo", color: COLORS.balance },
-  };
-
   const CommonChart = () => (
     <>
       <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" vertical={false} />
@@ -68,17 +60,15 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
         tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
         axisLine={{ stroke: "var(--border)" }}
         tickLine={false}
-        interval={0}
+        interval="preserveStartEnd"
+        minTickGap={24}
       />
       <YAxis
         tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
         axisLine={false}
         tickLine={false}
         tickFormatter={(value) => libFormatCurrency(value).replace("Rp", "").trim()}
-      />
-      <Legend
-        wrapperStyle={{ paddingTop: "16px" }}
-        formatter={(value) => chartConfig[value as keyof typeof chartConfig]?.label || value}
+        width={64}
       />
       <Tooltip content={<CustomTooltip />} />
     </>
@@ -87,7 +77,7 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
   switch (type) {
     case "area":
       return (
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
@@ -138,7 +128,7 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
 
     case "line":
       return (
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CommonChart />
             <Line
@@ -175,9 +165,9 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
 
     case "bar":
       return (
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} layout="vertical">
-            <CommonChart />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" horizontal={false} />
             <XAxis
               type="number"
               tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
@@ -193,6 +183,7 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
               tickLine={false}
               width={80}
             />
+            <Tooltip content={<CustomTooltip />} />
             <Bar dataKey="income" fill={COLORS.income} name="income" radius={[0, 4, 4, 0]} maxBarSize={30} />
             <Bar dataKey="expense" fill={COLORS.expense} name="expense" radius={[4, 0, 0, 4]} maxBarSize={30} />
           </BarChart>
@@ -208,53 +199,66 @@ export function FinancialChart() {
   const [chartType, setChartType] = useState<ChartType>("area");
 
   return (
-    <section aria-labelledby="chart-heading" className="py-10 md:py-16">
+    <section
+      id="grafik"
+      aria-labelledby="chart-heading"
+      className="scroll-mt-24 py-8 md:py-10"
+    >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl font-semibold">Grafik Keuangan Bulanan</CardTitle>
-            <Tabs value={chartType} onValueChange={setChartType} className="w-auto">
-              <TabsList className="bg-muted p-1 rounded-lg" aria-label="Tipe grafik">
-                <TabsTrigger value="area" className="px-3 py-1.5 text-sm">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-border/70 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6 md:pb-5">
+            <div className="min-w-0 max-w-xl">
+              <h2 id="chart-heading" className="text-xl font-bold tracking-tight text-balance text-foreground md:text-2xl">
+                Grafik Keuangan Bulanan
+              </h2>
+              <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-muted-foreground">
+                Tren Jan-Sep 2026 untuk pemasukan, pengeluaran, dan saldo.
+              </p>
+            </div>
+            <Tabs value={chartType} onValueChange={(v) => v && setChartType(v as ChartType)} className="w-auto shrink-0">
+              <TabsList className="rounded-full border border-border bg-muted/70 p-1" aria-label="Tipe grafik">
+                <TabsTrigger value="area" className="rounded-full px-4 py-1.5 text-sm data-active:shadow-sm">
                   Area
                 </TabsTrigger>
-                <TabsTrigger value="line" className="px-3 py-1.5 text-sm">
+                <TabsTrigger value="line" className="rounded-full px-4 py-1.5 text-sm data-active:shadow-sm">
                   Garis
                 </TabsTrigger>
-                <TabsTrigger value="bar" className="px-3 py-1.5 text-sm">
+                <TabsTrigger value="bar" className="rounded-full px-4 py-1.5 text-sm data-active:shadow-sm">
                   Batang
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-          </CardHeader>
-          <CardContent>
-            <div className="relative h-[340px] w-full">
+          </div>
+          <div className="p-5 md:p-6 md:pt-5">
+            <div className="relative h-[300px] w-full md:h-[320px]">
               <ChartContent data={chartData} type={chartType} />
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-medium text-muted-foreground">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.income }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS.income }} />
                 <span>Pemasukan</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.expense }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS.expense }} />
                 <span>Pengeluaran</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-0.5" style={{ backgroundColor: COLORS.balance }} />
+                <span className="h-0.5 w-5 rounded-full" style={{ backgroundColor: COLORS.balance }} />
                 <span>Saldo</span>
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="text-sm text-muted-foreground text-center">
-                Data 9 bulan terakhir (Jan–Sep 2026). Surplus tertinggi pada September 2026
-                berkat waqaf tanah Rp 50 Juta.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex flex-col items-center gap-1 border-t border-border/70 bg-primary/[0.04] px-5 py-3.5 text-center md:flex-row md:justify-center md:gap-2">
+            <span className="text-sm font-semibold text-primary">
+              Sorotan September 2026:
+            </span>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Surplus tertinggi berkat wakaf tanah Rp 50 Juta dari Bpk. H. Surya.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

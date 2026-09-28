@@ -786,7 +786,7 @@ export function ReportsPage() {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold text-foreground">Rincian Pemasukan</CardTitle>
-                <p className="text-xs text-muted-foreground">Per kategori — {periodLabel}</p>
+                <p className="text-xs text-muted-foreground">Per kategori, {periodLabel}</p>
               </div>
             </div>
           </CardHeader>
@@ -803,7 +803,7 @@ export function ReportsPage() {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold text-foreground">Rincian Pengeluaran</CardTitle>
-                <p className="text-xs text-muted-foreground">Per kategori — {periodLabel}</p>
+                <p className="text-xs text-muted-foreground">Per kategori, {periodLabel}</p>
               </div>
             </div>
           </CardHeader>
@@ -823,7 +823,7 @@ export function ReportsPage() {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold text-foreground">Ringkasan Bulanan</CardTitle>
-                <p className="text-xs text-muted-foreground">Rekap arus kas per bulan — Tahun {selectedYear}</p>
+                <p className="text-xs text-muted-foreground">Rekap arus kas per bulan, tahun {selectedYear}</p>
               </div>
             </div>
           </CardHeader>

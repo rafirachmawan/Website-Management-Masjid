@@ -119,15 +119,45 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-  html {
-    @apply font-sans;
-  }
   ::selection {
-    @apply bg-primary/20 text-primary-foreground;
+    @apply bg-primary text-primary-foreground;
+  }
+  input, textarea {
+    caret-color: var(--primary);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--muted);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--primary) 45%, transparent);
+    border-radius: 8px;
+    border: 2px solid var(--muted);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 

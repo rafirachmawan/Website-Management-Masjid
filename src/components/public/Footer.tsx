@@ -1,8 +1,5 @@
 import { mosqueProfile } from "@/lib/mock-data";
-import { formatDate } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
-import { Envelope, Phone, MapPin, FacebookLogo, InstagramLogo, YoutubeLogo, TwitterLogo, Globe } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { Envelope, Phone, MapPin, FacebookLogo, InstagramLogo, YoutubeLogo, TwitterLogo } from "@phosphor-icons/react";
 
 const socialLinks = [
   { name: "Facebook", href: "#", icon: FacebookLogo },
@@ -13,21 +10,13 @@ const socialLinks = [
 
 const navigation = {
   Keuangan: [
-    { name: "Ringkasan Kas", href: "#kas" },
+    { name: "Ringkasan Kas", href: "#ringkasan" },
     { name: "Grafik Keuangan", href: "#grafik" },
     { name: "Rincian Transaksi", href: "#transaksi" },
-    { name: "Laporan Bulanan", href: "#laporan" },
   ],
   Informasi: [
     { name: "Pengumuman", href: "#pengumuman" },
-    { name: "Kegiatan", href: "#kegiatan" },
     { name: "Jadwal Sholat", href: "#jadwal-sholat" },
-    { name: "Galeri Kegiatan", href: "#galeri" },
-  ],
-  Profil: [
-    { name: "Sejarah Masjid", href: "#sejarah" },
-    { name: "Struktur Pengurus", href: "#pengurus" },
-    { name: "Kontak Kami", href: "#kontak" },
   ],
 };
 
@@ -35,44 +24,64 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-muted/30 border-t border-border" role="contentinfo">
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+    <footer className="relative overflow-hidden bg-[#0B2B23] text-white" role="contentinfo">
+      {/* Gema grid hero dalam versi terang-di-gelap */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden="true">
+        <svg className="h-full w-full text-white" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs>
+            <pattern id="footer-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width="100" height="100" fill="url(#footer-grid)" />
+        </svg>
+      </div>
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-primary/30 blur-3xl" aria-hidden="true" />
+
+      <div className="container relative mx-auto px-4 pt-14 pb-10 md:px-6 md:pt-16 lg:px-8">
+        <div className="mb-10 max-w-2xl md:mb-12">
+          <p className="text-xl font-bold tracking-tight text-balance md:text-2xl">{mosqueProfile.name}</p>
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-white/70">
+            {mosqueProfile.description}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-10 border-t border-white/10 pt-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.4fr] lg:gap-12">
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="text-primary font-bold text-xl">AI</span>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+                <span className="text-lg font-bold text-white">AI</span>
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">{mosqueProfile.name}</h3>
-                <p className="text-xs text-muted-foreground">Didirikan {mosqueProfile.establishedYear}</p>
+                <h3 className="font-semibold text-white">{mosqueProfile.shortName}</h3>
+                <p className="text-xs text-white/60">Didirikan {mosqueProfile.establishedYear}</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-6 max-w-xs leading-relaxed">
-              {mosqueProfile.description}
+            <p className="mb-6 max-w-xs text-sm leading-relaxed text-white/65">
+              Pusat ibadah, kajian, dan program sosial warga, dikelola takmir dan diawasi jamaah.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
               {socialLinks.map((social) => (
                 <a
                   key={social.name}
                   href={social.href}
-                  className="text-muted-foreground hover:text-primary transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                   aria-label={social.name}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <social.icon className="w-5 h-5" />
+                  <social.icon className="h-5 w-5" />
                 </a>
               ))}
             </div>
           </div>
 
           <nav aria-label="Navigasi Keuangan">
-            <h4 className="font-semibold text-foreground mb-4">Keuangan</h4>
-            <ul className="space-y-2 text-sm">
+            <h4 className="mb-4 font-semibold text-white">Keuangan</h4>
+            <ul className="space-y-2.5 text-sm">
               {navigation.Keuangan.map((item) => (
                 <li key={item.name}>
-                  <a href={item.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <a href={item.href} className="block py-0.5 text-white/60 transition-colors hover:text-white">
                     {item.name}
                   </a>
                 </li>
@@ -81,11 +90,11 @@ export function Footer() {
           </nav>
 
           <nav aria-label="Navigasi Informasi">
-            <h4 className="font-semibold text-foreground mb-4">Informasi</h4>
-            <ul className="space-y-2 text-sm">
+            <h4 className="mb-4 font-semibold text-white">Informasi</h4>
+            <ul className="space-y-2.5 text-sm">
               {navigation.Informasi.map((item) => (
                 <li key={item.name}>
-                  <a href={item.href} className="text-muted-foreground hover:text-primary transition-colors">
+                  <a href={item.href} className="block py-0.5 text-white/60 transition-colors hover:text-white">
                     {item.name}
                   </a>
                 </li>
@@ -94,26 +103,26 @@ export function Footer() {
           </nav>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Kontak & Lokasi</h4>
-            <address className="not-italic text-sm text-muted-foreground space-y-3">
+            <h4 className="mb-4 font-semibold text-white">Kontak & Lokasi</h4>
+            <address className="space-y-3 text-sm text-white/65 not-italic">
               <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-white/50" />
                 <div>
-                  <p>{mosqueProfile.address}</p>
-                  <a href={`https://maps.google.com/?q=${mosqueProfile.latitude},${mosqueProfile.longitude}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs mt-1 inline-block">
+                  <p className="leading-relaxed">{mosqueProfile.address}</p>
+                  <a href={`https://maps.google.com/?q=${mosqueProfile.latitude},${mosqueProfile.longitude}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-semibold text-white hover:underline">
                     Buka di Google Maps
                   </a>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 flex-shrink-0" />
-                <a href={`tel:${mosqueProfile.phone}`} className="hover:text-primary transition-colors">
+                <Phone className="h-5 w-5 shrink-0 text-white/50" />
+                <a href={`tel:${mosqueProfile.phone}`} className="transition-colors hover:text-white">
                   {mosqueProfile.phone}
                 </a>
               </div>
               <div className="flex items-center gap-3">
-                <Envelope className="w-5 h-5 flex-shrink-0" />
-                <a href={`mailto:${mosqueProfile.email}`} className="hover:text-primary transition-colors">
+                <Envelope className="h-5 w-5 shrink-0 text-white/50" />
+                <a href={`mailto:${mosqueProfile.email}`} className="transition-colors hover:text-white">
                   {mosqueProfile.email}
                 </a>
               </div>
@@ -121,21 +130,20 @@ export function Footer() {
           </div>
         </div>
 
-        <Separator className="my-8" />
+        <div className="my-8 h-px bg-white/10" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground text-center md:text-left">
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="text-center text-sm text-white/60 md:text-left">
             &copy; {currentYear} {mosqueProfile.name}. Hak cipta dilindungi.
-            <br />
-            Dibangun untuk transparansi keuangan dan informasi jamaah.
+            <span className="mt-1 block text-xs text-white/45">Dibangun untuk transparansi keuangan dan informasi jamaah.</span>
           </p>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Kebijakan Privasi</a>
-            <span aria-hidden="true">·</span>
-            <a href="#" className="hover:text-primary transition-colors">Syarat Penggunaan</a>
-            <span aria-hidden="true">·</span>
-            <a href="#" className="hover:text-primary transition-colors">Aksesibilitas</a>
+          <div className="flex items-center gap-4 text-sm text-white/60">
+            <a href="#" className="transition-colors hover:text-white">Kebijakan Privasi</a>
+            <span aria-hidden="true" className="h-3 w-px bg-white/15" />
+            <a href="#" className="transition-colors hover:text-white">Syarat Penggunaan</a>
+            <span aria-hidden="true" className="h-3 w-px bg-white/15" />
+            <a href="#" className="transition-colors hover:text-white">Aksesibilitas</a>
           </div>
         </div>
       </div>

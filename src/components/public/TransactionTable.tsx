@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { transactions, categories } from "@/lib/mock-data";
+import { transactions } from "@/lib/mock-data";
 import type { Transaction, PeriodFilter } from "@/types";
 import { formatCurrency, formatShortDate } from "@/lib/utils";
 import {
@@ -14,10 +14,16 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CaretUp, CaretDown, CaretUpDown, MagnifyingGlass, FunnelSimple, ArrowDown } from "@phosphor-icons/react";
+import { CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, MagnifyingGlass, FunnelSimple, ArrowDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
+  { value: "daily", label: "Harian" },
+  { value: "weekly", label: "Mingguan" },
+  { value: "monthly", label: "Bulanan" },
+  { value: "yearly", label: "Tahunan" },
+];
 
 type SortDirection = "asc" | "desc" | null;
 
@@ -85,7 +91,7 @@ export function TransactionTable() {
     return result;
   }, [searchQuery, periodFilter, sortState]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
   const paginatedTransactions = filteredTransactions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -113,119 +119,153 @@ export function TransactionTable() {
   const expenseTotal = filteredTransactions
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0);
+  const periodLabel = PERIOD_OPTIONS.find((o) => o.value === periodFilter)?.label ?? "Bulanan";
 
   return (
-    <section aria-labelledby="transactions-heading" className="py-10 md:py-16">
+    <section
+      id="transaksi"
+      aria-labelledby="transactions-heading"
+      className="scroll-mt-24 pt-8 pb-16 md:pt-10 md:pb-20"
+    >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 id="transactions-heading" className="text-2xl font-semibold text-foreground">
-              Rincian Transaksi Kas
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Semua transaksi masuk dan keluar. Data bersifat transparan dan hanya untuk tujuan informasi.
-            </p>
-          </div>
+        <div className="mb-8 max-w-2xl md:mb-10">
+          <h2 id="transactions-heading" className="text-2xl font-bold tracking-tight text-balance text-foreground md:text-3xl">
+            Rincian Transaksi Kas
+          </h2>
+          <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-muted-foreground md:text-base">
+            {filteredTransactions.length} transaksi {periodLabel.toLowerCase()}. Cari,
+            saring periode, dan telusuri datanya.
+          </p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="w-full">
+        <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:flex-1">
+              <MagnifyingGlass className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <input
                 type="search"
-                placeholder="Cari transaksi..."
+                placeholder="Cari keterangan, kategori, pencatat…"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="h-10 w-full rounded-xl border border-border bg-background py-2 pr-4 pl-10 text-sm text-foreground placeholder:text-muted-foreground focus:border-transparent focus:ring-2 focus:ring-ring focus:outline-none"
                 aria-label="Cari transaksi"
               />
             </div>
 
-            <Select value={periodFilter} onValueChange={(v) => v && setPeriodFilter(v)}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Periode" />
-                <FunnelSimple className="w-4 h-4 mr-2" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Harian</SelectItem>
-                <SelectItem value="weekly">Mingguan</SelectItem>
-                <SelectItem value="monthly">Bulanan</SelectItem>
-                <SelectItem value="yearly">Tahunan</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline" size="sm" className="gap-2" disabled>
-              <ArrowDown className="w-4 h-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 shrink-0 gap-2 rounded-xl px-4 text-muted-foreground"
+              disabled
+              title="Ekspor PDF segera hadir"
+              aria-disabled="true"
+            >
+              <ArrowDown className="h-4 w-4" aria-hidden="true" />
               Ekspor PDF
             </Button>
           </div>
+          <div className="mt-3 flex items-center gap-2 overflow-x-auto border-t border-border/60 pt-3">
+            <span className="flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold text-muted-foreground">
+              <FunnelSimple className="h-3.5 w-3.5" aria-hidden="true" />
+              Periode
+            </span>
+            <div className="flex items-center gap-1.5" role="group" aria-label="Filter periode">
+              {PERIOD_OPTIONS.map((opt) => {
+                const active = opt.value === periodFilter;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      setPeriodFilter(opt.value);
+                      setCurrentPage(1);
+                    }}
+                    className={cn(
+                      "h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-
-        <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="overflow-x-auto">
+          <Table className="min-w-[780px]">
             <TableCaption className="sr-only">
               Daftar transaksi kas masjid masuk dan keluar
             </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="cursor-pointer select-none" onClick={() => handleSort("date")}>
+            <TableHeader className="bg-muted/40">
+              <TableRow className="border-border/60 hover:bg-muted/40">
+                <TableHead className="w-[132px] cursor-pointer px-4 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase select-none" onClick={() => handleSort("date")}>
                   <div className="flex items-center gap-1.5">
                     Tanggal
                     {getSortIcon("date")}
                   </div>
                 </TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => handleSort("description")}>
+                <TableHead className="w-[190px] px-4 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Kategori</TableHead>
+                <TableHead className="min-w-[260px] cursor-pointer px-4 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase select-none" onClick={() => handleSort("description")}>
                   <div className="flex items-center gap-1.5">
                     Keterangan
                     {getSortIcon("description")}
                   </div>
                 </TableHead>
-                <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort("amount")}>
+                <TableHead className="w-[168px] cursor-pointer px-4 py-3 text-right text-xs font-semibold tracking-wider text-muted-foreground uppercase select-none" onClick={() => handleSort("amount")}>
                   <div className="flex items-center justify-end gap-1.5">
                     Jumlah
                     {getSortIcon("amount")}
                   </div>
                 </TableHead>
-                <TableHead>Tipe</TableHead>
+                <TableHead className="w-[104px] px-4 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Tipe</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
-                    Tidak ada transaksi ditemukan
+                  <TableCell colSpan={5} className="px-5 py-14 text-center whitespace-normal">
+                    <p className="font-medium text-foreground">Tidak ada transaksi ditemukan</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Coba kata kunci atau periode lain.</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 paginatedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-mono text-sm">{formatShortDate(transaction.date)}</TableCell>
-                    <TableCell>
-                      <span className="font-medium">{transaction.category}</span>
+                  <TableRow key={transaction.id} className="border-border/60 transition-colors hover:bg-primary/[0.03]">
+                    <TableCell className="px-4 py-3 text-sm font-semibold whitespace-nowrap tabular-nums">{formatShortDate(transaction.date)}</TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
+                      <span className="text-[13px] font-medium text-muted-foreground">{transaction.category}</span>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{transaction.description}</TableCell>
-                    <TableCell className="text-right font-mono tabular-nums font-medium">
+                    <TableCell className="min-w-[260px] max-w-[380px] px-4 py-3 whitespace-normal">
+                      <span className="line-clamp-2 text-sm leading-relaxed text-foreground break-words">{transaction.description}</span>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right font-bold whitespace-nowrap tabular-nums">
                       {transaction.type === "income" ? (
-                        <span className="text-green-600 dark:text-green-400">
+                        <span className="text-[15px] text-green-700 dark:text-green-300">
                           +{formatCurrency(transaction.amount)}
                         </span>
                       ) : (
-                        <span className="text-red-600 dark:text-red-400">
+                        <span className="text-[15px] text-red-700 dark:text-red-300">
                           -{formatCurrency(transaction.amount)}
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3 whitespace-nowrap">
                       <Badge
                         variant={transaction.type === "income" ? "default" : "secondary"}
                         className={cn(
-                          "gap-1.5 px-2.5 py-0.5 text-xs",
+                          "gap-1.5 rounded-full px-2.5 py-0.5 text-xs",
                           transaction.type === "income"
-                            ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            ? "bg-green-500/10 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                            : "bg-red-500/10 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                         )}
                       >
                         {transaction.type === "income" ? "Masuk" : "Keluar"}
@@ -236,57 +276,61 @@ export function TransactionTable() {
               )}
             </TableBody>
           </Table>
+          </div>
 
           {(currentPage > 1 || currentPage < totalPages) && (
-            <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} dari {filteredTransactions.length} transaksi
+            <div className="flex flex-col gap-3 border-t border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-[13px] text-muted-foreground tabular-nums">
+                Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} dari {filteredTransactions.length} transaksi
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="rounded-full"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                   aria-label="Halaman sebelumnya"
                 >
-                  <CaretUp className="w-4 h-4 rotate-90" />
+                  <CaretLeft className="w-4 h-4" />
                 </Button>
-                <span className="px-3 text-sm font-medium">
+                <span className="px-3 text-sm font-medium tabular-nums">
                   {currentPage} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="rounded-full"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   aria-label="Halaman selanjutnya"
                 >
-                  <CaretDown className="w-4 h-4 rotate-90" />
+                  <CaretRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
           )}
 
-          <div className="px-4 py-3 border-t border-border bg-muted/30 grid grid-cols-3 gap-4 text-sm">
-            <div className="text-center">
-              <p className="text-muted-foreground">Total Pemasukan</p>
-              <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(incomeTotal)}</p>
+          <div className="grid grid-cols-1 gap-3 border-t border-border/60 bg-primary/[0.04] px-4 py-4 text-sm sm:grid-cols-3 sm:gap-4 sm:divide-x sm:divide-primary/15">
+            <div className="px-2 text-center sm:text-left">
+              <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Pemasukan</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-green-700 dark:text-green-300">{formatCurrency(incomeTotal)}</p>
             </div>
-            <div className="text-center">
-              <p className="text-muted-foreground">Total Pengeluaran</p>
-              <p className="font-bold text-red-600 dark:text-red-400">{formatCurrency(expenseTotal)}</p>
+            <div className="border-t border-primary/10 px-2 pt-4 text-center sm:border-0 sm:pt-0 sm:text-left">
+              <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Pengeluaran</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-red-700 dark:text-red-300">{formatCurrency(expenseTotal)}</p>
             </div>
-            <div className="text-center">
-              <p className="text-muted-foreground">Selisih</p>
-              <p className="font-bold text-foreground">{formatCurrency(incomeTotal - expenseTotal)}</p>
+            <div className="border-t border-primary/10 px-2 pt-4 text-center sm:border-0 sm:pt-0 sm:text-left">
+              <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Selisih Periode Ini</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-foreground">{formatCurrency(incomeTotal - expenseTotal)}</p>
             </div>
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-muted-foreground text-center">
-          Data bersifat read-only. Penginputan dan pengeditan transaksi hanya dapat dilakukan oleh Bendahara/Superadmin yang login.
+        <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
+          Data read-only. Input oleh Bendahara atau Superadmin yang login.
         </p>
+        </div>
       </div>
     </section>
   );
