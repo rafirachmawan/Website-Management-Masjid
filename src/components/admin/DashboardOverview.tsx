@@ -267,14 +267,14 @@ function QuickActions() {
   const actions = [
     {
       label: "Catat Kas Masuk",
-      href: "/admin/transactions/new?type=income",
+      href: "/admin/transactions?type=income",
       icon: Coins,
       iconBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white",
       desc: "Infak, sedekah, zakat, waqaf, & sewa",
     },
     {
       label: "Catat Kas Keluar",
-      href: "/admin/transactions/new?type=expense",
+      href: "/admin/transactions?type=expense",
       icon: TrendDown,
       iconBg: "bg-rose-500/10 text-rose-600 dark:text-rose-400 group-hover:bg-rose-600 group-hover:text-white",
       desc: "Operasional, honor, belanja, & utilitas",
@@ -407,7 +407,7 @@ export function DashboardOverview() {
               Export PDF
             </Link>
             <Link
-              href="/admin/transactions/new?type=income"
+              href="/admin/transactions?type=income"
               className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-xs hover:shadow-sm"
             >
               <Plus className="w-4 h-4" />

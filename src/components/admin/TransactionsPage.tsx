@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatCurrency, formatDate, formatShortDate, cn } from "@/lib/utils";
+import { TransactionFormDialog } from "@/components/admin/TransactionFormDialog";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
@@ -354,10 +354,12 @@ function RowActions({
   transaction,
   categories,
   onDeleted,
+  onEdit,
 }: {
   transaction: Transaction;
   categories: Category[];
   onDeleted: () => void;
+  onEdit: (txn: Transaction) => void;
 }) {
   return (
     <DropdownMenu>
@@ -376,7 +378,12 @@ function RowActions({
             Lihat Detail
           </DropdownMenuItem>
         </TransactionDetailDialog>
-        <DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            onEdit(transaction);
+          }}
+        >
           <PencilSimple className="w-4 h-4 mr-2" />
           Edit
         </DropdownMenuItem>
@@ -483,6 +490,10 @@ export function TransactionsPage() {
   const transactions = fetchedTransactions ?? [];
   const categories = fetchedCategories ?? [];
   const [searchQuery, setSearchQuery] = useState("");
+  // Form tambah/ubah transaksi (modal)
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [newType, setNewType] = useState<"income" | "expense">("income");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("date");
@@ -567,6 +578,29 @@ export function TransactionsPage() {
     return categories.filter((c) => usedCategoryIds.has(c.id));
   }, [transactions, categories]);
 
+  // Pintasan dari dashboard: /admin/transactions?type=income|expense
+  // langsung membuka form dengan tipe yang sesuai. Dibaca dari URL saat mount
+  // (bukan useSearchParams) supaya tidak perlu Suspense boundary.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("type");
+    if (t === "income" || t === "expense") {
+      setNewType(t);
+      setEditing(null);
+      setFormOpen(true);
+    }
+  }, []);
+
+  const openCreate = (type: "income" | "expense") => {
+    setEditing(null);
+    setNewType(type);
+    setFormOpen(true);
+  };
+
+  const openEdit = (txn: Transaction) => {
+    setEditing(txn);
+    setFormOpen(true);
+  };
+
   if (!fetchedTransactions || !fetchedCategories) {
     return (
       <div className="space-y-6" aria-label="Memuat transaksi kas">
@@ -588,12 +622,14 @@ export function TransactionsPage() {
               <Download className="w-4 h-4" />
               Export
             </Button>
-            <Link href="/admin/transactions/new?type=income">
-              <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
-                <Plus className="w-4 h-4" />
-                Transaksi Baru
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="gap-1.5 rounded-xl shadow-xs"
+              onClick={() => openCreate("income")}
+            >
+              <Plus className="w-4 h-4" />
+              Transaksi Baru
+            </Button>
           </>
         }
       />
@@ -864,7 +900,12 @@ export function TransactionsPage() {
 
                           {/* Actions */}
                           <TableCell className="py-3.5 pr-5 text-center">
-                            <RowActions transaction={txn} categories={categories} onDeleted={refresh} />
+                            <RowActions
+                              transaction={txn}
+                              categories={categories}
+                              onDeleted={refresh}
+                              onEdit={openEdit}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -885,6 +926,15 @@ export function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TransactionFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        categories={categories}
+        editing={editing}
+        defaultType={newType}
+        onSaved={refresh}
+      />
     </div>
   );
 }
