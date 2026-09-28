@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { mosqueProfile, prayerSchedule, financialSummary } from "@/lib/mock-data";
-import { formatDate, formatCurrency, cn } from "@/lib/utils";
+import { mosqueProfile, prayerSchedule } from "@/lib/mock-data";
+import { formatDate, cn } from "@/lib/utils";
 
 export function Hero() {
   const currentPrayer = prayerSchedule.prayers.find((p) => p.isCurrent);
@@ -13,8 +13,8 @@ export function Hero() {
     mosqueProfile.heroImages && mosqueProfile.heroImages.length > 0
       ? mosqueProfile.heroImages
       : mosqueProfile.coverImageUrl
-      ? [mosqueProfile.coverImageUrl]
-      : [];
+        ? [mosqueProfile.coverImageUrl]
+        : [];
 
   const isSlider = images.length > 1;
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -24,19 +24,19 @@ export function Hero() {
     setCurrentIdx((prev) => (prev + 1) % images.length);
   }, [isSlider, images.length]);
 
-  // Auto slide automatically every 6 seconds if there are multiple images
+  // Auto slide automatically every 2 seconds if there are multiple images
   useEffect(() => {
     if (!isSlider) return;
 
     const timer = setInterval(() => {
       goToNext();
-    }, 6000);
+    }, 2000);
 
     return () => clearInterval(timer);
   }, [isSlider, goToNext]);
 
   return (
-    <header className="relative overflow-hidden isolate flex min-h-[92svh] flex-col py-20 md:py-24 transition-colors">
+    <header className="relative overflow-hidden isolate flex min-h-svh flex-col py-14 md:py-16 transition-colors">
       {/* ─── Background Layer with Translucent Overlay ──────────────────────── */}
       {images.length > 0 && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
@@ -49,13 +49,13 @@ export function Hero() {
               referrerPolicy="no-referrer"
               className={cn(
                 "absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out",
-                idx === currentIdx ? "opacity-100" : "opacity-0"
+                idx === currentIdx ? "opacity-100" : "opacity-0",
               )}
             />
           ))}
 
-          {/* Translucent backdrop overlay: semi-transparent gradient for legibility */}
-          <div className="absolute inset-0 bg-background/60 dark:bg-background/75" />
+          {/* Translucent backdrop overlay: subtle blur + semi-transparent gradient */}
+          <div className="absolute inset-0 bg-background/55 dark:bg-background/70 backdrop-blur-[1.5px]" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
         </div>
       )}
@@ -71,8 +71,18 @@ export function Hero() {
           preserveAspectRatio="none"
         >
           <defs>
-            <pattern id="hero-grid" width="10" height="10" patternUnits="userSpaceOnUse">
-              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
+            <pattern
+              id="hero-grid"
+              width="10"
+              height="10"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 10 0 L 0 0 0 10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="0.5"
+              />
             </pattern>
           </defs>
           <rect width="100" height="100" fill="url(#hero-grid)" />
@@ -92,19 +102,20 @@ export function Hero() {
           </div>
 
           {/* Heading */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-5 leading-[1.12] text-balance">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-[1.15]">
             {mosqueProfile.name}
           </h1>
 
           {/* Description */}
-          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-[60ch] mx-auto mb-10 leading-relaxed font-normal text-balance">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
             Setiap rupiah yang masuk dan keluar dicatat dengan jelas. Laporan
-            keuangan terbuka untuk umum, demi kepercayaan dan kebersamaan jamaah.
+            keuangan terbuka untuk umum, demi kepercayaan dan kebersamaan
+            jamaah.
           </p>
 
           {/* Highlight Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-10 max-w-3xl mx-auto w-full">
-            <div className="flex flex-col items-center gap-1 px-5 py-4 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm hover:border-primary/40 transition-colors">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch justify-center gap-3 sm:gap-4 mb-10">
+            <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm hover:border-primary/40 transition-colors whitespace-nowrap">
               <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Saldo Saat Ini
               </span>
@@ -112,12 +123,12 @@ export function Hero() {
                 className="text-lg sm:text-xl font-bold text-foreground tabular-nums"
                 id="current-balance"
               >
-                {formatCurrency(financialSummary.currentBalance)}
+                Rp 87.450.000
               </span>
             </div>
 
             {currentPrayer && (
-              <div className="flex flex-col items-center gap-1 px-5 py-4 rounded-xl bg-primary/10 backdrop-blur-md border border-primary/30 shadow-sm">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-primary/10 backdrop-blur-md border border-primary/30 shadow-sm whitespace-nowrap">
                 <span className="text-xs sm:text-sm font-medium text-primary">
                   Sedang Waktu
                 </span>
@@ -134,7 +145,7 @@ export function Hero() {
             )}
 
             {nextPrayer && (
-              <div className="flex flex-col items-center gap-1 px-5 py-4 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 px-5 py-3.5 rounded-xl bg-card/90 backdrop-blur-md border border-border shadow-sm whitespace-nowrap">
                 <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Berikutnya
                 </span>
@@ -175,25 +186,19 @@ export function Hero() {
 
         {/* ─── Dot Indicators (Only rendered if images > 1) ───────────────── */}
         {isSlider && (
-          <div className="flex items-center justify-center gap-1 pt-6">
+          <div className="flex items-center justify-center gap-2 pt-6">
             {images.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIdx(idx)}
-                className="flex items-center justify-center min-w-[28px] min-h-[24px] cursor-pointer"
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
+                  idx === currentIdx
+                    ? "w-7 bg-primary shadow-xs"
+                    : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                )}
                 aria-label={`Lihat banner ${idx + 1}`}
-                aria-current={idx === currentIdx}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-300",
-                    idx === currentIdx
-                      ? "w-7 bg-primary shadow-xs"
-                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60"
-                  )}
-                />
-              </button>
+              />
             ))}
           </div>
         )}
