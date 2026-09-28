@@ -88,16 +88,7 @@ export function Hero() {
 
       {/* ─── Main Content ───────────────────────────────────────────────────── */}
       <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10 flex flex-1 flex-col">
-        <div className="max-w-4xl mx-auto w-full flex flex-1 flex-col justify-center text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs sm:text-sm font-semibold mb-6 border border-primary/20 backdrop-blur-sm self-center">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-            </span>
-            Transparansi Keuangan Masjid
-          </div>
-
+        <div className="max-w-4xl mx-auto w-full flex flex-1 flex-col justify-center text-center -translate-y-5 md:-translate-y-8">
           {/* Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6 leading-[1.15]">
             {mosqueProfile.name}

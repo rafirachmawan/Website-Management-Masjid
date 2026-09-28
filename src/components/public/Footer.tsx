@@ -14,6 +14,7 @@ const navigation = {
   ],
   Informasi: [
     { name: "Pengumuman", href: "#pengumuman" },
+    { name: "Kegiatan", href: "#kegiatan" },
   ],
 };
 

@@ -4,6 +4,7 @@ import { Navbar } from "@/components/public/Navbar";
 import { Hero } from "@/components/public/Hero";
 import { FinancialSummaryCards } from "@/components/public/FinancialSummaryCards";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
+import { ActivitiesSection } from "@/components/public/ActivitiesSection";
 import { Footer } from "@/components/public/Footer";
 
 export default function Home() {
@@ -21,6 +22,7 @@ export default function Home() {
           <div className="border-y border-border/60 bg-muted/40">
             <AnnouncementsSection />
           </div>
+          <ActivitiesSection />
         </div>
       </main>
       <Footer />

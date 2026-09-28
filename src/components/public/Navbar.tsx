@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CaretDown, List, X, MagnifyingGlass } from "@phosphor-icons/react";
+import { CaretDown, List, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 // TODO(admin): ubah daftar menu dan href sesuai halaman yang dikelola admin.
@@ -45,34 +45,6 @@ const MENU: MenuItem[] = [
   { name: "Reservasi", href: "#reservasi" },
 ];
 
-function SearchBox({ id, className }: { id: string; className?: string }) {
-  return (
-    <form
-      role="search"
-      aria-label="Cari di situs masjid"
-      className={cn("flex items-center", className)}
-      onSubmit={(e) => e.preventDefault()}
-    >
-      <label htmlFor={id} className="sr-only">
-        Cari
-      </label>
-      <input
-        id={id}
-        type="search"
-        placeholder="Cari"
-        className="h-9 w-28 rounded-l-md border border-r-0 border-border bg-muted/60 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none md:w-32"
-      />
-      <button
-        type="submit"
-        aria-label="Cari"
-        className="flex h-9 w-9 items-center justify-center rounded-r-md bg-primary text-primary-foreground transition-colors hover:opacity-90"
-      >
-        <MagnifyingGlass className="h-4 w-4" aria-hidden="true" />
-      </button>
-    </form>
-  );
-}
-
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDrop, setOpenDrop] = useState<string | null>(null);
@@ -82,7 +54,7 @@ export function Navbar() {
       aria-label="Navigasi utama"
       className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur"
     >
-        <div className="container mx-auto flex h-14 items-center justify-between gap-2 px-4 md:px-6 lg:px-8">
+        <div className="container mx-auto flex h-14 items-center justify-center gap-2 px-4 md:px-6 lg:px-8">
           {/* Mobile toggle */}
           <button
             type="button"
@@ -151,16 +123,13 @@ export function Navbar() {
           <p className="text-sm font-semibold uppercase tracking-wide text-foreground lg:hidden">
             Menu
           </p>
-
-          <SearchBox id="cari-desktop" className="hidden sm:flex" />
-          <span className="w-9 sm:hidden" aria-hidden="true" />
+          <span className="w-9 lg:hidden" aria-hidden="true" />
         </div>
 
         {/* Mobile panel */}
         {mobileOpen && (
           <div className="border-t border-border/60 bg-background lg:hidden">
             <div className="container mx-auto space-y-1 px-4 py-3 md:px-6">
-              <SearchBox id="cari-mobile" className="w-full pb-2 sm:hidden" />
               <ul className="space-y-1">
                 {MENU.map((item) => (
                   <li key={item.name} className="rounded-lg">
