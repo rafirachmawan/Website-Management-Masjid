@@ -1,6 +1,4 @@
-import { Navbar } from "@/components/public/Navbar";
 import { Hero } from "@/components/public/Hero";
-import { PrayerScheduleSection } from "@/components/public/PrayerScheduleSection";
 import { FinancialSummaryCards } from "@/components/public/FinancialSummaryCards";
 import { FinancialChart } from "@/components/public/FinancialChart";
 import { TransactionTable } from "@/components/public/TransactionTable";
@@ -31,7 +29,6 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
       {profile === null && (
         <p
           role="status"
@@ -45,8 +42,6 @@ export default async function Home() {
         <Hero profile={profile} prayer={prayer} />
       </div>
       <main className="flex flex-1 flex-col">
-        {/* Ibadah dulu: jadwal sholat langsung setelah hero */}
-        <PrayerScheduleSection profile={profile} prayer={prayer} />
         {/* Takmir: pengurus masjid dari data admin */}
         <OfficialsSection officials={officials} />
         {/* Keuangan: ringkasan + grafik + rincian — sesuai menu Navbar */}

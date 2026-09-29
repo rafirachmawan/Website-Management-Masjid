@@ -34,13 +34,13 @@ export function Navbar() {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur"
+      className="relative z-10 bg-transparent"
     >
         <div className="container mx-auto flex h-14 items-center justify-center gap-2 px-4 md:px-6 lg:px-8">
           {/* Mobile toggle */}
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card/80 text-foreground backdrop-blur lg:hidden"
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             onClick={() => setMobileOpen((v) => !v)}
@@ -111,7 +111,7 @@ export function Navbar() {
 
         {/* Mobile panel */}
         {mobileOpen && (
-          <div className="border-t border-border/60 bg-background lg:hidden">
+          <div className="mx-4 rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur lg:hidden">
             <div className="container mx-auto space-y-1 px-4 py-3 md:px-6">
               <ul className="space-y-1">
                 {MENU.map((item) => (

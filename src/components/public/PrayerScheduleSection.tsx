@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { DailyPrayerSchedule, MosqueProfile } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sun, Moon, Star, Clock, Timer, SunHorizon, MapPin } from "@phosphor-icons/react";
+import {
+  Sun,
+  Moon,
+  Star,
+  Clock,
+  Timer,
+  SunHorizon,
+  MapPin,
+  CaretDown,
+} from "@phosphor-icons/react";
 
 const PRAYER_ORDER = ["Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"] as const;
 const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -67,172 +75,493 @@ interface LiveInfo {
   nowLabel: string;
 }
 
-function Timetable({
-  schedule,
-  isToday,
-  nowMin,
-  live,
-}: {
-  schedule: DailyPrayerSchedule;
-  isToday: boolean;
-  nowMin: number | null;
-  live: LiveInfo | null;
-}) {
-  const mins = PRAYER_ORDER.map(
-    (n) => toMinutes(schedule.prayers.find((p) => p.name === n)?.time ?? "00:00"),
-  );
-  const nextIdx = isToday && nowMin !== null ? mins.findIndex((m) => m > nowMin) : -2;
-  // nextIdx: -2 = bukan hari ini (netral) | -1 = semua lewat | >=0 = index berikutnya
-
-  const statusOf = (idx: number): "done" | "current" | "next" | "idle" => {
-    if (nextIdx === -2) return "idle";
-    if (nextIdx === -1) return idx === mins.length - 1 ? "current" : "done";
-    if (nextIdx === 0) return idx === 0 ? "next" : "idle";
-    if (idx < nextIdx - 1) return "done";
-    if (idx === nextIdx - 1) return "current";
-    if (idx === nextIdx) return "next";
-    return "idle";
-  };
-
+// Lis geometris bintang 8-sisi — tipis, dari token primary, tanpa aset baru.
+function GeometricTrim() {
+  const stars = Array.from({ length: 48 });
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <ul className="divide-y divide-border/60">
-        {PRAYER_ORDER.map((prayerName, idx) => {
-          const prayer = schedule.prayers.find((p) => p.name === prayerName);
-          if (!prayer) return null;
-          const status = statusOf(idx);
-          const Icon = PRAYER_ICONS[prayer.name] || Clock;
-          return (
-            <li
-              key={prayerName}
-              className={cn(
-                "flex items-center justify-between gap-3 px-5 py-3.5",
-                status === "current" && "bg-primary/[0.06]",
-                status === "done" && "opacity-55",
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <Icon
-                  className={cn(
-                    "h-[18px] w-[18px] shrink-0",
-                    status === "done" ? "text-muted-foreground" : "text-primary",
-                  )}
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-[15px] font-semibold text-foreground">
-                    {prayer.name}
-                    <span
-                      lang="ar"
-                      dir="rtl"
-                      aria-hidden="true"
-                      className="font-arabic ml-2.5 font-normal text-muted-foreground"
-                    >
-                      {prayer.arabic}
-                    </span>
-                  </p>
-                  {status === "current" && (
-                    <p className="mt-0.5 text-xs font-semibold text-primary">Sedang berlangsung</p>
-                  )}
-                  {status === "next" && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Berikutnya{live?.friendly ? ` • ${live.friendly}` : ""}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <p
-                className={cn(
-                  "shrink-0 text-lg font-bold tabular-nums",
-                  status === "next"
-                    ? "text-primary"
-                    : status === "done"
-                      ? "text-muted-foreground"
-                      : "text-foreground",
-                )}
-              >
-                {prayer.time}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
+    <div
+      aria-hidden="true"
+      className="flex h-3.5 items-center gap-2 overflow-hidden border-b border-border/60 px-5 text-primary/25 sm:px-6"
+    >
+      {stars.map((_, i) => (
+        <svg
+          key={i}
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          className="shrink-0"
+        >
+          <rect
+            x="2"
+            y="2"
+            width="6"
+            height="6"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
+          <rect
+            x="2"
+            y="2"
+            width="6"
+            height="6"
+            stroke="currentColor"
+            strokeWidth="1"
+            transform="rotate(45 5 5)"
+          />
+        </svg>
+      ))}
     </div>
   );
 }
 
-function LiveNextCard({
-  day,
+function CountdownPill({
   live,
   zone,
   mounted,
 }: {
-  day: DailyPrayerSchedule;
   live: LiveInfo | null;
   zone: string;
   mounted: boolean;
 }) {
+  if (!live || !mounted) {
+    return (
+      <p
+        role="status"
+        className="inline-flex items-center gap-2 rounded-full bg-muted px-3.5 py-1.5 text-[13px] font-semibold text-muted-foreground tabular-nums"
+      >
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+        Memuat hitung mundur…
+      </p>
+    );
+  }
   return (
-    <aside
-      aria-label="Sholat berikutnya"
-      className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7 lg:col-span-2"
+    <p
+      aria-label={`Berikutnya ${live.name} pukul ${live.time}${live.besok ? " besok" : ""}, tersisa ${live.ticking}`}
+      className="inline-flex max-w-full items-center gap-2 rounded-full bg-primary/[0.08] px-3.5 py-1.5 text-[13px] font-bold text-primary ring-1 ring-primary/20 ring-inset tabular-nums"
     >
-      <div>
-        <p className="inline-flex items-center gap-2 rounded-full bg-primary/[0.08] px-3 py-1 text-[11px] font-bold text-primary ring-1 ring-primary/20 ring-inset">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-          </span>
-          Hari ini
-        </p>
-        <p className="mt-3 text-lg font-bold text-foreground">
-          {formatDate(day.date, { weekday: "long", day: "numeric", month: "long" })}
-        </p>
-        <p className="mt-0.5 text-sm font-medium text-primary">{day.hijriDate}</p>
+      <span className="relative flex h-1.5 w-1.5 shrink-0">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+      </span>
+      <span className="truncate">
+        {live.name} · {live.ticking}
+      </span>
+      <span className="shrink-0 font-semibold text-primary/70">{zone}</span>
+    </p>
+  );
+}
 
-        {live && mounted ? (
-          <div className="mt-5 rounded-2xl bg-muted/60 p-4 sm:p-5">
-            <p className="text-xs font-medium text-muted-foreground">Berikutnya</p>
-            <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-2xl font-extrabold text-foreground">{live.name}</span>
-              <span lang="ar" dir="rtl" className="font-arabic text-muted-foreground">
-                {live.arabic}
-              </span>
-            </p>
-            <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
-              {live.time} {zone}
-              {live.besok ? " (besok)" : ""}
-            </p>
-            <p className="mt-3 text-4xl font-extrabold tabular-nums text-foreground">{live.ticking}</p>
-            <div
-              className="mt-3 h-1 overflow-hidden rounded-full bg-border"
-              role="img"
-              aria-label={`Perjalanan waktu menuju ${live.name} ${live.progressPct} persen`}
-            >
-              <div className="h-full rounded-full bg-primary" style={{ width: `${live.progressPct}%` }} />
-            </div>
-            {live.friendly && <p className="mt-2 text-xs text-muted-foreground">{live.friendly}</p>}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground sm:p-5">
-            Memuat hitung mundur...
-          </div>
-        )}
+// ── Papan desktop: 1 kartu, baris = waktu, kolom = 7 hari ──
+function PrayerBoard({
+  week,
+  todayISO,
+  nowMin,
+  live,
+  zone,
+}: {
+  week: DailyPrayerSchedule[];
+  todayISO: string | null;
+  nowMin: number | null;
+  live: LiveInfo | null;
+  zone: string;
+}) {
+  const todayIdx = todayISO ? week.findIndex((s) => s.date === todayISO) : -1;
 
-        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-[13px] tabular-nums">
-          <p className="flex items-center gap-2 text-muted-foreground">
-            <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            Terbit {day.sunrise} {zone}
-          </p>
-          {live && mounted && (
-            <p className="flex items-center gap-2 text-muted-foreground">
-              <Timer className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              Sekarang {live.nowLabel} {zone}
-            </p>
-          )}
+  // Status hanya untuk kolom hari ini; hari lain netral.
+  let nextRow = -1;
+  if (todayIdx !== -1 && nowMin !== null && week[todayIdx]) {
+    const mins = PRAYER_ORDER.map((n) =>
+      toMinutes(week[todayIdx].prayers.find((p) => p.name === n)?.time ?? "00:00"),
+    );
+    nextRow = mins.findIndex((m) => m > nowMin);
+  }
+
+  const statusOfToday = (idx: number): "done" | "current" | "next" | "idle" => {
+    if (todayIdx === -1 || nowMin === null) return "idle";
+    if (nextRow === -1) return idx === PRAYER_ORDER.length - 1 ? "current" : "done";
+    if (nextRow === 0) return idx === 0 ? "next" : "idle";
+    if (idx < nextRow - 1) return "done";
+    if (idx === nextRow - 1) return "current";
+    if (idx === nextRow) return "next";
+    return "idle";
+  };
+
+  const onGridKeys = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const keys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    if (!keys.includes(e.key)) return;
+    const el = document.activeElement as HTMLElement | null;
+    if (!el?.dataset?.cell) return;
+    e.preventDefault();
+    const r = Number(el.dataset.r);
+    const c = Number(el.dataset.c);
+    let nr = r;
+    let nc = c;
+    if (e.key === "ArrowUp") nr = Math.max(0, r - 1);
+    if (e.key === "ArrowDown") nr = Math.min(PRAYER_ORDER.length - 1, r + 1);
+    if (e.key === "ArrowLeft") nc = Math.max(0, c - 1);
+    if (e.key === "ArrowRight") nc = Math.min(week.length - 1, c + 1);
+    const next = document.querySelector<HTMLElement>(
+      `[data-cell="time"][data-r="${nr}"][data-c="${nc}"]`,
+    );
+    next?.focus();
+  }, [week.length]);
+
+  return (
+    <div
+      role="grid"
+      aria-label="Jadwal sholat 7 hari"
+      aria-colcount={week.length + 1}
+      aria-rowcount={PRAYER_ORDER.length + 1}
+      onKeyDown={onGridKeys}
+      className="grid min-w-[760px]"
+      style={{
+        gridTemplateColumns: `minmax(168px, 1.1fr) repeat(${week.length}, minmax(0, 1fr))`,
+      }}
+    >
+      {/* Baris kepala hari */}
+      <div role="row" className="contents">
+        <div
+          role="columnheader"
+          aria-label="Waktu sholat"
+          className="flex items-end px-5 pb-3 pt-4 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground sm:px-6"
+        >
+          Waktu
         </div>
+        {week.map((s, ci) => {
+          const isToday = s.date === todayISO;
+          return (
+            <div
+              key={s.date}
+              role="columnheader"
+              aria-label={`${formatDate(s.date, { weekday: "long", day: "numeric", month: "long" })}${isToday ? ", hari ini" : ""}`}
+              className={cn(
+                "border-l border-border/50 px-2 pb-3 pt-4 text-center",
+                isToday && "bg-primary/[0.06]",
+              )}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                {formatDate(s.date, { weekday: "short" })}
+              </p>
+              <p className="mt-0.5 text-[15px] font-extrabold tabular-nums text-foreground">
+                {formatDate(s.date, { day: "numeric" })}{" "}
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {formatDate(s.date, { month: "short" }).replace(".", "")}
+                </span>
+              </p>
+              <span className="mt-1.5 flex h-1.5 items-center justify-center" aria-hidden="true">
+                {isToday ? (
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                ) : null}
+              </span>
+            </div>
+          );
+        })}
       </div>
-    </aside>
+
+      {/* Baris waktu */}
+      {PRAYER_ORDER.map((prayerName, ri) => {
+        const Icon = PRAYER_ICONS[prayerName] || Clock;
+        const arabic =
+          week[0]?.prayers.find((p) => p.name === prayerName)?.arabic ?? "";
+        return (
+          <div key={prayerName} role="row" className="contents">
+            <div
+              role="rowheader"
+              className="flex items-center gap-2.5 border-t border-border/60 px-5 py-3 sm:px-6"
+            >
+              <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <p className="min-w-0 truncate text-[14px] font-semibold text-foreground">
+                {prayerName}
+                <span
+                  lang="ar"
+                  dir="rtl"
+                  aria-hidden="true"
+                  className="font-arabic ml-2 text-[17px] font-normal text-muted-foreground"
+                >
+                  {arabic}
+                </span>
+              </p>
+            </div>
+            {week.map((s, ci) => {
+              const prayer = s.prayers.find((p) => p.name === prayerName);
+              const isToday = s.date === todayISO;
+              const st = isToday ? statusOfToday(ri) : "idle";
+              const isNext = isToday && st === "next";
+              return (
+                <div
+                  key={s.date + prayerName}
+                  role="gridcell"
+                  data-cell="time"
+                  data-r={ri}
+                  data-c={ci}
+                  tabIndex={0}
+                  aria-label={`${prayerName} ${formatDate(s.date, { weekday: "short", day: "numeric", month: "short" })} pukul ${prayer?.time ?? "--:--"}${isNext ? ", berikutnya" : ""}${isToday && st === "done" ? ", telah lewat" : ""}`}
+                  aria-selected={isNext}
+                  className={cn(
+                    "border-l border-t border-border/50 px-2 py-3 text-center outline-none transition-colors",
+                    "focus-visible:bg-primary/[0.1] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                    isToday && "bg-primary/[0.06]",
+                    st === "done" && "opacity-50",
+                  )}
+                >
+                  <p
+                    className={cn(
+                      "text-[15px] font-bold tabular-nums",
+                      isNext
+                        ? "text-primary"
+                        : st === "done"
+                          ? "text-muted-foreground"
+                          : "text-foreground",
+                    )}
+                  >
+                    {prayer?.time ?? "--:--"}
+                  </p>
+                  <span
+                    className="mt-1 flex h-3 items-center justify-center gap-1"
+                    aria-hidden="true"
+                  >
+                    {isNext && (
+                      <>
+                        <span className="h-1 w-1 rounded-full bg-primary" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                          {live?.friendly ? live.friendly.split(" ").slice(0, 2).join(" ") : "Berikutnya"}
+                        </span>
+                      </>
+                    )}
+                    {isToday && st === "current" && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Sedang
+                      </span>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* Baris terbit */}
+      <div role="row" className="contents">
+        <div
+          role="rowheader"
+          className="flex items-center gap-2.5 border-t border-border/60 px-5 py-3 text-[13px] text-muted-foreground sm:px-6"
+        >
+          <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          Terbit
+        </div>
+        {week.map((s) => {
+          const isToday = s.date === todayISO;
+          return (
+            <div
+              key={s.date + "sunrise"}
+              role="gridcell"
+              aria-label={`Terbit ${formatDate(s.date, { weekday: "short" })} pukul ${s.sunrise} ${zone}`}
+              className={cn(
+                "border-l border-t border-border/50 px-2 py-3 text-center text-[13px] font-semibold tabular-nums text-muted-foreground",
+                isToday && "bg-primary/[0.06]",
+              )}
+            >
+              {s.sunrise}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Daftar mobile: 7 kartu hari, hari ini paling atas & terbuka ──
+function MobileDayList({
+  ordered,
+  todayISO,
+  nowMin,
+  live,
+  zone,
+  expandedDate,
+  onToggle,
+}: {
+  ordered: DailyPrayerSchedule[];
+  todayISO: string | null;
+  nowMin: number | null;
+  live: LiveInfo | null;
+  zone: string;
+  expandedDate: string | null;
+  onToggle: (date: string) => void;
+}) {
+  const minsToday =
+    todayISO && nowMin !== null
+      ? (() => {
+          const t = ordered.find((s) => s.date === todayISO);
+          if (!t) return null;
+          return PRAYER_ORDER.map((n) =>
+            toMinutes(t.prayers.find((p) => p.name === n)?.time ?? "00:00"),
+          );
+        })()
+      : null;
+  const nextRowToday =
+    minsToday && nowMin !== null ? minsToday.findIndex((m) => m > nowMin) : -1;
+
+  return (
+    <div className="space-y-3 md:hidden">
+      {ordered.map((s) => {
+        const isToday = s.date === todayISO;
+        const expanded = expandedDate === s.date;
+        const panelId = `prayer-day-${s.date}`;
+        const first = s.prayers[0];
+        const todayNext =
+          isToday && live && nextRowToday >= 0
+            ? s.prayers.find((p) => p.name === PRAYER_ORDER[nextRowToday])
+            : null;
+        return (
+          <article
+            key={s.date}
+            className={cn(
+              "overflow-hidden rounded-2xl border border-border bg-card",
+              isToday && "border-primary/30 ring-1 ring-primary/20 ring-inset",
+            )}
+          >
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={panelId}
+              onClick={() => onToggle(s.date)}
+              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+            >
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="text-[15px] font-bold text-foreground">
+                    {formatDate(s.date, { weekday: "long", day: "numeric", month: "short" })}
+                  </span>
+                  {isToday && (
+                    <span className="rounded-full bg-primary/[0.08] px-2 py-0.5 text-[11px] font-bold text-primary ring-1 ring-primary/20 ring-inset">
+                      Hari ini
+                    </span>
+                  )}
+                </span>
+                <span className="mt-0.5 block text-[13px] font-medium text-primary">
+                  {s.hijriDate}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2.5">
+                <span className="text-right tabular-nums">
+                  <span className="block text-sm font-extrabold text-foreground">
+                    {(todayNext ?? first)?.time ?? "--:--"}
+                  </span>
+                  <span className="block text-[11px] font-semibold text-muted-foreground">
+                    {(todayNext ?? first)?.name ?? ""} · {zone}
+                  </span>
+                </span>
+                <CaretDown
+                  aria-hidden="true"
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    expanded && "rotate-180",
+                  )}
+                />
+              </span>
+            </button>
+
+            {isToday && (
+              <div className="border-t border-border/60 px-5 py-3">
+                {live ? (
+                  <div>
+                    <div className="flex items-baseline justify-between gap-2 tabular-nums">
+                      <p className="text-[13px] font-semibold text-muted-foreground">
+                        {live.name}
+                        {live.besok ? " (besok)" : ""} · {live.time} {zone}
+                      </p>
+                      <p className="text-lg font-extrabold tabular-nums text-foreground">
+                        {live.ticking}
+                      </p>
+                    </div>
+                    <div
+                      className="mt-2 h-1 overflow-hidden rounded-full bg-border"
+                      role="img"
+                      aria-label={`Perjalanan waktu menuju ${live.name} ${live.progressPct} persen`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${live.progressPct}%` }}
+                      />
+                    </div>
+                    {live.friendly && (
+                      <p className="mt-1.5 text-xs text-muted-foreground">{live.friendly}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">Memuat hitung mundur…</p>
+                )}
+              </div>
+            )}
+
+            {expanded && (
+              <ul id={panelId} className="divide-y divide-border/60 border-t border-border/60">
+                {PRAYER_ORDER.map((prayerName, idx) => {
+                  const prayer = s.prayers.find((p) => p.name === prayerName);
+                  if (!prayer) return null;
+                  const Icon = PRAYER_ICONS[prayer.name] || Clock;
+                  let st: "done" | "current" | "next" | "idle" = "idle";
+                  if (isToday && nextRowToday !== -1 && nowMin !== null) {
+                    if (nextRowToday === -1) st = idx === 4 ? "current" : "done";
+                    else if (nextRowToday === 0) st = idx === 0 ? "next" : "idle";
+                    else if (idx < nextRowToday - 1) st = "done";
+                    else if (idx === nextRowToday - 1) st = "current";
+                    else if (idx === nextRowToday) st = "next";
+                  } else if (isToday && nextRowToday === -1) {
+                    st = idx === 4 ? "current" : "done";
+                  }
+                  return (
+                    <li
+                      key={prayerName}
+                      className={cn(
+                        "flex items-center justify-between gap-3 px-5 py-3",
+                        st === "current" && "bg-primary/[0.06]",
+                        st === "done" && "opacity-55",
+                      )}
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Icon
+                          aria-hidden="true"
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            st === "done" ? "text-muted-foreground" : "text-primary",
+                          )}
+                        />
+                        <span className="min-w-0 truncate text-[15px] font-semibold text-foreground">
+                          {prayer.name}
+                          <span
+                            lang="ar"
+                            dir="rtl"
+                            aria-hidden="true"
+                            className="font-arabic ml-2 text-[17px] font-normal text-muted-foreground"
+                          >
+                            {prayer.arabic}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 text-[15px] font-bold tabular-nums",
+                          st === "next"
+                            ? "text-primary"
+                            : st === "done"
+                              ? "text-muted-foreground"
+                              : "text-foreground",
+                        )}
+                      >
+                        {prayer.time}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </article>
+        );
+      })}
+    </div>
   );
 }
 
@@ -260,16 +589,16 @@ export function PrayerScheduleSection({
   const todayIndex = todayISO
     ? weeklyPrayerSchedule.findIndex((s) => s.date === todayISO)
     : -1;
-  const [activeDay, setActiveDay] = useState(0);
-  const [dayPinned, setDayPinned] = useState(false);
+  const todaySchedule =
+    todayIndex !== -1 ? weeklyPrayerSchedule[todayIndex] : undefined;
 
-  if (!dayPinned && todayIndex !== -1) {
-    setActiveDay(todayIndex);
-    setDayPinned(true);
-  }
-
-  const activeSchedule = weeklyPrayerSchedule[activeDay];
-  const todaySchedule = todayIndex !== -1 ? weeklyPrayerSchedule[todayIndex] : undefined;
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  useEffect(() => {
+    if (weeklyPrayerSchedule.length === 0) return;
+    if (expandedDate !== null) return;
+    if (todayIndex !== -1) setExpandedDate(weeklyPrayerSchedule[todayIndex].date);
+    else setExpandedDate(weeklyPrayerSchedule[0].date);
+  }, [weeklyPrayerSchedule, todayIndex, expandedDate]);
 
   // ── Status live hari ini (zona waktu masjid) ──
   let live: LiveInfo | null = null;
@@ -353,6 +682,20 @@ export function PrayerScheduleSection({
     );
   }
 
+  const activeHijri = todaySchedule?.hijriDate ?? weeklyPrayerSchedule[0]?.hijriDate;
+  const activeTitle = todaySchedule
+    ? formatDate(todaySchedule.date, { weekday: "long", day: "numeric", month: "long" })
+    : formatDate(weeklyPrayerSchedule[0].date, { weekday: "long", day: "numeric", month: "long" });
+
+  // Mobile: hari ini paling atas, lalu hari berikutnya, lalu yang lewat.
+  const orderedWeek =
+    todayIndex !== -1
+      ? [
+          ...weeklyPrayerSchedule.slice(todayIndex),
+          ...weeklyPrayerSchedule.slice(0, todayIndex),
+        ]
+      : weeklyPrayerSchedule;
+
   return (
     <section
       id="jadwal-sholat"
@@ -360,113 +703,99 @@ export function PrayerScheduleSection({
       className="scroll-mt-24 bg-background py-16 md:py-20"
     >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="max-w-2xl">
-          <h2
-            id="prayer-heading"
-            className="font-display text-h2-fluid font-semibold text-foreground"
-          >
-            Jadwal Sholat Mingguan
-          </h2>
-          <p className="mt-2.5 max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
-            Mengikuti lokasi masjid dan diperbarui harian. Pilih hari untuk melihat lima waktu sholat.
-          </p>
-        </div>
-
-        <div className="mt-8 grid items-start gap-4 md:gap-5 lg:grid-cols-5">
-          {/* Panel kiri: sholat berikutnya — hitung mundur live */}
-          <LiveNextCard
-            day={todaySchedule ?? activeSchedule}
-            live={live}
-            zone={zone}
-            mounted={mounted}
-          />
-
-          <Tabs
-            value={activeSchedule.date}
-            onValueChange={(v) =>
-              setActiveDay(weeklyPrayerSchedule.findIndex((s) => s.date === v))
-            }
-            className="w-full lg:col-span-3"
-          >
-          {/* Baris tanggal aktif — teks biasa, tanpa kartu */}
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-lg font-bold text-foreground">
-                {formatDate(activeSchedule.date, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-                {activeSchedule.date === todayISO && (
-                  <span className="ml-2 rounded-full bg-primary/[0.08] px-2 py-0.5 align-middle text-[11px] font-bold text-primary">
-                    Hari ini
-                  </span>
-                )}
-              </p>
-              <p className="mt-0.5 text-sm font-medium text-primary">
-                {activeSchedule.hijriDate}
-              </p>
-            </div>
-            <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground tabular-nums">
-              <SunHorizon className="h-4 w-4 text-primary" aria-hidden="true" />
-              Terbit {activeSchedule.sunrise} {zone}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <h2
+              id="prayer-heading"
+              className="font-display text-h2-fluid font-semibold text-foreground"
+            >
+              Jadwal Sholat Mingguan
+            </h2>
+            <p className="mt-2.5 max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+              Lima waktu dalam satu papan — kolom yang disorot adalah hari ini,
+              titik hijau menandai sholat berikutnya.
             </p>
           </div>
+          <div className="flex items-center gap-2 text-[13px] text-muted-foreground tabular-nums">
+            <Timer className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            {mounted && live ? (
+              <span>
+                Sekarang {live.nowLabel} {zone}
+              </span>
+            ) : (
+              <span>
+                Zona {zone}
+              </span>
+            )}
+          </div>
+        </div>
 
-          {/* Pemilih hari: strip tab bergaris bawah */}
-          <TabsList
-            className="mt-3 flex h-auto! w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border/60 bg-transparent p-0"
-            aria-label="Pilih hari"
-          >
-            {weeklyPrayerSchedule.map((schedule) => {
-              const isTodayTab = schedule.date === todayISO;
-              return (
-                <TabsTrigger
-                  key={schedule.date}
-                  value={schedule.date}
-                  className="group h-auto min-w-[3.75rem] flex-1 snap-start flex-col gap-0 rounded-none border-0 px-3 py-2 text-muted-foreground data-active:bg-transparent data-active:text-foreground data-active:shadow-none! sm:min-w-0 sm:px-2"
-                >
-                  <span className="text-[11px] font-bold tracking-widest uppercase">
-                    {formatDate(schedule.date, { weekday: "short" })}
+        <div className="mt-8">
+          {/* Papan mihrab — satu kartu */}
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+            <GeometricTrim />
+            {/* Kepala ramping */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-bold text-foreground">
+                  {activeTitle}
+                  <span className="ml-2 rounded-full bg-primary/[0.08] px-2 py-0.5 align-middle text-[11px] font-bold text-primary ring-1 ring-primary/20 ring-inset">
+                    Hari ini
                   </span>
-                  <span className="text-lg leading-snug font-bold tabular-nums">
-                    {formatDate(schedule.date, { day: "numeric" })}
-                    <span className="ml-1 text-[11px] font-medium text-muted-foreground">
-                      {formatDate(schedule.date, { month: "short" }).replace(".", "")}
-                    </span>
-                  </span>
-                  <span className="mt-1 flex h-1 items-center" aria-hidden="true">
-                    {isTodayTab && (
-                      <span className="h-1 w-1 rounded-full bg-primary group-data-active:bg-primary" />
-                    )}
-                  </span>
-                  <span
-                    className="absolute inset-x-3 bottom-[-1px] hidden h-0.5 rounded-full bg-primary group-data-active:block"
-                    aria-hidden="true"
-                  />
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium text-primary">{activeHijri}</p>
+              </div>
+              <CountdownPill live={live} zone={zone} mounted={mounted} />
+            </div>
 
-          {weeklyPrayerSchedule.map((schedule) => (
-            <TabsContent key={schedule.date} value={schedule.date} className="mt-4">
-              <Timetable
-                schedule={schedule}
-                isToday={schedule.date === todayISO}
-                nowMin={schedule.date === todayISO ? nowMinLive : null}
-                live={schedule.date === todayISO ? live : null}
+            {/* Desktop: grid 5 x 7 */}
+            <div className="hidden overflow-x-auto border-t border-border/60 md:block">
+              <PrayerBoard
+                week={weeklyPrayerSchedule}
+                todayISO={todayISO}
+                nowMin={nowMinLive}
+                live={live}
+                zone={zone}
               />
-            </TabsContent>
-          ))}
+            </div>
 
-          <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            {profile
-              ? `Mengikuti lokasi ${profile.name} (${zone}). Diperbarui setiap hari.`
-              : `Zona ${zone}. Diperbarui setiap hari.`}
-          </p>
-          </Tabs>
+            {/* Kaki papan — konteks lokasi */}
+            <div className="hidden items-center justify-between gap-3 border-t border-border/60 px-5 py-3.5 text-[13px] text-muted-foreground sm:px-6 md:flex">
+              <p className="flex min-w-0 items-center gap-1.5">
+                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="truncate">
+                  {profile
+                    ? `Mengikuti lokasi ${profile.name} (${zone}). Diperbarui setiap hari.`
+                    : `Zona ${zone}. Diperbarui setiap hari.`}
+                </span>
+              </p>
+              {todaySchedule && (
+                <p className="flex shrink-0 items-center gap-1.5 tabular-nums">
+                  <SunHorizon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Terbit hari ini {todaySchedule.sunrise} {zone}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile: 7 kartu hari */}
+          <div className="mt-3 md:hidden">
+            <MobileDayList
+              ordered={orderedWeek}
+              todayISO={todayISO}
+              nowMin={nowMinLive}
+              live={live}
+              zone={zone}
+              expandedDate={expandedDate}
+              onToggle={(d) => setExpandedDate((prev) => (prev === d ? d : d))}
+            />
+            <p className="mt-4 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              {profile
+                ? `Mengikuti lokasi ${profile.name} (${zone}). Diperbarui setiap hari.`
+                : `Zona ${zone}. Diperbarui setiap hari.`}
+            </p>
+          </div>
         </div>
       </div>
     </section>
