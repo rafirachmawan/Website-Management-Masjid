@@ -450,7 +450,7 @@ function CategorySummaryTable({
 
 // ─── Monthly Summary Table ───────────────────────────────────────────────────
 
-function MonthlySummaryTable({ data }: { data: ChartDataPoint[] }) {
+function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: string }) {
   const totalIncome = data.reduce((s, d) => s + d.income, 0);
   const totalExpense = data.reduce((s, d) => s + d.expense, 0);
 
@@ -504,7 +504,7 @@ function MonthlySummaryTable({ data }: { data: ChartDataPoint[] }) {
           })}
           {/* Total Row */}
           <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30">
-            <TableCell className="py-3 text-sm font-bold text-foreground">Total Tahun 2026</TableCell>
+            <TableCell className="py-3 text-sm font-bold text-foreground">Total Tahun {year}</TableCell>
             <TableCell className="py-3 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalIncome)}
             </TableCell>
@@ -547,9 +547,10 @@ export function ReportsPage() {
   const financialSummary = fetchedSummary;
   const mosqueProfile = fetchedProfile;
 
+  const now = new Date();
   const [periodType, setPeriodType] = useState<PeriodType>("yearly");
-  const [selectedMonth, setSelectedMonth] = useState("9"); // September
-  const [selectedYear] = useState("2026");
+  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
+  const [selectedYear] = useState(String(now.getFullYear()));
   const [chartType, setChartType] = useState<ChartType>("area");
 
   // Filter transactions by period
@@ -561,7 +562,7 @@ export function ReportsPage() {
         return d.getMonth() + 1 === month && d.getFullYear() === parseInt(selectedYear);
       });
     }
-    // yearly — all 2026
+    // yearly — tahun terpilih
     return transactions.filter((t) => new Date(t.date).getFullYear() === parseInt(selectedYear));
   }, [periodType, selectedMonth, selectedYear]);
 
@@ -858,7 +859,7 @@ export function ReportsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <MonthlySummaryTable data={chartData} />
+            <MonthlySummaryTable data={chartData} year={selectedYear} />
           </CardContent>
         </Card>
       )}

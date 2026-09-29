@@ -23,12 +23,24 @@ export function AdminHeader() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
 
+  const SEGMENT_LABELS: Record<string, string> = {
+    announcements: "Berita",
+    activities: "Kegiatan",
+    transactions: "Transaksi Kas",
+    reports: "Laporan Keuangan",
+    users: "Pengurus",
+    settings: "Pengaturan",
+    "prayer-schedule": "Jadwal Sholat",
+  };
+
   const breadcrumbs = pathname
     .replace("/admin", "")
     .split("/")
     .filter(Boolean)
     .map((segment, index, arr) => ({
-      label: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " "),
+      label:
+        SEGMENT_LABELS[segment] ??
+        segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " "),
       href: "/admin" + arr.slice(0, index + 1).join("/"),
       isLast: index === arr.length - 1,
     }));

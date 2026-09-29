@@ -19,12 +19,15 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useSidebar } from "./AdminLayout";
+import { useApi } from "@/lib/api";
+import { getInitials } from "@/lib/utils";
+import type { MosqueProfile } from "@/types";
 
 const navigation = [
   { name: "Overview", href: "/admin", icon: Layout },
   { name: "Transaksi Kas", href: "/admin/transactions", icon: Coins },
   { name: "Laporan Keuangan", href: "/admin/reports", icon: FileText },
-  { name: "Pengumuman", href: "/admin/announcements", icon: ListChecks },
+  { name: "Berita", href: "/admin/announcements", icon: ListChecks },
   { name: "Kegiatan", href: "/admin/activities", icon: ChartBar },
   { name: "Jadwal Sholat", href: "/admin/prayer-schedule", icon: Mosque },
   { name: "Pengurus", href: "/admin/users", icon: Users },
@@ -35,6 +38,9 @@ export function Sidebar() {
   const { isMobileOpen, setIsMobileOpen, collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
+  const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const brandName = profile?.shortName || profile?.name || "Masjid";
+  const brandInitials = profile ? getInitials(profile.shortName || profile.name) : "M";
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -67,13 +73,13 @@ export function Sidebar() {
           {!collapsed && !isMobile && (
             <Link href="/admin" className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="text-primary font-bold text-sm">AR</span>
+                <span className="text-primary font-bold text-sm">{brandInitials}</span>
               </div>
-              <span className="font-display text-[15px] font-semibold text-foreground">Ar-Rahman</span>
+              <span className="font-display text-[15px] font-semibold text-foreground">{brandName}</span>
             </Link>
           )}
           {isMobile && (
-            <span className="font-display text-[15px] font-semibold text-foreground">Ar-Rahman</span>
+            <span className="font-display text-[15px] font-semibold text-foreground">{brandName}</span>
           )}
           <button
             onClick={() => {

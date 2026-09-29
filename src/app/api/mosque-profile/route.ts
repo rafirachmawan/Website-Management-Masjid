@@ -4,7 +4,11 @@ import { ok, fail } from "@/server/api-helpers";
 
 export async function GET() {
   try {
-    return ok(await getMosqueProfile());
+    const profile = await getMosqueProfile();
+    if (!profile) {
+      return ok({ error: "Profil masjid belum diisi. Lengkapi lewat halaman admin." }, 404);
+    }
+    return ok(profile);
   } catch (e) {
     return fail(e);
   }

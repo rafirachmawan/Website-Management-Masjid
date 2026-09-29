@@ -6,6 +6,7 @@
 // - monthly* = filter bulan berjalan (zona masjid), yearly* = tahun berjalan.
 
 import { db } from "../db";
+import { randomUUID } from "crypto";
 import { BadRequestError } from "../api-helpers";
 import type {
   Category,
@@ -13,7 +14,7 @@ import type {
   FinancialSummary,
   ChartDataPoint,
 } from "@/types";
-import type { TransactionInput, TransactionUpdate } from "../schemas";
+import type { TransactionInput, TransactionUpdate, CategoryInput } from "../schemas";
 
 const ID_MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
@@ -63,6 +64,88 @@ export async function getCategories(): Promise<Category[]> {
     icon: c.icon ?? undefined,
     color: c.color ?? undefined,
   }));
+}
+
+export async function createCategory(input: CategoryInput): Promise<Category> {
+  const clash = await db.category.findFirst({
+    where: { name: { equals: input.name.trim() }, type: input.type },
+  });
+  if (clash) throw new BadRequestError(`Kategori "${input.name.trim()}" sudah ada.`);
+  const row = await db.category.create({
+    data: {
+      id: `cat-${randomUUID().slice(0, 8)}`,
+      name: input.name.trim(),
+      type: input.type,
+      icon: input.icon || null,
+      color: input.color || null,
+    },
+  });
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as Category["type"],
+    icon: row.icon ?? undefined,
+    color: row.color ?? undefined,
+  };
+}
+
+export async function updateCategory(id: string, input: Partial<CategoryInput>): Promise<Category> {
+  const existing = await db.category.findUnique({ where: { id } });
+  if (!existing) throw new BadRequestError("Kategori yang akan diubah tidak ditemukan.");
+
+  const name = input.name?.trim() || existing.name;
+  const type = input.type ?? (existing.type as Category["type"]);
+
+  // Kategori yang sudah dipakai transaksi tidak boleh pindah tipe
+  // (transaksi terikat pada tipe kategori).
+  if (type !== existing.type) {
+    const used = await db.transaction.count({ where: { categoryId: id } });
+    if (used > 0) {
+      throw new BadRequestError(
+        `Kategori "${existing.name}" sudah dipakai ${used} transaksi — tipe tidak boleh diubah. Buat kategori baru.`,
+      );
+    }
+  }
+
+  const clash = await db.category.findFirst({
+    where: { name: { equals: name }, type, NOT: { id } },
+  });
+  if (clash) throw new BadRequestError(`Kategori "${name}" sudah ada.`);
+
+  const row = await db.category.update({
+    where: { id },
+    data: {
+      name,
+      type,
+      ...(input.icon !== undefined && { icon: input.icon || null }),
+      ...(input.color !== undefined && { color: input.color || null }),
+    },
+  });
+
+  // Nama kategori didenormalisasi di transaksi — ikut perbarui.
+  if (name !== existing.name) {
+    await db.transaction.updateMany({ where: { categoryId: id }, data: { category: name } });
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type as Category["type"],
+    icon: row.icon ?? undefined,
+    color: row.color ?? undefined,
+  };
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const existing = await db.category.findUnique({ where: { id } });
+  if (!existing) throw new BadRequestError("Kategori yang akan dihapus tidak ditemukan.");
+  const used = await db.transaction.count({ where: { categoryId: id } });
+  if (used > 0) {
+    throw new BadRequestError(
+      `Kategori "${existing.name}" masih dipakai ${used} transaksi — hapus/ pindahkan transaksinya dulu.`,
+    );
+  }
+  await db.category.delete({ where: { id } });
 }
 
 export async function getTransactions(): Promise<Transaction[]> {

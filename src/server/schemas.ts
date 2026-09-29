@@ -109,6 +109,32 @@ export const officialInputSchema = z.object({
 
 export type OfficialInput = z.infer<typeof officialInputSchema>;
 
+// ── Kategori ───────────────────────────────────────────────────────────────────
+
+export const categoryInputSchema = z.object({
+  name: z.string().min(2, "Nama kategori minimal 2 karakter.").max(80),
+  type: z.enum(["income", "expense"], {
+    error: "Tipe kategori harus 'income' (kas masuk) atau 'expense' (kas keluar).",
+  }),
+  icon: z.string().max(60).optional().or(z.literal("")),
+  color: z.string().max(60).optional().or(z.literal("")),
+});
+
+export type CategoryInput = z.infer<typeof categoryInputSchema>;
+
+// ── Konfigurasi aplikasi (rekening & preferensi) ─────────────────────────────
+
+export const appConfigInputSchema = z.object({
+  bankName: z.string().max(120).optional().or(z.literal("")),
+  accountNumber: z.string().max(60).optional().or(z.literal("")),
+  accountHolder: z.string().max(120).optional().or(z.literal("")),
+  minBalanceAlert: z.number().int().min(0).max(100_000_000_000).optional(),
+  publicTransparency: z.boolean().optional(),
+  showDonationQRIS: z.boolean().optional(),
+});
+
+export type AppConfigInput = z.infer<typeof appConfigInputSchema>;
+
 // ── Profil masjid ────────────────────────────────────────────────────────────
 
 export const mosqueProfileInputSchema = z.object({

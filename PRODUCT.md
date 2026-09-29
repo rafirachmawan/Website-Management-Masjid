@@ -28,10 +28,9 @@ Dibangun sebagai **template multi-masjid**: satu codebase yang bisa dipakai ulan
 ## Capabilities and Constraints
 
 - Halaman publik: hero, ringkasan keuangan, grafik, tabel transaksi, pengumuman, jadwal salat, footer profil.
-- Halaman admin: dashboard, transaksi, laporan, kegiatan, pengumuman, pengguna, jadwal salat, pengaturan.
-- Data saat ini statis (`src/lib/mock-data.ts`); **rencana disambungkan ke database/backend sungguhan** (teknologinya belum diputuskan — open decision).
-- Identitas "Masjid Al-Ikhlas" beserta seluruh isi data contoh adalah placeholder template, bukan data final.
-- Open decisions: pilihan database/backend; model autentikasi & hak akses per peran admin.
+- Halaman admin: dashboard, transaksi, laporan, kegiatan, pengumuman, pengguna, jadwal salat, pengaturan (termasuk kelola kategori kas & konfigurasi rekening).
+- Seluruh data berasal dari database SQLite (`prisma/dev.db`) dan diisi lewat halaman /admin — tidak ada lagi data contoh/mockup di codebase. Database kosong = halaman publik menampilkan status penyiapan, bukan angka palsu.
+- Open decisions: model autentikasi & hak akses per peran admin.
 
 ## Brand Commitments
 
@@ -40,7 +39,7 @@ Dibangun sebagai **template multi-masjid**: satu codebase yang bisa dipakai ulan
 
 ## Evidence on Hand
 
-- Data contoh: `src/lib/mock-data.ts` (profil, kategori, transaksi, pengumuman, jadwal).
+- Database lokal `prisma/dev.db` (SQLite) — saat ini kosong; diisi pengurus lewat /admin.
 - Tidak ada data asli, testimoni, atau aset brand final — jangan fabrikasi angka/transaksi seolah data sungguhan.
 
 ## Product Principles

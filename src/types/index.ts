@@ -89,6 +89,15 @@ export interface ChartDataPoint {
 
 export type PeriodFilter = "daily" | "weekly" | "monthly" | "yearly";
 
+export interface AppConfig {
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  minBalanceAlert: number;
+  publicTransparency: boolean;
+  showDonationQRIS: boolean;
+}
+
 export interface Official {
   id: string;
   name: string;

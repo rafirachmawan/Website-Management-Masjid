@@ -6,6 +6,7 @@ import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
@@ -132,7 +133,7 @@ export function AnnouncementsPage() {
       refresh();
       setIsFormModalOpen(false);
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Gagal menyimpan pengumuman.");
+      setFormError(e instanceof Error ? e.message : "Gagal menyimpan berita.");
     } finally {
       setIsSaving(false);
     }
@@ -148,7 +149,7 @@ export function AnnouncementsPage() {
       setIsDeleteModalOpen(false);
       setSelectedAnnouncement(null);
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Gagal menghapus pengumuman.");
+      setFormError(e instanceof Error ? e.message : "Gagal menghapus berita.");
     } finally {
       setIsDeleting(false);
     }
@@ -182,7 +183,7 @@ export function AnnouncementsPage() {
 
   if (!announcements) {
     return (
-      <div className="space-y-6" aria-label="Memuat pengumuman">
+      <div className="space-y-6" aria-label="Memuat berita">
         <DataSkeleton lines={2} className="max-w-md" />
         <DataSkeleton lines={6} />
       </div>
@@ -193,12 +194,12 @@ export function AnnouncementsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Pengumuman"
-        description="Kelola warta, siaran informasi, dan berita kegiatan untuk jamaah"
+        title="Berita"
+        description="Kelola berita dan informasi untuk jamaah"
         actions={
           <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
             <Plus className="w-4 h-4" />
-            <span>Buat Pengumuman</span>
+            <span>Buat Berita</span>
           </Button>
         }
       />
@@ -209,7 +210,7 @@ export function AnnouncementsPage() {
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Total Pengumuman
+                Total Berita
               </p>
               <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {data.length}
@@ -282,7 +283,7 @@ export function AnnouncementsPage() {
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Cari judul pengumuman, isi pesan, atau pembuat..."
+                placeholder="Cari judul berita, isi pesan, atau pembuat..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
@@ -314,9 +315,9 @@ export function AnnouncementsPage() {
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-3">
                 <Megaphone className="w-6 h-6" />
               </div>
-              <h3 className="font-semibold text-foreground">Tidak Ada Pengumuman</h3>
+              <h3 className="font-semibold text-foreground">Tidak Ada Berita</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Tidak ada pengumuman yang sesuai dengan kriteria pencarian Anda.
+                Tidak ada berita yang sesuai dengan kriteria pencarian Anda.
               </p>
             </div>
           </Card>
@@ -328,6 +329,15 @@ export function AnnouncementsPage() {
             >
               <CardContent className="p-5">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  {item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      loading="lazy"
+                      className="h-20 w-full shrink-0 rounded-lg border border-border object-cover md:w-28"
+                    />
+                  )}
                   <div className="flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       {getPriorityBadge(item.priority)}
@@ -413,6 +423,13 @@ export function AnnouncementsPage() {
           </DialogHeader>
 
           <div className="py-4">
+            {selectedAnnouncement?.imageUrl && (
+              <img
+                src={selectedAnnouncement.imageUrl}
+                alt={selectedAnnouncement.title}
+                className="mb-4 max-h-64 w-full rounded-xl border border-border object-cover"
+              />
+            )}
             <div className="p-4 bg-muted/40 rounded-xl border border-border">
               <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
                 {selectedAnnouncement?.content}
@@ -436,17 +453,17 @@ export function AnnouncementsPage() {
         <DialogContent className="sm:max-w-140">
           <DialogHeader>
             <DialogTitle>
-              {isEditMode ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
+              {isEditMode ? "Edit Berita" : "Buat Berita Baru"}
             </DialogTitle>
             <DialogDescription>
-              Isi formulir di bawah ini untuk mempublikasikan pengumuman ke jamaah.
+              Isi formulir di bawah ini untuk mempublikasikan berita ke jamaah.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Judul Pengumuman <span className="text-red-500">*</span>
+                Judul Berita <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -498,11 +515,11 @@ export function AnnouncementsPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">
-                Isi Pengumuman Lengkap <span className="text-red-500">*</span>
+                Isi Berita Lengkap <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={5}
-                placeholder="Tuliskan isi pengumuman lengkap secara jelas..."
+                placeholder="Tuliskan isi berita lengkap secara jelas..."
                 value={formData.content}
                 onChange={(e) =>
                   setFormData({ ...formData, content: e.target.value })
@@ -510,6 +527,12 @@ export function AnnouncementsPage() {
                 className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
+
+            <ImageUploadField
+              label="Gambar Berita (opsional)"
+              value={formData.imageUrl}
+              onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+            />
           </div>
 
           {formError && (
@@ -537,7 +560,7 @@ export function AnnouncementsPage() {
                 ? "Menyimpan..."
                 : isEditMode
                   ? "Simpan Perubahan"
-                  : "Terbitkan Pengumuman"}
+                  : "Terbitkan Berita"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -549,14 +572,14 @@ export function AnnouncementsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash className="w-5 h-5" />
-              Hapus Pengumuman?
+              Hapus Berita?
             </DialogTitle>
             <DialogDescription className="pt-2 text-sm leading-relaxed">
-              Apakah Anda yakin ingin menghapus pengumuman &quot;
+              Apakah Anda yakin ingin menghapus berita &quot;
               <strong className="text-foreground">
                 {selectedAnnouncement?.title}
               </strong>
-              &quot;? Pengumuman tidak akan tampil lagi di halaman profil publik.
+              &quot;? Berita tidak akan tampil lagi di halaman profil publik.
             </DialogDescription>
           </DialogHeader>
 

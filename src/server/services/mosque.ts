@@ -37,9 +37,9 @@ function toProfile(row: {
   };
 }
 
-export async function getMosqueProfile(): Promise<MosqueProfile> {
-  const row = await db.mosqueProfile.findUniqueOrThrow({ where: { id: "main" } });
-  return toProfile(row);
+export async function getMosqueProfile(): Promise<MosqueProfile | null> {
+  const row = await db.mosqueProfile.findUnique({ where: { id: "main" } });
+  return row ? toProfile(row) : null;
 }
 
 export async function updateMosqueProfile(input: MosqueProfileInput): Promise<MosqueProfile> {

@@ -8,14 +8,14 @@ export function Hero({
   profile: mosqueProfile,
   prayer,
 }: {
-  profile: MosqueProfile;
-  prayer: { today: DailyPrayerSchedule; week: DailyPrayerSchedule[] };
+  profile: MosqueProfile | null;
+  prayer: { today: DailyPrayerSchedule | null; week: DailyPrayerSchedule[] };
 }) {
   // Background images from admin / mosque profile
   const images =
-    mosqueProfile.heroImages && mosqueProfile.heroImages.length > 0
+    mosqueProfile?.heroImages && mosqueProfile.heroImages.length > 0
       ? mosqueProfile.heroImages
-      : mosqueProfile.coverImageUrl
+      : mosqueProfile?.coverImageUrl
         ? [mosqueProfile.coverImageUrl]
         : [];
 
@@ -38,16 +38,29 @@ export function Hero({
     return () => clearInterval(timer);
   }, [isSlider, goToNext]);
 
-  if (!mosqueProfile || !prayer) {
+  // Profil/jadwal belum diisi admin — tampilkan sambutan netral, bukan skeleton.
+  if (!mosqueProfile) {
     return (
       <header
-        aria-label="Memuat sambutan masjid"
-        className="relative flex min-h-svh flex-col items-center justify-center py-14 md:py-16"
+        aria-label="Sambutan masjid"
+        className="relative flex min-h-svh flex-col items-center justify-center py-14 text-center md:py-16"
       >
-        <div className="w-full max-w-2xl animate-pulse space-y-4 px-4" aria-hidden="true">
-          <div className="mx-auto h-8 w-56 rounded-lg bg-muted" />
-          <div className="mx-auto h-14 w-3/4 rounded-xl bg-muted" />
-          <div className="mx-auto h-4 w-1/2 rounded bg-muted" />
+        <div className="container mx-auto max-w-2xl px-4">
+          <p
+            lang="ar"
+            dir="rtl"
+            aria-label="Bismillahirrahmanirrahim"
+            className="font-arabic text-2xl text-primary md:text-3xl"
+          >
+            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          </p>
+          <h1 className="font-display text-display-fluid mt-4 font-semibold text-foreground">
+            Selamat Datang di Website Masjid
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
+            Profil masjid, laporan keuangan, dan jadwal kegiatan akan tampil di
+            sini setelah dilengkapi oleh pengurus.
+          </p>
         </div>
       </header>
     );
@@ -61,21 +74,35 @@ export function Hero({
       {images.length > 0 && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
           {images.map((img, idx) => (
-            <img
+            <div
               key={idx}
-              src={img}
-              alt=""
               aria-hidden="true"
-              referrerPolicy="no-referrer"
               className={cn(
-                "absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out",
+                "absolute inset-0 transition-opacity duration-700 ease-in-out",
                 idx === currentIdx ? "opacity-100" : "opacity-0",
               )}
-            />
+            >
+              {/* Latar pengisi: foto sama yang diburamkan agar tidak ada ruang kosong */}
+              <img
+                src={img}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full scale-110 object-cover"
+              />
+              {/* Foto utama: tampil utuh tanpa dipotong-zoom */}
+              <img
+                src={img}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 h-full w-full object-contain"
+              />
+            </div>
           ))}
 
-          {/* Translucent backdrop overlay: subtle blur + semi-transparent gradient */}
-          <div className="absolute inset-0 bg-background/55 dark:bg-background/70 backdrop-blur-[1.5px]" />
+          {/* Translucent backdrop overlay: semi-transparent gradient */}
+          <div className="absolute inset-0 bg-background/55 dark:bg-background/70" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
         </div>
       )}
@@ -141,19 +168,25 @@ export function Hero({
               <span className="font-semibold text-foreground">
                 {mosqueProfile.shortName}
               </span>
-              <span aria-hidden="true">·</span>
-              <span>
-                {formatDate(prayerSchedule.date, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+              {prayerSchedule && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    {formatDate(prayerSchedule.date, {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </span>
+                </>
+              )}
             </div>
-            <div className="flex items-center gap-1.5 font-medium text-primary">
-              <span aria-hidden="true">{prayerSchedule.hijriDate}</span>
-            </div>
+            {prayerSchedule && (
+              <div className="flex items-center gap-1.5 font-medium text-primary">
+                <span aria-hidden="true">{prayerSchedule.hijriDate}</span>
+              </div>
+            )}
           </div>
         </div>
 

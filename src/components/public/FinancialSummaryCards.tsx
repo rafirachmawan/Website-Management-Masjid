@@ -72,7 +72,7 @@ function FlowRow({
   desc: string;
   value: number;
   prefix: "+" | "−";
-  trend: { value: number; label: string };
+  trend?: { value: number; label: string };
   iconClass: string;
   valueClass?: string;
 }) {
@@ -94,7 +94,7 @@ function FlowRow({
           {formatCurrency(value).replace("Rp", "Rp ")}
         </p>
       </div>
-      <TrendPill value={trend.value} label={trend.label} />
+      {trend && <TrendPill value={trend.value} label={trend.label} />}
     </div>
   );
 }
@@ -112,6 +112,7 @@ export function FinancialSummaryCards({
   const totalFlow = monthlyIncome + monthlyExpense;
   const incomeShare = totalFlow > 0 ? Math.round((monthlyIncome / totalFlow) * 100) : 0;
   const yearlySurplus = yearlyIncome - yearlyExpense;
+  const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long" });
 
   return (
     <section
@@ -236,8 +237,7 @@ export function FinancialSummaryCards({
               {/* Komposisi arus — visual user-friendly */}
               <div className="mt-6 rounded-2xl bg-white/[0.07] p-4 ring-1 ring-white/10 ring-inset backdrop-blur-sm sm:p-5">
                 <div className="flex items-center justify-between gap-3 text-xs font-medium text-white/70">
-                  <span>Komposisi September</span>
-                  <TrendPill value={18} label="vs bln lalu" dark />
+                  <span>Komposisi {monthLabel}</span>
                 </div>
                 <div
                   className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full bg-white/15"
@@ -282,7 +282,7 @@ export function FinancialSummaryCards({
             <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 pt-5 pb-4 sm:px-6">
               <div>
                 <h3 className="text-[15px] font-bold tracking-tight text-foreground">
-                  Arus September 2026
+                  Arus {monthLabel} {new Date().getFullYear()}
                 </h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Infak, zakat, wakaf, operasional
@@ -301,7 +301,6 @@ export function FinancialSummaryCards({
                 desc="Infak • zakat • wakaf • sewa"
                 value={monthlyIncome}
                 prefix="+"
-                trend={{ value: 12, label: "vs bln lalu" }}
                 iconClass="bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300"
                 valueClass="text-foreground"
               />
@@ -311,7 +310,6 @@ export function FinancialSummaryCards({
                 desc="Operasional • honor • rawat"
                 value={monthlyExpense}
                 prefix="−"
-                trend={{ value: -5, label: "vs bln lalu" }}
                 iconClass="bg-rose-500/10 text-rose-700 ring-rose-600/20 dark:text-rose-300"
                 valueClass="text-foreground"
               />

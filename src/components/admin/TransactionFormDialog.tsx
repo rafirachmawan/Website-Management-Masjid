@@ -24,8 +24,6 @@ import type { Category, Transaction } from "@/types";
 
 type TxnType = "income" | "expense";
 
-const DEFAULT_RECORDER = "Ust. Ahmad (Bendahara)";
-
 function todayISO(): string {
   return new Date().toISOString().split("T")[0];
 }
@@ -67,7 +65,7 @@ export function TransactionFormDialog({
   const [categoryId, setCategoryId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [recordedBy, setRecordedBy] = useState(DEFAULT_RECORDER);
+  const [recordedBy, setRecordedBy] = useState("");
   const [proofUrl, setProofUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +88,7 @@ export function TransactionFormDialog({
       setCategoryId("");
       setAmount("");
       setDescription("");
-      setRecordedBy(DEFAULT_RECORDER);
+      setRecordedBy("");
       setProofUrl("");
     }
   }, [open, editing, defaultType]);
@@ -209,6 +207,15 @@ export function TransactionFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {availableCategories.length === 0 && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Belum ada kategori {type === "income" ? "kas masuk" : "kas keluar"}.{" "}
+                  <a href="/admin/settings" className="font-semibold text-primary hover:underline">
+                    Buat dulu di Pengaturan
+                  </a>
+                  .
+                </p>
+              )}
             </div>
           </div>
 
@@ -243,7 +250,7 @@ export function TransactionFormDialog({
             <textarea
               id="txn-description"
               rows={2}
-              placeholder="Contoh: Infak Jumat ke-4 September 2026"
+              placeholder="Contoh: Infak Jumat pekan ke-4"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/30 focus:outline-none"
@@ -258,6 +265,7 @@ export function TransactionFormDialog({
               <input
                 id="txn-recorder"
                 type="text"
+                placeholder="Nama pencatat (misal: Bendahara)"
                 value={recordedBy}
                 onChange={(e) => setRecordedBy(e.target.value)}
                 className={inputClass}

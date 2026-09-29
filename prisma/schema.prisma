@@ -113,3 +113,10 @@ model PrayerTime {
 
   @@index([dayDate])
 }
+
+// Pengaturan aplikasi (rekening donasi, preferensi tampilan publik).
+// Key-value agar penambahan pengaturan tak perlu migrasi baru.
+model Config {
+  key   String @id
+  value String
+}

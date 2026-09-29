@@ -210,6 +210,16 @@ function ChartContent({ data, type }: { data: ChartDataPoint[]; type: ChartType 
 export function FinancialChart({ chartData }: { chartData: ChartDataPoint[] }) {
   const [chartType, setChartType] = useState<ChartType>("area");
 
+  const rangeLabel =
+    chartData.length > 0
+      ? chartData.length === 1
+        ? `Periode ${chartData[0].period}`
+        : `Tren ${chartData[0].period} – ${chartData[chartData.length - 1].period}`
+      : "Belum ada data transaksi";
+
+  // Sorotan = bulan dengan surplus tertinggi, dihitung dari data (bukan teks statis).
+  const highlight = [...chartData].sort((a, b) => b.balance - a.balance)[0];
+
   return (
     <section
       id="grafik"
@@ -224,7 +234,7 @@ export function FinancialChart({ chartData }: { chartData: ChartDataPoint[] }) {
                 Grafik Keuangan Bulanan
               </h2>
               <p className="mt-1.5 max-w-[65ch] text-sm leading-relaxed text-muted-foreground">
-                Tren Jan-Sep 2026 untuk pemasukan, pengeluaran, dan saldo.
+                {rangeLabel} untuk pemasukan, pengeluaran, dan saldo.
               </p>
             </div>
             <Tabs value={chartType} onValueChange={(v) => v && setChartType(v as ChartType)} className="w-auto shrink-0">
@@ -262,14 +272,17 @@ export function FinancialChart({ chartData }: { chartData: ChartDataPoint[] }) {
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1 border-t border-border/70 bg-primary/[0.04] px-5 py-3.5 text-center md:flex-row md:justify-center md:gap-2">
-            <span className="text-sm font-semibold text-primary">
-              Sorotan September 2026:
-            </span>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Surplus tertinggi berkat wakaf tanah Rp 50 Juta dari Bpk. H. Surya.
-            </p>
-          </div>
+          {highlight && (
+            <div className="flex flex-col items-center gap-1 border-t border-border/70 bg-primary/[0.04] px-5 py-3.5 text-center md:flex-row md:justify-center md:gap-2">
+              <span className="text-sm font-semibold text-primary">
+                Sorotan {highlight.period}:
+              </span>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Surplus {libFormatCurrency(highlight.balance)} dengan pemasukan{" "}
+                {libFormatCurrency(highlight.income)}.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

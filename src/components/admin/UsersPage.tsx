@@ -6,6 +6,7 @@ import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
 import type { Official } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
@@ -335,13 +336,22 @@ export function UsersPage() {
               <CardContent className="p-5 flex flex-col items-center text-center space-y-3">
                 {/* Avatar with initials or photo */}
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-xl overflow-hidden shadow-xs">
-                    {item.name
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((n) => n[0])
-                      .join("")}
-                  </div>
+                  {item.avatar && (item.avatar.startsWith("http") || item.avatar.startsWith("/")) ? (
+                    <img
+                      src={item.avatar}
+                      alt={item.name}
+                      loading="lazy"
+                      className="w-16 h-16 rounded-full border-2 border-primary/20 object-cover shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-xl overflow-hidden shadow-xs">
+                      {item.name
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
+                  )}
                   <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card" />
                 </div>
 
@@ -516,6 +526,12 @@ export function UsersPage() {
               </div>
             </div>
           </div>
+
+          <ImageUploadField
+            label="Foto Pengurus (opsional)"
+            value={formData.avatar}
+            onChange={(url) => setFormData({ ...formData, avatar: url })}
+          />
 
           {formError && (
             <p

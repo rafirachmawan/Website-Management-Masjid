@@ -17,6 +17,14 @@ const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
 
 const DEFAULT_TZ = "Asia/Jakarta";
 
+// Singkatan zona untuk label waktu (menghindari "WIB" hardcode di luar Jawa).
+function shortZone(tz: string): string {
+  if (tz === "Asia/Jakarta") return "WIB";
+  if (tz === "Asia/Makassar") return "WITA";
+  if (tz === "Asia/Jayapura") return "WIT";
+  return tz;
+}
+
 function toMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -88,36 +96,6 @@ function Timetable({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      {isToday && live && (
-        <div className="border-b border-border/60">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4">
-            <p className="flex min-w-0 items-center gap-2 text-[15px] text-foreground">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-              <span className="truncate">
-                Berikutnya: <strong className="font-bold">{live.name}</strong>{" "}
-                <span lang="ar" dir="rtl" className="font-arabic text-muted-foreground">
-                  {live.arabic}
-                </span>{" "}
-                <span className="text-muted-foreground tabular-nums">
-                  • {live.time} WIB{live.besok ? " (besok)" : ""}
-                </span>
-              </span>
-            </p>
-            <p className="flex shrink-0 items-center gap-1.5 text-xl font-bold tabular-nums text-foreground">
-              <Timer className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              {live.ticking}
-            </p>
-          </div>
-          <div
-            className="mx-5 mb-4 h-1 overflow-hidden rounded-full bg-muted"
-            role="img"
-            aria-label={`Perjalanan waktu menuju ${live.name} ${live.progressPct} persen`}
-          >
-            <div className="h-full rounded-full bg-primary" style={{ width: `${live.progressPct}%` }} />
-          </div>
-        </div>
-      )}
-
       <ul className="divide-y divide-border/60">
         {PRAYER_ORDER.map((prayerName, idx) => {
           const prayer = schedule.prayers.find((p) => p.name === prayerName);
@@ -179,15 +157,82 @@ function Timetable({
           );
         })}
       </ul>
-
-      {isToday && live && (
-        <div className="border-t border-border/60 px-5 py-3 text-[13px] text-muted-foreground tabular-nums">
-          Sekarang {live.nowLabel} WIB
-          {live.currentName ? ` • Sedang: ${live.currentName}` : ""}
-          {live.friendly ? ` • ${live.friendly} menuju ${live.name}` : ""}
-        </div>
-      )}
     </div>
+  );
+}
+
+function LiveNextCard({
+  day,
+  live,
+  zone,
+  mounted,
+}: {
+  day: DailyPrayerSchedule;
+  live: LiveInfo | null;
+  zone: string;
+  mounted: boolean;
+}) {
+  return (
+    <aside
+      aria-label="Sholat berikutnya"
+      className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7 lg:col-span-2"
+    >
+      <div>
+        <p className="inline-flex items-center gap-2 rounded-full bg-primary/[0.08] px-3 py-1 text-[11px] font-bold text-primary ring-1 ring-primary/20 ring-inset">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          </span>
+          Hari ini
+        </p>
+        <p className="mt-3 text-lg font-bold text-foreground">
+          {formatDate(day.date, { weekday: "long", day: "numeric", month: "long" })}
+        </p>
+        <p className="mt-0.5 text-sm font-medium text-primary">{day.hijriDate}</p>
+
+        {live && mounted ? (
+          <div className="mt-5 rounded-2xl bg-muted/60 p-4 sm:p-5">
+            <p className="text-xs font-medium text-muted-foreground">Berikutnya</p>
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-2xl font-extrabold text-foreground">{live.name}</span>
+              <span lang="ar" dir="rtl" className="font-arabic text-muted-foreground">
+                {live.arabic}
+              </span>
+            </p>
+            <p className="mt-1 text-sm font-bold tabular-nums text-foreground">
+              {live.time} {zone}
+              {live.besok ? " (besok)" : ""}
+            </p>
+            <p className="mt-3 text-4xl font-extrabold tabular-nums text-foreground">{live.ticking}</p>
+            <div
+              className="mt-3 h-1 overflow-hidden rounded-full bg-border"
+              role="img"
+              aria-label={`Perjalanan waktu menuju ${live.name} ${live.progressPct} persen`}
+            >
+              <div className="h-full rounded-full bg-primary" style={{ width: `${live.progressPct}%` }} />
+            </div>
+            {live.friendly && <p className="mt-2 text-xs text-muted-foreground">{live.friendly}</p>}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground sm:p-5">
+            Memuat hitung mundur...
+          </div>
+        )}
+
+        <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-[13px] tabular-nums">
+          <p className="flex items-center gap-2 text-muted-foreground">
+            <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            Terbit {day.sunrise} {zone}
+          </p>
+          {live && mounted && (
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <Timer className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              Sekarang {live.nowLabel} {zone}
+            </p>
+          )}
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -195,8 +240,8 @@ export function PrayerScheduleSection({
   profile,
   prayer: prayerData,
 }: {
-  profile: MosqueProfile;
-  prayer: { today: DailyPrayerSchedule; week: DailyPrayerSchedule[] };
+  profile: MosqueProfile | null;
+  prayer: { today: DailyPrayerSchedule | null; week: DailyPrayerSchedule[] };
 }) {
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(() => new Date());
@@ -208,6 +253,7 @@ export function PrayerScheduleSection({
   }, []);
 
   const tz = profile?.timezone ?? DEFAULT_TZ;
+  const zone = shortZone(tz);
   const weeklyPrayerSchedule = prayerData?.week ?? [];
 
   const todayISO = mounted ? jakartaTodayISO(now, tz) : null;
@@ -292,9 +338,15 @@ export function PrayerScheduleSection({
         className="scroll-mt-24 bg-background py-16 md:py-20"
       >
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
-          <p className="text-sm text-muted-foreground">
-            Jadwal sholat belum tersedia. Jalankan <code>npm run db:seed</code> untuk
-            mengisinya.
+          <h2
+            id="prayer-heading"
+            className="font-display text-h2-fluid font-semibold text-foreground"
+          >
+            Jadwal Sholat Mingguan
+          </h2>
+          <p className="mt-2.5 max-w-[58ch] text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+            Jadwal sholat belum tersedia. Pengurus cukup melengkapi lokasi masjid di
+            halaman admin. Jadwal 7 hari dihitung otomatis setiap hari.
           </p>
         </div>
       </section>
@@ -309,28 +361,33 @@ export function PrayerScheduleSection({
     >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.06] px-3 py-1 text-xs font-semibold text-primary">
-            <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-            Jadwal sholat • Diperbarui harian
-          </p>
           <h2
             id="prayer-heading"
-            className="font-display text-h2-fluid mt-3 font-semibold text-foreground"
+            className="font-display text-h2-fluid font-semibold text-foreground"
           >
             Jadwal Sholat Mingguan
           </h2>
           <p className="mt-2.5 max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
-            Mengikuti lokasi masjid. Pilih hari untuk melihat lima waktu sholat.
+            Mengikuti lokasi masjid dan diperbarui harian. Pilih hari untuk melihat lima waktu sholat.
           </p>
         </div>
 
-        <Tabs
-          value={activeSchedule.date}
-          onValueChange={(v) =>
-            setActiveDay(weeklyPrayerSchedule.findIndex((s) => s.date === v))
-          }
-          className="mt-8 w-full"
-        >
+        <div className="mt-8 grid items-start gap-4 md:gap-5 lg:grid-cols-5">
+          {/* Panel kiri: sholat berikutnya — hitung mundur live */}
+          <LiveNextCard
+            day={todaySchedule ?? activeSchedule}
+            live={live}
+            zone={zone}
+            mounted={mounted}
+          />
+
+          <Tabs
+            value={activeSchedule.date}
+            onValueChange={(v) =>
+              setActiveDay(weeklyPrayerSchedule.findIndex((s) => s.date === v))
+            }
+            className="w-full lg:col-span-3"
+          >
           {/* Baris tanggal aktif — teks biasa, tanpa kartu */}
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -352,7 +409,7 @@ export function PrayerScheduleSection({
             </div>
             <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground tabular-nums">
               <SunHorizon className="h-4 w-4 text-primary" aria-hidden="true" />
-              Terbit {activeSchedule.sunrise} WIB
+              Terbit {activeSchedule.sunrise} {zone}
             </p>
           </div>
 
@@ -405,9 +462,12 @@ export function PrayerScheduleSection({
 
           <p className="mt-5 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            Mengikuti lokasi {profile.name} — Jakarta • Zona WIB • Diperbarui setiap hari.
+            {profile
+              ? `Mengikuti lokasi ${profile.name} (${zone}). Diperbarui setiap hari.`
+              : `Zona ${zone}. Diperbarui setiap hari.`}
           </p>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
     </section>
   );

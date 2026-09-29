@@ -23,12 +23,27 @@ const PRIORITY_WEIGHT: Record<Priority, number> = {
   normal: 2,
 };
 
-// TODO(admin): ganti resolver ini dengan URL gambar dari CMS atau upload admin.
-// Untuk sekarang setiap berita yang belum punya imageUrl memakai placeholder
-// picsum dengan seed stabil per id, supaya layout Image 2 tetap terlihat penuh.
-function coverFor(a: Announcement, w: number, h: number): string {
-  if (a.imageUrl && a.imageUrl.startsWith("http")) return a.imageUrl;
-  return `https://picsum.photos/seed/masjid-${a.id}/${w}/${h}`;
+// Gambar hanya dari data admin (imageUrl). Tanpa gambar → blok netral,
+// bukan gambar acak dari layanan luar.
+function coverFor(a: Announcement): string | null {
+  if (a.imageUrl && (a.imageUrl.startsWith("http") || a.imageUrl.startsWith("/"))) return a.imageUrl;
+  return null;
+}
+
+function CoverPlaceholder({ title, className }: { title: string; className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "flex w-full items-center justify-center bg-gradient-to-br from-primary/[0.12] via-muted to-muted",
+        className,
+      )}
+    >
+      <span className="font-display text-4xl font-bold text-primary/30">
+        {title.trim().charAt(0).toUpperCase() || "•"}
+      </span>
+    </div>
+  );
 }
 
 function Meta({ announcement, light = false }: { announcement: Announcement; light?: boolean }) {
@@ -58,12 +73,16 @@ function FeaturedCard({ announcement }: { announcement: Announcement }) {
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors hover:border-primary/40">
       <div className="relative overflow-hidden bg-muted">
-        <img
-          src={coverFor(announcement, 1200, 675)}
-          alt={announcement.title}
-          loading="eager"
-          className="aspect-[16/9] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-        />
+        {coverFor(announcement) ? (
+          <img
+            src={coverFor(announcement)!}
+            alt={announcement.title}
+            loading="eager"
+            className="aspect-[16/9] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+          />
+        ) : (
+          <CoverPlaceholder title={announcement.title} className="aspect-[16/9]" />
+        )}
       </div>
       <div className="flex flex-1 flex-col p-5 md:p-6">
         <Meta announcement={announcement} />
@@ -92,13 +111,17 @@ function SideCard({ announcement }: { announcement: Announcement }) {
   return (
     <article className="group flex gap-4 overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-primary/40">
       <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-28 sm:w-36">
-        <img
-          src={coverFor(announcement, 400, 300)}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-        />
+        {coverFor(announcement) ? (
+          <img
+            src={coverFor(announcement)!}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          />
+        ) : (
+          <CoverPlaceholder title={announcement.title} className="h-full" />
+        )}
       </div>
       <div className="min-w-0 flex-1 py-0.5">
         <Meta announcement={announcement} />
@@ -117,13 +140,17 @@ function LowerCard({ announcement }: { announcement: Announcement }) {
   return (
     <article className="group flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 sm:flex-row md:p-5">
       <div className="relative h-44 w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:h-36 sm:w-48 md:h-40 md:w-56">
-        <img
-          src={coverFor(announcement, 600, 400)}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-        />
+        {coverFor(announcement) ? (
+          <img
+            src={coverFor(announcement)!}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+          />
+        ) : (
+          <CoverPlaceholder title={announcement.title} className="h-full" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <h3 className="text-balance text-lg font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
@@ -162,8 +189,7 @@ export function AnnouncementsSection({
   });
 
   const featured = sorted[0];
-  //Layout Image 2: 1 besar di kiri, maksimal 3 kecil menumpuk di kanan, sisanya 2 kolom di bawah.
-  //Dengan 5 data contoh: 1 besar, 2 kecil, 2 bawah. Saat admin menambah data, sisi terisi 3 otomatis.
+  //Layout: 1 besar di kiri, maksimal 3 kecil menumpuk di kanan, sisanya 2 kolom di bawah.
   const side = sorted.length > 5 ? sorted.slice(1, 4) : sorted.slice(1, 3);
   const lower = sorted.slice(1 + side.length);
 
@@ -186,36 +212,44 @@ export function AnnouncementsSection({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
-          {featured && (
-            <div className="lg:col-span-2">
-              <FeaturedCard announcement={featured} />
+        {sorted.length === 0 ? (
+          <p className="mx-auto max-w-xl rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+            Belum ada pengumuman. Kabar terbaru dari pengurus akan tampil di sini.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3 lg:gap-6">
+              {featured && (
+                <div className="lg:col-span-2">
+                  <FeaturedCard announcement={featured} />
+                </div>
+              )}
+              <div className="flex flex-col gap-4 md:gap-5">
+                {side.map((a) => (
+                  <SideCard key={a.id} announcement={a} />
+                ))}
+              </div>
             </div>
-          )}
-          <div className="flex flex-col gap-4 md:gap-5">
-            {side.map((a) => (
-              <SideCard key={a.id} announcement={a} />
-            ))}
-          </div>
-        </div>
 
-        {lower.length > 0 && (
-          <div className="mt-4 grid grid-cols-1 gap-4 md:mt-5 md:gap-5 lg:gap-6 xl:grid-cols-2">
-            {lower.map((a) => (
-              <LowerCard key={a.id} announcement={a} />
-            ))}
-          </div>
+            {lower.length > 0 && (
+              <div className="mt-4 grid grid-cols-1 gap-4 md:mt-5 md:gap-5 lg:gap-6 xl:grid-cols-2">
+                {lower.map((a) => (
+                  <LowerCard key={a.id} announcement={a} />
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 text-center">
+              <a
+                href="#pengumuman"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
+              >
+                Lihat semua pengumuman
+                <CaretRight className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </div>
+          </>
         )}
-
-        <div className="mt-8 text-center">
-          <a
-            href="#pengumuman"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
-          >
-            Lihat semua pengumuman
-            <CaretRight className="h-4 w-4" aria-hidden="true" />
-          </a>
-        </div>
       </div>
     </section>
   );

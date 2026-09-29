@@ -26,8 +26,20 @@ const navigation = {
   ],
 };
 
-export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile }) {
+export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | null }) {
   const currentYear = new Date().getFullYear();
+
+  if (!mosqueProfile) {
+    return (
+      <footer id="kontak" className="relative scroll-mt-20 overflow-hidden bg-[#0B2B23] text-white" role="contentinfo">
+        <div className="container relative mx-auto px-4 py-8 md:px-6 md:py-10 lg:px-8">
+          <p className="text-center text-[13px] text-white/60">
+            &copy; {currentYear} Website Masjid. Kontak dan lokasi akan tampil setelah profil dilengkapi pengurus.
+          </p>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer id="kontak" className="relative scroll-mt-20 overflow-hidden bg-[#0B2B23] text-white" role="contentinfo">
@@ -47,7 +59,9 @@ export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile }) {
           <div>
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10">
-                <span className="text-sm font-bold text-white">AR</span>
+                <span className="text-sm font-bold text-white">
+                  {mosqueProfile.shortName.slice(0, 2).toUpperCase()}
+                </span>
               </div>
               <div>
                 <h3 className="font-display text-[15px] font-semibold text-white">{mosqueProfile.name}</h3>

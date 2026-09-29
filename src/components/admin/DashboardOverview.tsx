@@ -287,8 +287,8 @@ function QuickActions() {
       desc: "Bulanan, tahunan, atau rentang kustom",
     },
     {
-      label: "Tambah Pengumuman",
-      href: "/admin/announcements/new",
+      label: "Tambah Berita",
+      href: "/admin/announcements",
       icon: Plus,
       iconBg: "bg-sky-500/10 text-sky-600 dark:text-sky-400 group-hover:bg-sky-600 group-hover:text-white",
       desc: "Info jamaah, jadwal kajian, & agenda",
@@ -336,7 +336,7 @@ function UpcomingAnnouncements({ items }: { items: Announcement[] }) {
     <Card className="hover:border-primary/20 transition-all">
       <CardHeader className="p-5 pb-3 flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-base font-semibold text-foreground">Pengumuman Terbaru</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Berita Terbaru</CardTitle>
           <p className="text-xs text-muted-foreground mt-0.5">Informasi aktif untuk jamaah</p>
         </div>
         <Link href="/admin/announcements" className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
@@ -422,30 +422,24 @@ export function DashboardOverview() {
         <StatCard
           title="Saldo Kas"
           value={formatCurrency(currentBalance)}
-          description="Update 27 Sep 2026"
+          description={`Diperbarui ${formatDate(new Date().toISOString(), { day: "numeric", month: "short", year: "numeric" })}`}
           icon={Coins}
-          trend={12}
-          trendLabel="vs bln lalu"
           iconBgClass="bg-primary/10 text-primary"
           valueColorClass="text-foreground"
         />
         <StatCard
           title="Pemasukan Bulan Ini"
           value={formatCurrency(monthlyIncome)}
-          description="September 2026"
+          description={new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
           icon={TrendUp}
-          trend={18}
-          trendLabel="vs bln lalu"
           iconBgClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           valueColorClass="text-emerald-600 dark:text-emerald-400"
         />
         <StatCard
           title="Pengeluaran Bulan Ini"
           value={formatCurrency(monthlyExpense)}
-          description="September 2026"
+          description={new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
           icon={TrendDown}
-          trend={-5}
-          trendLabel="vs bln lalu"
           iconBgClass="bg-rose-500/10 text-rose-600 dark:text-rose-400"
           valueColorClass="text-rose-600 dark:text-rose-400"
         />
@@ -454,8 +448,6 @@ export function DashboardOverview() {
           value={formatCurrency(monthlyIncome - monthlyExpense)}
           description="Saldo bersih bulan ini"
           icon={Coins}
-          trend={28}
-          trendLabel="vs bln lalu"
           iconBgClass="bg-teal-500/10 text-teal-600 dark:text-teal-400"
           valueColorClass="text-teal-600 dark:text-teal-400"
         />

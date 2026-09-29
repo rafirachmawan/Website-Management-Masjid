@@ -14,11 +14,11 @@ import {
   ArrowRight,
 } from "@phosphor-icons/react";
 
-// TODO(admin): ganti resolver ini dengan URL gambar dari CMS atau upload admin.
-// Gambar lokal yang belum ada otomatis memakai placeholder picsum per id.
-function coverFor(a: Activity, w: number, h: number): string {
-  if (a.imageUrl && a.imageUrl.startsWith("http")) return a.imageUrl;
-  return `https://picsum.photos/seed/masjid-${a.id}/${w}/${h}`;
+// Gambar hanya dari data admin (imageUrl). Tanpa gambar → blok netral,
+// bukan gambar acak dari layanan luar.
+function coverFor(a: Activity): string | null {
+  if (a.imageUrl && (a.imageUrl.startsWith("http") || a.imageUrl.startsWith("/"))) return a.imageUrl;
+  return null;
 }
 
 function dayNumber(dateStr: string): string {
@@ -55,12 +55,23 @@ function FeaturedCard({ activity }: { activity: Activity }) {
   return (
     <article className="group grid grid-cols-1 overflow-hidden rounded-[24px] border border-border bg-card shadow-[0_24px_50px_-28px_rgba(4,47,34,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_64px_-28px_rgba(4,47,34,0.55)] lg:grid-cols-[1.08fr_1fr]">
       <div className="relative min-h-60 overflow-hidden bg-muted sm:min-h-72 lg:min-h-full">
-        <img
-          src={coverFor(activity, 1000, 700)}
-          alt={activity.title}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-        />
+        {coverFor(activity) ? (
+          <img
+            src={coverFor(activity)!}
+            alt={activity.title}
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/[0.12] via-muted to-muted"
+          >
+            <span className="font-display text-6xl font-bold text-primary/30">
+              {activity.title.trim().charAt(0).toUpperCase() || "•"}
+            </span>
+          </div>
+        )}
         <div
           className="absolute inset-0 bg-gradient-to-t from-emerald-950/60 via-transparent to-transparent"
           aria-hidden="true"
@@ -240,28 +251,36 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
           </p>
         </div>
 
-        {featured && <FeaturedCard activity={featured} />}
-
-        {rest.length > 0 && (
-          <div className="mt-4 divide-y divide-border/60 rounded-[24px] border border-border bg-card px-2 py-2 shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] sm:px-3 md:mt-5">
-            {rest.map((a) => (
-              <AgendaRow key={a.id} activity={a} />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-8 flex flex-col items-center gap-3 text-center">
-          <a
-            href="#kegiatan"
-            className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-10px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
-          >
-            Lihat semua kegiatan
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
-          <p className="text-xs text-muted-foreground">
-            Butuh info pendaftaran? Hubungi sekretariat masjid.
+        {sorted.length === 0 ? (
+          <p className="mx-auto max-w-xl rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+            Belum ada kegiatan terjadwal. Agenda dari pengurus akan tampil di sini.
           </p>
-        </div>
+        ) : (
+          <>
+            {featured && <FeaturedCard activity={featured} />}
+
+            {rest.length > 0 && (
+              <div className="mt-4 divide-y divide-border/60 rounded-[24px] border border-border bg-card px-2 py-2 shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] sm:px-3 md:mt-5">
+                {rest.map((a) => (
+                  <AgendaRow key={a.id} activity={a} />
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 flex flex-col items-center gap-3 text-center">
+              <a
+                href="#kegiatan"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-10px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+              >
+                Lihat semua kegiatan
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
+              <p className="text-xs text-muted-foreground">
+                Butuh info pendaftaran? Hubungi sekretariat masjid.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

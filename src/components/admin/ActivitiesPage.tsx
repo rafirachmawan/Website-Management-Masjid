@@ -6,6 +6,7 @@ import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
 import type { Activity } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
@@ -63,15 +64,15 @@ export function ActivitiesPage() {
     title: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
-    time: "19:30 - 21:00",
-    location: "Masjid Ar-Rahman (Ruang Utama)",
-    organizer: "Pengurus Masjid",
+    time: "",
+    location: "",
+    organizer: "",
     imageUrl: "",
   });
 
   const data = activities ?? [];
 
-  const todayStr = "2026-09-27";
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const getActivityStatus = (dateStr: string) => {
     if (dateStr < todayStr) return "completed";
@@ -106,9 +107,9 @@ export function ActivitiesPage() {
       title: "",
       description: "",
       date: new Date().toISOString().split("T")[0],
-      time: "19:30 - 21:00",
-      location: "Masjid Ar-Rahman (Ruang Utama)",
-      organizer: "Pengurus Masjid",
+      time: "",
+      location: "",
+      organizer: "",
       imageUrl: "",
     });
     setIsFormModalOpen(true);
@@ -398,6 +399,13 @@ export function ActivitiesPage() {
           </DialogHeader>
 
           <div className="py-3 space-y-4">
+            {selectedActivity?.imageUrl && (
+              <img
+                src={selectedActivity.imageUrl}
+                alt={selectedActivity.title}
+                className="max-h-64 w-full rounded-xl border border-border object-cover"
+              />
+            )}
             <div className="grid grid-cols-2 gap-3 p-3.5 bg-muted/40 rounded-xl border border-border text-xs">
               <div>
                 <span className="text-muted-foreground block">Hari & Tanggal</span>
@@ -551,6 +559,12 @@ export function ActivitiesPage() {
                 className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
+
+            <ImageUploadField
+              label="Gambar Kegiatan (opsional)"
+              value={formData.imageUrl}
+              onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+            />
           </div>
 
           {formError && (

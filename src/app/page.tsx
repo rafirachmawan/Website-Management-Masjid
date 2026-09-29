@@ -6,6 +6,7 @@ import { FinancialChart } from "@/components/public/FinancialChart";
 import { TransactionTable } from "@/components/public/TransactionTable";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
 import { ActivitiesSection } from "@/components/public/ActivitiesSection";
+import { OfficialsSection } from "@/components/public/OfficialsSection";
 import { Footer } from "@/components/public/Footer";
 import { getPublicHomeData } from "@/server/services/public-home";
 
@@ -25,17 +26,29 @@ export default async function Home() {
     transactions,
     announcements,
     activities,
+    officials,
   } = await getPublicHomeData();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
+      {profile === null && (
+        <p
+          role="status"
+          className="border-b border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-center text-[13px] font-medium text-amber-800 dark:text-amber-200"
+        >
+          Website masjid dalam penyiapan — pengurus dapat melengkapi profil, keuangan,
+          dan jadwal lewat halaman admin.
+        </p>
+      )}
       <div id="beranda" className="scroll-mt-20">
         <Hero profile={profile} prayer={prayer} />
       </div>
       <main className="flex flex-1 flex-col">
         {/* Ibadah dulu: jadwal sholat langsung setelah hero */}
         <PrayerScheduleSection profile={profile} prayer={prayer} />
+        {/* Takmir: pengurus masjid dari data admin */}
+        <OfficialsSection officials={officials} />
         {/* Keuangan: ringkasan + grafik + rincian — sesuai menu Navbar */}
         <div
           id="keuangan"

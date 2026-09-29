@@ -34,9 +34,12 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local sqlite database (dibuat via `npm run db:migrate`, isi via `npm run db:seed`)
+# local sqlite database (dibuat via `npm run db:migrate`, isi via halaman /admin)
 *.db
 *.db-journal
+
+# berkas unggahan admin (foto banner dkk.) — data lokal tiap masjid
+/public/uploads/*
 
 # vercel
 .vercel

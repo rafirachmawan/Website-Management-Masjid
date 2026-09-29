@@ -1,10 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import type { MosqueProfile, Category } from "@/types";
+import type { MosqueProfile, AppConfig } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { CategoryManager } from "@/components/admin/CategoryManager";
+
+// Form kosong untuk masjid yang profilnya belum pernah diisi admin.
+// Bukan data contoh — semua kolom wajib dilengkapi sebelum disimpan.
+const EMPTY_PROFILE: MosqueProfile = {
+  name: "",
+  shortName: "",
+  address: "",
+  phone: "",
+  email: "",
+  latitude: 0,
+  longitude: 0,
+  timezone: "Asia/Jakarta",
+  establishedYear: new Date().getFullYear(),
+  description: "",
+  heroImages: [],
+};
+
+const EMPTY_CONFIG: AppConfig = {
+  bankName: "",
+  accountNumber: "",
+  accountHolder: "",
+  minBalanceAlert: 0,
+  publicTransparency: true,
+  showDonationQRIS: true,
+};
 import {
   Card,
   CardContent,
@@ -36,30 +62,35 @@ import {
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const { data: fetchedProfile, refresh: refreshProfile } = useApi<MosqueProfile>(
+  const { data: fetchedProfile, error: profileLoadError, refresh: refreshProfile } = useApi<MosqueProfile>(
     "/api/mosque-profile",
   );
-  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
-  const categories = fetchedCategories ?? [];
+  const { data: fetchedConfig, refresh: refreshConfig } = useApi<AppConfig>("/api/config");
   const [profile, setProfile] = useState<MosqueProfile | null>(null);
+  const [blankTried, setBlankTried] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // Profil diambil ulang dari server saat tombol Simpan ditekan.
-  useEffect(() => {
-    if (fetchedProfile && !profile) setProfile(fetchedProfile);
-  }, [fetchedProfile, profile]);
+  // Profil diambil dari server; bila belum ada (404) tampilkan form kosong
+  // agar pengurus langsung bisa mengisi profil pertama. Penyesuaian state
+  // dilakukan saat render (bukan di effect) agar tidak memicu render beruntun.
+  if (fetchedProfile && !profile) setProfile(fetchedProfile);
+  else if (profileLoadError && !profile && !blankTried) {
+    setProfile({ ...EMPTY_PROFILE });
+    setBlankTried(true);
+  }
   const [isSaved, setIsSaved] = useState(false);
 
-  // Financial Settings State
-  const [financeConfig, setFinanceConfig] = useState({
-    bankName: "Bank Syariah Indonesia (BSI)",
-    accountNumber: "7123-4567-8901",
-    accountHolder: "DKM Masjid Ar-Rahman Kemang",
-    minBalanceAlert: 10000000,
-    publicTransparency: true,
-    showDonationQRIS: true,
-  });
+  // Konfigurasi rekening & preferensi — tersimpan di database (/api/config).
+  const [financeConfig, setFinanceConfig] = useState<AppConfig>({ ...EMPTY_CONFIG });
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const [isSavingFinance, setIsSavingFinance] = useState(false);
+  const [financeError, setFinanceError] = useState<string | null>(null);
+
+  if (fetchedConfig && !configLoaded) {
+    setFinanceConfig({ ...fetchedConfig });
+    setConfigLoaded(true);
+  }
 
   // Security Form State
   const [securityForm, setSecurityForm] = useState({
@@ -68,17 +99,58 @@ export function SettingsPage() {
     confirmPassword: "",
   });
 
-  const [newImageUrl, setNewImageUrl] = useState("");
+  // Unggah banner: pilih file dari perangkat → unggah ke server → masuk daftar.
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
 
-  const handleAddHeroImage = (urlToAdd?: string) => {
-    const url = (urlToAdd || newImageUrl).trim();
-    if (!url || !profile) return;
-    const currentImages = profile.heroImages || [];
-    setProfile({
-      ...profile,
-      heroImages: [...currentImages, url],
-    });
-    setNewImageUrl("");
+  const handlePickHeroFile = (file: File | null) => {
+    setHeroUploadError(null);
+    if (heroPreview) URL.revokeObjectURL(heroPreview);
+    if (!file) {
+      setHeroFile(null);
+      setHeroPreview(null);
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      setHeroUploadError("Format file harus JPG, PNG, WebP, atau GIF.");
+      setHeroFile(null);
+      setHeroPreview(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setHeroUploadError("Ukuran file maksimal 5 MB.");
+      setHeroFile(null);
+      setHeroPreview(null);
+      return;
+    }
+    setHeroFile(file);
+    setHeroPreview(URL.createObjectURL(file));
+  };
+
+  const handleUploadHero = async () => {
+    if (!heroFile || !profile) return;
+    setIsUploadingHero(true);
+    setHeroUploadError(null);
+    try {
+      const form = new FormData();
+      form.append("file", heroFile);
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? "Gagal mengunggah foto.");
+      setProfile({
+        ...profile,
+        heroImages: [...(profile.heroImages || []), data.url as string],
+      });
+      if (heroPreview) URL.revokeObjectURL(heroPreview);
+      setHeroFile(null);
+      setHeroPreview(null);
+    } catch (err) {
+      setHeroUploadError(err instanceof Error ? err.message : "Gagal mengunggah foto.");
+    } finally {
+      setIsUploadingHero(false);
+    }
   };
 
   const handleRemoveHeroImage = (indexToRemove: number) => {
@@ -113,10 +185,24 @@ export function SettingsPage() {
     }
   };
 
-  const handleSaveFinance = (e: React.FormEvent) => {
+  const handleSaveFinance = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    setIsSavingFinance(true);
+    setFinanceError(null);
+    try {
+      const saved = await apiSend<AppConfig>("/api/config", "PUT", {
+        ...financeConfig,
+        minBalanceAlert: Number(financeConfig.minBalanceAlert) || 0,
+      });
+      setFinanceConfig(saved);
+      refreshConfig();
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      setFinanceError(err instanceof Error ? err.message : "Gagal menyimpan konfigurasi.");
+    } finally {
+      setIsSavingFinance(false);
+    }
   };
 
   const handleSaveSecurity = (e: React.FormEvent) => {
@@ -192,6 +278,12 @@ export function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {blankTried && (
+                <p className="mb-4 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[13px] font-medium text-amber-800 dark:text-amber-200">
+                  Profil masjid belum pernah diisi. Lengkapi seluruh kolom lalu simpan —
+                  data tampil di halaman publik.
+                </p>
+              )}
               <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -281,6 +373,64 @@ export function SettingsPage() {
                     />
                   </div>
 
+                  {/* Lokasi — menentukan jadwal sholat otomatis */}
+                  <div className="space-y-1.5 md:col-span-2">
+                    <p className="text-xs font-semibold text-foreground">
+                      Lokasi Masjid <span className="font-normal text-muted-foreground">(menentukan jadwal sholat otomatis)</span>
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Garis Lintang <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="-7.56"
+                          value={profile.latitude || ""}
+                          onChange={(e) =>
+                            setProfile({ ...profile, latitude: parseFloat(e.target.value) || 0 })
+                          }
+                          className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Garis Bujur <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          placeholder="112.01"
+                          value={profile.longitude || ""}
+                          onChange={(e) =>
+                            setProfile({ ...profile, longitude: parseFloat(e.target.value) || 0 })
+                          }
+                          className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Zona Waktu
+                        </label>
+                        <select
+                          value={profile.timezone}
+                          onChange={(e) =>
+                            setProfile({ ...profile, timezone: e.target.value })
+                          }
+                          className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
+                          <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
+                          <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Lihat titik di Google Maps (klik kanan → salin koordinat), contoh Blitar: -8.09, 112.16.
+                    </p>
+                  </div>
+
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-xs font-semibold text-foreground">
                       Deskripsi & Sejarah Singkat Masjid
@@ -356,30 +506,53 @@ export function SettingsPage() {
                       </div>
                     )}
 
-                    {/* Add new image input */}
-                    <div className="flex gap-2 pt-1">
-                      <input
-                        type="url"
-                        placeholder="Masukkan tautan URL foto baru (misal: https://images.unsplash.com/...)"
-                        value={newImageUrl}
-                        onChange={(e) => setNewImageUrl(e.target.value)}
-                        className="flex-1 px-3 py-2 text-xs bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddHeroImage()}
-                        disabled={!newImageUrl.trim()}
-                        className="gap-1.5 shrink-0 text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Tambah Foto</span>
-                      </Button>
+                    {/* Unggah foto baru dari perangkat */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <label className="inline-flex h-9 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
+                          <UploadSimple className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                          <span className="truncate">
+                            {heroFile ? heroFile.name : "Pilih foto dari perangkat…"}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={(e) => handlePickHeroFile(e.target.files?.[0] ?? null)}
+                          />
+                        </label>
+                        {heroPreview && (
+                          <img
+                            src={heroPreview}
+                            alt="Pratinjau foto banner"
+                            className="h-12 w-20 shrink-0 rounded-lg border border-border object-cover"
+                          />
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleUploadHero}
+                          disabled={!heroFile || isUploadingHero}
+                          className="gap-1.5 shrink-0 text-xs"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>{isUploadingHero ? "Mengunggah..." : "Unggah Foto"}</span>
+                        </Button>
+                      </div>
+                      {heroUploadError && (
+                        <p role="alert" className="text-xs font-medium text-destructive">
+                          {heroUploadError}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground">
+                        Format JPG, PNG, WebP, atau GIF — maksimal 5 MB. Foto tersimpan
+                        di server dan tampil setelah profil disimpan.
+                      </p>
                     </div>
 
                     <div className="p-3 bg-muted/40 rounded-lg border border-border text-[11px] text-muted-foreground leading-relaxed">
-                      💡 <strong>Ketentuan Sistem:</strong> Jika Anda memasukkan <strong>lebih dari 1 foto</strong>, hero section di halaman utama secara otomatis akan menjadi <em>slide carousel transparan</em> yang bergulir halus setiap 6 detik beserta titik indikator navigasi. Jika <strong>hanya 1 foto</strong>, foto akan tampil diam (statis) tanpa bergulir.
+                      💡 <strong>Ketentuan Sistem:</strong> Jika Anda mengunggah <strong>lebih dari 1 foto</strong>, hero section di halaman utama secara otomatis akan menjadi <em>slide carousel transparan</em> yang bergulir halus beserta titik indikator navigasi. Jika <strong>hanya 1 foto</strong>, foto akan tampil diam (statis) tanpa bergulir.
                     </div>
                   </div>
                 </div>
@@ -485,32 +658,24 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Kategori Master List */}
+                {/* Kategori kas — dikelola penuh dari sini, tersimpan di database */}
                 <div className="pt-4 border-t border-border">
-                  <h4 className="text-xs font-semibold text-foreground mb-2">
-                    Daftar Kategori Kas Terdaftar ({categories.length} Kategori):
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map((c) => (
-                      <Badge
-                        key={c.id}
-                        variant="outline"
-                        className={
-                          c.type === "income"
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200"
-                            : "bg-red-500/10 text-red-700 dark:text-red-400 border-red-200"
-                        }
-                      >
-                        {c.name} ({c.type === "income" ? "Masuk" : "Keluar"})
-                      </Badge>
-                    ))}
-                  </div>
+                  <CategoryManager />
                 </div>
 
+                {financeError && (
+                  <p
+                    role="alert"
+                    className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                  >
+                    {financeError}
+                  </p>
+                )}
+
                 <div className="pt-3 flex justify-end">
-                  <Button type="submit" className="gap-2">
+                  <Button type="submit" className="gap-2" disabled={isSavingFinance}>
                     <FloppyDisk className="w-4 h-4" />
-                    <span>Simpan Rekening</span>
+                    <span>{isSavingFinance ? "Menyimpan..." : "Simpan Rekening"}</span>
                   </Button>
                 </div>
               </form>
@@ -572,6 +737,22 @@ export function SettingsPage() {
                     className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                   />
                 </div>
+              </div>
+
+              {financeError && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                >
+                  {financeError}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveFinance} className="gap-2" disabled={isSavingFinance}>
+                  <FloppyDisk className="w-4 h-4" />
+                  <span>{isSavingFinance ? "Menyimpan..." : "Simpan Preferensi"}</span>
+                </Button>
               </div>
 
               {/* Backup & Export Data */}
