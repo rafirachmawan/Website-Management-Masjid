@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const priorityConfig = {
   normal: { icon: Clock, label: "Info", pill: "bg-muted text-muted-foreground" },
   important: { icon: Star, label: "Penting", pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
-  urgent: { icon: Warning, label: "Urgen", pill: "bg-red-500/10 text-red-700 dark:text-red-300" },
+  urgent: { icon: Warning, label: "Urgen", pill: "bg-destructive/10 text-destructive" },
 } as const;
 
 type Priority = keyof typeof priorityConfig;

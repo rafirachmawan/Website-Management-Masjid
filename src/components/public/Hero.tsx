@@ -11,6 +11,7 @@ import {
   Clock,
   SunHorizon,
   MapPin,
+  Phone,
   ArrowRight,
 } from "@phosphor-icons/react";
 
@@ -21,6 +22,119 @@ const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   Maghrib: Moon,
   Isya: Star,
 };
+
+/**
+ * Pita jadwal sholat di bawah hero — lima waktu dalam satu baris.
+ * Dipisah dari hero supaya kolom kanan hero bisa dipakai foto masjid
+ * penuh ke tepi layar, dan tautan Navbar/Footer ke #jadwal-sholat tetap hidup.
+ */
+function PrayerTimesBand({
+  today,
+  shortName,
+}: {
+  today: DailyPrayerSchedule | null;
+  shortName: string;
+}) {
+  return (
+    <section
+      id="jadwal-sholat"
+      aria-label="Jadwal sholat hari ini"
+      className="scroll-mt-20 border-t border-border/60 bg-muted/40"
+    >
+      <div className="container mx-auto px-4 py-12 md:px-6 md:py-14 lg:px-8">
+        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-12">
+          <div>
+            <p className="eyebrow-friendly border border-primary/25 bg-primary/[0.07] text-primary">
+              <Clock className="h-4 w-4" aria-hidden="true" />
+              Waktu Sholat
+            </p>
+            <h2 className="font-display text-h2-fluid mt-4 font-semibold text-foreground">
+              Jadwal Sholat Hari Ini
+            </h2>
+            {today ? (
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {formatDate(today.date, {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+                <span aria-hidden="true"> · </span>
+                <span className="font-medium text-primary">{today.hijriDate}</span>
+              </p>
+            ) : (
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Jadwal sholat hari ini belum tersedia. Pengurus dapat melengkapi
+                lokasi masjid di halaman admin.
+              </p>
+            )}
+          </div>
+
+          {today && (
+            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+              {today.prayers.map((p) => {
+                const Icon = PRAYER_ICONS[p.name] || Clock;
+                return (
+                  <li
+                    key={p.name}
+                    className={cn(
+                      "rounded-2xl border p-3.5 transition-colors",
+                      p.isNext
+                        ? "border-primary/45 bg-primary/[0.07]"
+                        : "border-border/70 bg-card",
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          p.isNext ? "text-primary" : "text-primary/60",
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="truncate text-[13px] font-semibold text-foreground">
+                        {p.name}
+                      </span>
+                    </span>
+                    <span className="mt-2 block text-xl font-bold tabular-nums text-foreground">
+                      {p.time}
+                    </span>
+                    <span
+                      lang="ar"
+                      dir="rtl"
+                      aria-hidden="true"
+                      className="font-arabic block text-base text-muted-foreground"
+                    >
+                      {p.arabic}
+                    </span>
+                    {p.isNext && (
+                      <span className="mt-1.5 block text-[11px] font-bold tracking-wide text-primary">
+                        Berikutnya
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {today && (
+          <p className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-border/60 pt-4 text-[13px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 tabular-nums">
+              <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              Terbit {today.sunrise}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              {shortName}
+            </span>
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export function Hero({
   profile: mosqueProfile,
@@ -85,265 +199,125 @@ export function Hero({
     );
   }
 
-  const prayerSchedule = prayer.today;
+  const today = prayer.today;
+  const rawName = mosqueProfile.name.trim();
+  // Cegah dobel kata "Masjid" bila pengurus sudah menuliskannya di profil.
+  const heading = /masjid/i.test(rawName) ? rawName : `Masjid ${rawName}`;
 
   return (
-    <header className="relative overflow-hidden isolate flex min-h-svh flex-col pb-14 pt-2 transition-colors md:pb-16 md:pt-3">
-      {/* ─── Background Layer with Translucent Overlay ──────────────────────── */}
-      {images.length > 0 && (
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
-          {images.map((img, idx) => (
-            <div
-              key={idx}
-              aria-hidden="true"
-              className={cn(
-                "absolute inset-0 transition-opacity duration-700 ease-in-out",
-                idx === currentIdx ? "opacity-100" : "opacity-0",
-              )}
-            >
-              {/* Latar pengisi: foto sama yang diburamkan agar tidak ada ruang kosong */}
+    <>
+      <header className="relative isolate flex min-h-svh flex-col overflow-hidden">
+        {/* ─── Foto masjid ────────────────────────────────────────────────
+            Layar lebar: foto naik ke tepi kanan dan terpotong di bawah,
+            teks kiri berdiri di atas warna latar yang bersih.
+            Layar kecil: foto turun ke belakang layar jadi backdrop lembut. */}
+        {images.length > 0 && (
+          <div
+            className="pointer-events-none absolute inset-0 -z-10 select-none"
+            aria-hidden="true"
+          >
+            {images.map((img, idx) => (
               <img
-                src={img}
-                alt=""
-                aria-hidden="true"
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 h-full w-full scale-110 object-cover"
-              />
-              {/* Foto utama: tampil utuh tanpa dipotong-zoom */}
-              <img
-                src={img}
-                alt=""
-                aria-hidden="true"
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 h-full w-full object-contain"
-              />
-            </div>
-          ))}
-
-          {/* Translucent backdrop overlay: semi-transparent gradient */}
-          <div className="absolute inset-0 bg-background/55 dark:bg-background/70" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
-        </div>
-      )}
-
-      {/* Decorative Grid SVG */}
-      <div
-        className="absolute inset-0 -z-10 opacity-5 pointer-events-none"
-        aria-hidden="true"
-      >
-        <svg
-          className="w-full h-full text-primary"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <pattern
-              id="hero-grid"
-              width="10"
-              height="10"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M 10 0 L 0 0 0 10"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="0.5"
-              />
-            </pattern>
-          </defs>
-          <rect width="100" height="100" fill="url(#hero-grid)" />
-        </svg>
-      </div>
-
-      {/* Navigasi menyatu dengan hero — berbagi background yang sama */}
-      <Navbar />
-      {/* ─── Main Content: 2 kolom ala referensi ──────────────────────────── */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10 flex flex-1 flex-col justify-center">
-        <div className="grid w-full items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
-          {/* Kolom kiri: sapaan + nama + deskripsi + aksi + metadata */}
-          <div className="max-w-2xl">
-            <p
-              lang="ar"
-              dir="rtl"
-              aria-label="Bismillahirrahmanirrahim"
-              className="font-arabic text-left text-2xl text-primary md:text-3xl"
-            >
-              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-            </p>
-            <p className="eyebrow-friendly mt-4 border border-primary/25 bg-primary/[0.06] text-primary">
-              Selamat datang di rumah ibadah kita
-            </p>
-            <h1 className="font-display text-display-fluid mt-4 font-semibold text-foreground">
-              {mosqueProfile.name}
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl md:leading-loose">
-              Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan
-              penyaluran dana tercatat tertib untuk kemaslahatan jamaah.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a
-                href="#keuangan"
-                className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-14px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
-              >
-                Lihat Transparansi Kas
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-              <a
-                href="#jadwal-sholat"
-                className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-all duration-200 hover:border-primary/40 hover:text-primary active:scale-[0.98]"
-              >
-                <Clock className="h-4 w-4" aria-hidden="true" />
-                Jadwal Sholat
-              </a>
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border/70 pt-6 text-xs sm:text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">
-                  {mosqueProfile.shortName}
-                </span>
-                {prayerSchedule && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span>
-                      {formatDate(prayerSchedule.date, {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </>
-                )}
-              </div>
-              {prayerSchedule && (
-                <div className="flex items-center gap-1.5 font-medium text-primary">
-                  <span aria-hidden="true">{prayerSchedule.hijriDate}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Kolom kanan: kartu jadwal hari ini (data asli, bukan mockup) */}
-          <div id="jadwal-sholat" className="scroll-mt-24">
-            {prayerSchedule ? (
-              <div className="overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_28px_60px_-28px_rgba(4,47,34,0.4)]">
-                <div className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 sm:px-6">
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold tracking-tight text-foreground">
-                      Jadwal Sholat Hari Ini
-                    </p>
-                    <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                      {formatDate(prayerSchedule.date, {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}{" "}
-                      ·{" "}
-                      <span className="font-medium text-primary">
-                        {prayerSchedule.hijriDate}
-                      </span>
-                    </p>
-                  </div>
-                  <p className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-bold text-primary ring-1 ring-primary/20 ring-inset">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                    </span>
-                    Hari ini
-                  </p>
-                </div>
-
-                <ul className="mx-3 mb-3 mt-4 divide-y divide-border/60 rounded-2xl bg-muted/50 px-2 py-1 ring-1 ring-border/50 ring-inset sm:mx-4">
-                  {prayerSchedule.prayers.map((p) => {
-                    const Icon = PRAYER_ICONS[p.name] || Clock;
-                    return (
-                      <li
-                        key={p.name}
-                        className={cn(
-                          "flex items-center justify-between gap-3 rounded-xl px-3 py-2.5",
-                          p.isCurrent && "bg-primary/[0.07]",
-                        )}
-                      >
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <Icon
-                            aria-hidden="true"
-                            className={cn(
-                              "h-4 w-4 shrink-0",
-                              p.isNext ? "text-primary" : "text-primary/70",
-                            )}
-                          />
-                          <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-                            {p.name}
-                            <span
-                              lang="ar"
-                              dir="rtl"
-                              aria-hidden="true"
-                              className="font-arabic ml-2 text-base font-normal text-muted-foreground"
-                            >
-                              {p.arabic}
-                            </span>
-                          </span>
-                          {p.isNext && (
-                            <span className="flex shrink-0 items-center gap-1 text-[11px] font-bold text-primary">
-                              <span className="h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
-                              Berikutnya
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          className={cn(
-                            "shrink-0 text-[15px] font-bold tabular-nums",
-                            p.isNext ? "text-primary" : "text-foreground",
-                          )}
-                        >
-                          {p.time}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 px-5 py-3.5 text-[13px] text-muted-foreground sm:px-6">
-                  <p className="flex items-center gap-1.5 tabular-nums">
-                    <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    Terbit {prayerSchedule.sunrise}
-                  </p>
-                  <p className="flex min-w-0 items-center gap-1.5">
-                    <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    <span className="truncate">{mosqueProfile.shortName}</span>
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-[20px] border border-border bg-card p-6 text-sm text-muted-foreground shadow-[0_28px_60px_-28px_rgba(4,47,34,0.4)] sm:p-7">
-                Jadwal sholat hari ini belum tersedia. Pengurus dapat melengkapi
-                lokasi masjid di halaman admin.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ─── Dot Indicators (Only rendered if images > 1) ───────────────── */}
-        {isSlider && (
-          <div className="flex items-center justify-center gap-2 pt-10">
-            {images.map((_, idx) => (
-              <button
                 key={idx}
-                onClick={() => setCurrentIdx(idx)}
+                src={img}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-300 cursor-pointer",
-                  idx === currentIdx
-                    ? "w-7 bg-primary shadow-xs"
-                    : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                  "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out",
+                  idx === currentIdx ? "opacity-100" : "opacity-0",
                 )}
-                aria-label={`Lihat banner ${idx + 1}`}
               />
             ))}
+            {/* Kabut warna latar: teks kiri selalu terbaca, foto menyatu
+                halus ke background tanpa garis potong yang keras. */}
+            <div className="absolute inset-0 bg-background/60 lg:bg-gradient-to-r lg:from-background lg:from-10% lg:via-background/40 lg:via-50% lg:to-transparent lg:to-80%" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
           </div>
         )}
-      </div>
-    </header>
+
+        <Navbar />
+
+        <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 pb-12 pt-10 md:px-6 md:pb-16 lg:px-8 lg:pb-20 lg:pt-24">
+          <div className="grid w-full gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
+            <div className="max-w-2xl">
+              <p className="eyebrow-friendly max-w-full items-start rounded-2xl border border-primary/25 bg-primary/[0.07] text-primary lg:items-center lg:rounded-full">
+                <MapPin
+                  className="mt-0.5 h-4 w-4 shrink-0 lg:mt-0"
+                  aria-hidden="true"
+                />
+                <span>{mosqueProfile.address}</span>
+              </p>
+
+              <h1 className="font-display text-display-fluid mt-6 font-semibold text-foreground">
+                {heading}
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:leading-loose">
+                {mosqueProfile.description?.trim() ||
+                  "Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan penyaluran dana tercatat tertib untuk kemaslahatan jamaah."}
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <a
+                  href="#keuangan"
+                  className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-14px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+                >
+                  Lihat Transparansi Kas
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+                <a
+                  href="#jadwal-sholat"
+                  className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-all duration-200 hover:border-primary/40 hover:text-primary active:scale-[0.98]"
+                >
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  Jadwal Sholat
+                </a>
+              </div>
+
+              <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
+                {mosqueProfile.phone && (
+                  <span className="flex items-center gap-1.5 tabular-nums">
+                    <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {mosqueProfile.phone}
+                  </span>
+                )}
+                {mosqueProfile.establishedYear ? (
+                  <span>Berdiri sejak {mosqueProfile.establishedYear}</span>
+                ) : null}
+                {today && (
+                  <span className="font-medium text-primary">
+                    {today.hijriDate}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Kolom kanan sengaja kosong: ruang foto bleed ke tepi layar. */}
+            <div aria-hidden="true" className="hidden lg:block" />
+          </div>
+
+          {isSlider && (
+            <div className="flex items-center justify-center gap-2 pt-12 lg:justify-end">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={cn(
+                    "h-1.5 cursor-pointer rounded-full transition-all duration-300",
+                    idx === currentIdx
+                      ? "w-7 bg-primary shadow-xs"
+                      : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                  )}
+                  aria-label={`Lihat banner ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <PrayerTimesBand today={today} shortName={mosqueProfile.shortName} />
+    </>
   );
 }

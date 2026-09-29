@@ -184,7 +184,7 @@ function AgendaRow({ activity }: { activity: Activity }) {
               className={cn(
                 "hidden shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset sm:inline-flex",
                 diff <= 1
-                  ? "bg-emerald-500/10 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300"
+                  ? "bg-primary/10 text-primary ring-primary/20"
                   : "bg-muted text-muted-foreground ring-border"
               )}
             >

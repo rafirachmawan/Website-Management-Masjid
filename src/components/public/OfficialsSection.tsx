@@ -28,14 +28,14 @@ function avatarUrl(o: Official): string | null {
 
 function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
   const url = avatarUrl(official);
-  const dims = size === "lg" ? "h-24 w-24 text-3xl md:h-28 md:w-28" : "h-16 w-16 text-xl";
+  const dims = size === "lg" ? "h-20 w-20 text-2xl" : "h-16 w-16 text-xl";
   if (url) {
     return (
       <img
         src={url}
         alt={official.name}
         loading="lazy"
-        className={cn(dims, "shrink-0 rounded-full border-2 border-white/60 object-cover shadow-md")}
+        className={cn(dims, "shrink-0 rounded-full bg-muted object-cover ring-1 ring-border")}
       />
     );
   }
@@ -44,7 +44,7 @@ function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
       aria-hidden="true"
       className={cn(
         dims,
-        "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-emerald-800 font-display font-bold text-white shadow-md",
+        "flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-display font-semibold text-primary ring-1 ring-border",
       )}
     >
       {getInitials(official.name)}
@@ -52,14 +52,14 @@ function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
   );
 }
 
-function RoleBadge({ official, light = false }: { official: Official; light?: boolean }) {
+function RoleBadge({ official }: { official: Official }) {
   return (
     <span
       className={cn(
-        "inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset",
-        light
-          ? "bg-white/10 text-emerald-100 ring-white/20"
-          : "bg-primary/[0.08] text-primary ring-primary/20",
+        "inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset",
+        official.systemRole === "superadmin"
+          ? "bg-primary text-primary-foreground ring-primary"
+          : "bg-muted text-muted-foreground ring-border",
       )}
     >
       {official.systemRole === "superadmin" && <Crown className="h-3 w-3" aria-hidden="true" />}
@@ -68,18 +68,13 @@ function RoleBadge({ official, light = false }: { official: Official; light?: bo
   );
 }
 
-function ContactLinks({ official, light = false }: { official: Official; light?: boolean }) {
+function ContactLinks({ official }: { official: Official }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {official.phone && (
         <a
           href={`tel:${official.phone.replace(/[^+\d]/g, "")}`}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
-            light
-              ? "bg-white/10 text-white ring-1 ring-white/15 ring-inset hover:bg-white/20"
-              : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary",
-          )}
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
         >
           <Phone className="h-3.5 w-3.5" aria-hidden="true" />
           {official.phone}
@@ -89,12 +84,7 @@ function ContactLinks({ official, light = false }: { official: Official; light?:
         <a
           href={`mailto:${official.email}`}
           aria-label={`Kirim email ke ${official.name}`}
-          className={cn(
-            "inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-            light
-              ? "bg-white/10 text-white ring-1 ring-white/15 ring-inset hover:bg-white/20"
-              : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary",
-          )}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
         >
           <Envelope className="h-4 w-4" aria-hidden="true" />
         </a>
@@ -115,16 +105,10 @@ export function OfficialsSection({ officials }: { officials: Official[] }) {
     <section
       id="pengurus"
       aria-labelledby="officials-heading"
-      className="relative scroll-mt-24 overflow-hidden bg-background py-16 md:py-20"
+      className="scroll-mt-24 bg-background py-16 md:py-20"
     >
-      {/* Ambient — selaras dengan seksi keuangan */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
-        <div className="absolute top-[-6rem] left-[-6rem] h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-      </div>
-
-      <div className="container relative mx-auto px-4 md:px-6 lg:px-8">
-        <div className="mx-auto mb-8 max-w-2xl text-center md:mb-10">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
+        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
           <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.06] px-3 py-1 text-xs font-semibold text-primary">
             <Users className="h-3.5 w-3.5" aria-hidden="true" />
             Takmir & Pengurus
@@ -140,51 +124,42 @@ export function OfficialsSection({ officials }: { officials: Official[] }) {
           </p>
         </div>
 
-        {leader && (
-          <div className="relative mx-auto mb-4 max-w-3xl overflow-hidden rounded-[24px] bg-emerald-950 p-6 text-white shadow-[0_28px_60px_-24px_rgba(4,47,34,0.65)] ring-1 ring-white/10 sm:p-7 md:mb-5 md:p-8">
-            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-emerald-950 to-[#021a12]" />
-              <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl" />
-              <div className="absolute inset-0 rounded-[24px] ring-1 ring-white/10 ring-inset" />
-            </div>
-            <div className="relative flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
+        {/* Satu baris grid untuk semua orang: kartuketua menyatu di baris
+            yang sama sehingga tidak ada blok yang meleset ke kanan. */}
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-3">
+          {leader && (
+            <article className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 sm:col-span-2 md:p-6">
               <Avatar official={leader} size="lg" />
-              <div className="min-w-0 flex-1">
-                <RoleBadge official={leader} light />
-                <h3 className="font-display mt-2 text-balance text-xl font-semibold leading-snug md:text-2xl">
+              <div className="min-w-0">
+                <RoleBadge official={leader} />
+                <h3 className="font-display mt-2 text-balance text-xl font-semibold leading-snug text-foreground">
                   {leader.name}
                 </h3>
-                <p className="mt-1 text-sm text-white/70">{leader.role}</p>
-                <div className="mt-3 flex justify-center sm:justify-start">
-                  <ContactLinks official={leader} light />
+                <p className="mt-0.5 text-sm text-muted-foreground">{leader.role}</p>
+                <div className="mt-3">
+                  <ContactLinks official={leader} />
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            </article>
+          )}
 
-        {rest.length > 0 && (
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-3">
-            {rest.map((o) => (
-              <article
-                key={o.id}
-                className="group flex flex-col items-center gap-3 rounded-[24px] border border-border bg-card p-6 text-center shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30"
-              >
-                <Avatar official={o} size="md" />
-                <div className="min-w-0">
-                  <h3 className="truncate text-[15px] font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-                    {o.name}
-                  </h3>
-                  <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                    {o.role}
-                  </p>
-                </div>
-                <RoleBadge official={o} />
-                <ContactLinks official={o} />
-              </article>
-            ))}
-          </div>
-        )}
+          {rest.map((o) => (
+            <article
+              key={o.id}
+              className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center transition-colors hover:border-primary/35"
+            >
+              <Avatar official={o} size="md" />
+              <div className="min-w-0">
+                <h3 className="truncate text-[15px] font-semibold text-foreground">{o.name}</h3>
+                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                  {o.role}
+                </p>
+              </div>
+              <RoleBadge official={o} />
+              <ContactLinks official={o} />
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

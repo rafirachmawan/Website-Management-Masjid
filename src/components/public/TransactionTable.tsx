@@ -248,12 +248,12 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right font-bold whitespace-nowrap tabular-nums">
                       {transaction.type === "income" ? (
-                        <span className="text-[15px] text-green-700 dark:text-green-300">
+                        <span className="text-[15px] text-primary">
                           +{formatCurrency(transaction.amount)}
                         </span>
                       ) : (
-                        <span className="text-[15px] text-red-700 dark:text-red-300">
-                          -{formatCurrency(transaction.amount)}
+                        <span className="text-[15px] text-destructive">
+                          −{formatCurrency(transaction.amount)}
                         </span>
                       )}
                     </TableCell>
@@ -263,8 +263,8 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                         className={cn(
                           "gap-1.5 rounded-full px-2.5 py-0.5 text-xs",
                           transaction.type === "income"
-                            ? "bg-green-500/10 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                            : "bg-red-500/10 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-destructive/10 text-destructive"
                         )}
                       >
                         {transaction.type === "income" ? "Masuk" : "Keluar"}
@@ -313,11 +313,11 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
           <div className="grid grid-cols-1 gap-3 border-t border-border/60 bg-primary/[0.04] px-4 py-4 text-sm sm:grid-cols-3 sm:gap-4 sm:divide-x sm:divide-primary/15">
             <div className="px-2 text-center sm:text-left">
               <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Pemasukan</p>
-              <p className="mt-1 text-lg font-bold tabular-nums text-green-700 dark:text-green-300">{formatCurrency(incomeTotal)}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-primary">{formatCurrency(incomeTotal)}</p>
             </div>
             <div className="border-t border-primary/10 px-2 pt-4 text-center sm:border-0 sm:pt-0 sm:text-left">
               <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total Pengeluaran</p>
-              <p className="mt-1 text-lg font-bold tabular-nums text-red-700 dark:text-red-300">{formatCurrency(expenseTotal)}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-destructive">{formatCurrency(expenseTotal)}</p>
             </div>
             <div className="border-t border-primary/10 px-2 pt-4 text-center sm:border-0 sm:pt-0 sm:text-left">
               <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Selisih Periode Ini</p>
