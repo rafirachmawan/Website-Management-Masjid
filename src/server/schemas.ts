@@ -2,6 +2,7 @@
 // Route handlers tidak percaya body mentah — selalu lewat parse di sini.
 
 import { z } from "zod";
+import { POSITIONS, normalizePosition } from "@/lib/positions";
 
 export const transactionInputSchema = z.object({
   date: z
@@ -90,7 +91,12 @@ export type ActivityInput = z.infer<typeof activityInputSchema>;
 
 export const officialInputSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter.").max(120),
-  role: z.string().min(3, "Jabatan minimal 3 karakter.").max(120),
+  // Jabatan dipetakan ke nilai kanonik supaya data lama ("Bendahara")
+  // otomatis menjadi "Bendahara DKM" dan teks bebas tidak bisa masuk lagi.
+  role: z
+    .string()
+    .transform((v) => normalizePosition(v))
+    .pipe(z.enum(POSITIONS.map((p) => p.value), { error: "Jabatan tidak dikenal." })),
   systemRole: z.enum(["superadmin", "admin", "bendahara", "pengurus"], {
     error: "Peran sistem tidak dikenal.",
   }),

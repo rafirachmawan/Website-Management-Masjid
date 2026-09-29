@@ -5,37 +5,71 @@
 // React Context internal.
 import type { Official } from "@/types";
 import { getInitials, cn } from "@/lib/utils";
-import { Users, Phone, Envelope, Crown } from "@phosphor-icons/react";
+import { levelOf, rankOf, normalizePosition, TIER_NAME } from "@/lib/positions";
+import {
+  Users,
+  Crown,
+  Phone,
+  EnvelopeSimple,
+  WhatsappLogo,
+  ShieldCheck,
+} from "@phosphor-icons/react";
 
-const ROLE_RANK: Record<Official["systemRole"], number> = {
-  superadmin: 0,
-  admin: 1,
-  bendahara: 2,
-  pengurus: 3,
-};
-
-const ROLE_LABEL: Record<Official["systemRole"], string> = {
-  superadmin: "Superadmin",
-  admin: "Admin",
+/** "Superadmin"/"Admin" adalah istilah internal aplikasi, jadi di halaman publik
+ *  diganti label yang dipahami jamaah. */
+const TIER_LABEL: Record<Official["systemRole"], string> = {
+  superadmin: "Ketua Takmir",
+  admin: "Admin Masjid",
   bendahara: "Bendahara",
   pengurus: "Pengurus",
 };
+
+const LINE = "bg-border";
 
 function avatarUrl(o: Official): string | null {
   if (o.avatar && (o.avatar.startsWith("http") || o.avatar.startsWith("/"))) return o.avatar;
   return null;
 }
 
-function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
+/** Nomor lokal 0857… → format wa.me yang bisa dibuka WhatsApp. */
+function waLink(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  const intl = digits.startsWith("0")
+    ? `62${digits.slice(1)}`
+    : digits.startsWith("8")
+      ? `62${digits}`
+      : digits;
+  return `https://wa.me/${intl}`;
+}
+
+function prettyPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "");
+  return /^0\d{9,11}$/.test(d)
+    ? `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8, 12)}`
+    : phone;
+}
+
+/** Badge tingkatan disembunyikan kalau jabatan sudah menyebutnya sendiri —
+ *  mencegah "Bendahara" tampil dua kali dalam satu kartu. */
+function tierVisible(o: Official): boolean {
+  const role = normalizePosition(o.role).toLowerCase();
+  if (role.includes(TIER_LABEL[o.systemRole].toLowerCase())) return false;
+  if (o.systemRole === "superadmin" && role.includes("ketua")) return false;
+  return true;
+}
+
+function Avatar({ official, size }: { official: Official; size: "md" | "sm" }) {
   const url = avatarUrl(official);
-  const dims = size === "lg" ? "h-20 w-20 text-2xl" : "h-16 w-16 text-xl";
+  const dims = size === "md" ? "h-16 w-16 text-lg" : "h-12 w-12 text-sm";
+
   if (url) {
     return (
       <img
         src={url}
         alt={official.name}
         loading="lazy"
-        className={cn(dims, "shrink-0 rounded-full bg-muted object-cover ring-1 ring-border")}
+        className={cn(dims, "shrink-0 rounded-full bg-muted object-cover")}
       />
     );
   }
@@ -44,7 +78,7 @@ function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
       aria-hidden="true"
       className={cn(
         dims,
-        "flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-display font-semibold text-primary ring-1 ring-border",
+        "font-display flex shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary ring-1 ring-primary/20",
       )}
     >
       {getInitials(official.name)}
@@ -52,63 +86,177 @@ function Avatar({ official, size }: { official: Official; size: "lg" | "md" }) {
   );
 }
 
-function RoleBadge({ official }: { official: Official }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset",
-        official.systemRole === "superadmin"
-          ? "bg-primary text-primary-foreground ring-primary"
-          : "bg-muted text-muted-foreground ring-border",
-      )}
-    >
-      {official.systemRole === "superadmin" && <Crown className="h-3 w-3" aria-hidden="true" />}
-      {ROLE_LABEL[official.systemRole]}
-    </span>
-  );
-}
+/** Tiga aksi kontak dengan lebar sama — muat rapi di kartu sempit schema. */
+function ContactRow({ official }: { official: Official }) {
+  const tel = official.phone ? `tel:${official.phone.replace(/[^+\d]/g, "")}` : null;
+  const wa = waLink(official.phone);
+  const mail = official.email ? `mailto:${official.email}` : null;
 
-function ContactLinks({ official }: { official: Official }) {
+  const cell =
+    "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/[0.07] hover:text-primary";
+
+  if (!tel && !wa && !mail) {
+    return <p className="mt-3.5 text-[11px] text-muted-foreground">Kontak belum dilengkapi.</p>;
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {official.phone && (
+    <div className="mt-3.5 flex items-center gap-1.5">
+      {tel && (
         <a
-          href={`tel:${official.phone.replace(/[^+\d]/g, "")}`}
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          href={tel}
+          title={prettyPhone(official.phone)}
+          aria-label={`Telepon ${official.name}`}
+          className={cell}
         >
-          <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-          {official.phone}
+          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate text-[11px] font-semibold tabular-nums">
+            {prettyPhone(official.phone)}
+          </span>
         </a>
       )}
-      {official.email && (
+      {wa && (
         <a
-          href={`mailto:${official.email}`}
-          aria-label={`Kirim email ke ${official.name}`}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="WhatsApp"
+          aria-label={`Hubungi ${official.name} lewat WhatsApp`}
+          className={cn(cell, "max-w-9 shrink-0 px-0")}
         >
-          <Envelope className="h-4 w-4" aria-hidden="true" />
+          <WhatsappLogo className="h-4 w-4" weight="fill" aria-hidden="true" />
+        </a>
+      )}
+      {mail && (
+        <a
+          href={mail}
+          title="Email"
+          aria-label={`Kirim email ke ${official.name}`}
+          className={cn(cell, "max-w-9 shrink-0 px-0")}
+        >
+          <EnvelopeSimple className="h-4 w-4" aria-hidden="true" />
         </a>
       )}
     </div>
   );
 }
 
-export function OfficialsSection({ officials }: { officials: Official[] }) {
-  if (officials.length === 0) return null;
+function OfficialCard({
+  official,
+  lead = false,
+  className,
+}: {
+  official: Official;
+  lead?: boolean;
+  className?: string;
+}) {
+  return (
+    <article
+      className={cn(
+        "flex flex-col rounded-2xl border bg-card p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-24px_rgba(4,47,34,0.45)]",
+        lead ? "border-primary/30 shadow-[0_16px_34px_-22px_rgba(4,47,34,0.45)]" : "border-border",
+        className,
+      )}
+    >
+      <div className="relative mx-auto">
+        <Avatar official={official} size={lead ? "md" : "sm"} />
+        {lead && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card"
+          >
+            <Crown className="h-3 w-3" weight="fill" />
+          </span>
+        )}
+      </div>
 
-  const sorted = [...officials].sort(
-    (a, b) => ROLE_RANK[a.systemRole] - ROLE_RANK[b.systemRole] || (a.joinedDate < b.joinedDate ? -1 : 1),
+      {tierVisible(official) && (
+        <p className="mt-2.5 inline-flex w-fit items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+          {TIER_LABEL[official.systemRole]}
+        </p>
+      )}
+
+      <h3
+        className={cn(
+          "font-display mt-1.5 text-balance font-semibold leading-snug text-foreground",
+          lead ? "text-lg" : "text-[15px]",
+        )}
+      >
+        {official.name}
+      </h3>
+      <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
+        {normalizePosition(official.role)}
+      </p>
+
+      <ContactRow official={official} />
+    </article>
   );
-  const [leader, ...rest] = sorted;
+}
+
+/** Satu baris tingkat: setiap kartu punya batang naik menuju garis walang di
+ *  atasnya, dan (kalau ada tingkat di bawahnya) batang turun juga. */
+function TierRow({
+  items,
+  lead = false,
+  down = false,
+}: {
+  items: Official[];
+  lead?: boolean;
+  down?: boolean;
+}) {
+  return (
+    <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {items.map((o) => (
+        <div key={o.id} className="flex flex-col items-center">
+          {!lead && <div aria-hidden="true" className={cn("mb-6 h-6 w-px", LINE)} />}
+          <OfficialCard official={o} lead={lead} className="w-full" />
+          {down && <div aria-hidden="true" className={cn("mt-6 h-6 w-px", LINE)} />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function OfficialsSection({ officials }: { officials: Official[] }) {
+  // Urutan hanya dari Jabatan (lihat src/lib/positions.ts): jenjang jabatan
+  // dulu, lalu urutan di dalam jenjang itu, lalu tanggal bergabung paling awal.
+  // `systemRole` sengaja tidak dipakai — itu hak akses aplikasi, bukan posisi.
+  const sorted = [...officials].sort(
+    (a, b) =>
+      levelOf(a.role) - levelOf(b.role) ||
+      rankOf(a.role) - rankOf(b.role) ||
+      (a.joinedDate < b.joinedDate ? -1 : 1),
+  );
+
+  // Schema hanya punya satu puncak, jadi ketua kedua otomatis turun ke
+  // tingkat pengurus harian.
+  const tiers: Official[][] = [[], [], []];
+  let rootTaken = false;
+  for (const o of sorted) {
+    let level = levelOf(o.role);
+    if (level === 0) {
+      level = rootTaken ? 1 : 0;
+      rootTaken = true;
+    }
+    tiers[level].push(o);
+  }
+
+  const hasLower = tiers[1].length > 0;
+  const hasBottom = tiers[2].length > 0;
+  const filled = tiers.map((t) => t.length).filter((n) => n > 0);
 
   return (
     <section
       id="pengurus"
       aria-labelledby="officials-heading"
-      className="scroll-mt-24 bg-background py-16 md:py-20"
+      className="relative scroll-mt-24 overflow-hidden bg-background py-14 md:py-20"
     >
-      <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="mx-auto mb-10 max-w-2xl text-center md:mb-12">
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
+        <div className="absolute top-[-5rem] left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-primary/[0.08] blur-3xl" />
+      </div>
+
+      <div className="container relative mx-auto px-4 md:px-6 lg:px-8">
+        <div className="mx-auto mb-10 max-w-xl text-center md:mb-12">
           <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.06] px-3 py-1 text-xs font-semibold text-primary">
             <Users className="h-3.5 w-3.5" aria-hidden="true" />
             Takmir & Pengurus
@@ -119,47 +267,60 @@ export function OfficialsSection({ officials }: { officials: Official[] }) {
           >
             Pengurus Masjid
           </h2>
-          <p className="mx-auto mt-2 max-w-[52ch] text-sm leading-relaxed text-muted-foreground md:text-base">
-            Amanah pengelolaan masjid diemban bersama para pengurus berikut.
+          <p className="mx-auto mt-2.5 max-w-[46ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+            Susunan kepengurusan masjid beserta kontak yang dapat dihubungi.
           </p>
         </div>
 
-        {/* Satu baris grid untuk semua orang: kartuketua menyatu di baris
-            yang sama sehingga tidak ada blok yang meleset ke kanan. */}
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-3">
-          {leader && (
-            <article className="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 sm:col-span-2 md:p-6">
-              <Avatar official={leader} size="lg" />
-              <div className="min-w-0">
-                <RoleBadge official={leader} />
-                <h3 className="font-display mt-2 text-balance text-xl font-semibold leading-snug text-foreground">
-                  {leader.name}
-                </h3>
-                <p className="mt-0.5 text-sm text-muted-foreground">{leader.role}</p>
-                <div className="mt-3">
-                  <ContactLinks official={leader} />
+        {sorted.length === 0 ? (
+          <p className="mx-auto max-w-xl rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+            Belum ada data pengurus. Susunan takmir akan tampil di sini setelah
+            dilengkapi lewat halaman admin.
+          </p>
+        ) : (
+          <div className="mx-auto max-w-5xl">
+            <div className="flex flex-col items-center">
+              {/* Tingkat 1 — selalu tepat satu orang */}
+              {tiers[0].map((o) => (
+                <div key={o.id} className="flex w-full max-w-[16rem] flex-col items-center">
+                  <OfficialCard official={o} lead className="w-full" />
+                  {hasLower && <div aria-hidden="true" className={cn("h-8 w-px", LINE)} />}
                 </div>
-              </div>
-            </article>
-          )}
+              ))}
 
-          {rest.map((o) => (
-            <article
-              key={o.id}
-              className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center transition-colors hover:border-primary/35"
-            >
-              <Avatar official={o} size="md" />
-              <div className="min-w-0">
-                <h3 className="truncate text-[15px] font-semibold text-foreground">{o.name}</h3>
-                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                  {o.role}
-                </p>
-              </div>
-              <RoleBadge official={o} />
-              <ContactLinks official={o} />
-            </article>
-          ))}
-        </div>
+              {/* Tingkat 2 — pengurus harian */}
+              {hasLower && (
+                <>
+                  <div aria-hidden="true" className={cn("h-px w-full", LINE)} />
+                  <TierRow items={tiers[1]} down={hasBottom} />
+                </>
+              )}
+
+              {/* Tingkat 3 — anggota */}
+              {hasBottom && (
+                <>
+                  <div aria-hidden="true" className={cn("h-px w-full", LINE)} />
+                  <TierRow items={tiers[2]} />
+                </>
+              )}
+            </div>
+
+            <p className="mt-12 flex flex-col items-center gap-2 text-center text-[13px] text-muted-foreground">
+              <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 tabular-nums">
+                {filled.map((n, i) => (
+                  <span key={TIER_NAME[i]} className="inline-flex items-center gap-1.5">
+                    {i > 0 && <span aria-hidden="true">•</span>}
+                    {n} {TIER_NAME[i]}
+                  </span>
+                ))}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                Struktur mengikuti jabatan yang diisi di halaman admin.
+              </span>
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

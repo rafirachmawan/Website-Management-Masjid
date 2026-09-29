@@ -5,14 +5,15 @@ import { CaretDown, List, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 // Menu diselaraskan dengan isi halaman publik yang benar-benar ada
-// (PRODUCT.md): hero, ringkasan, grafik, transaksi, pengumuman, kegiatan,
-// jadwal sholat, kontak. Tidak ada halaman Profil/Virtual Tour/Wisata/Aula/Reservasi.
+// (PRODUCT.md): hero, takmir, keuangan, pengumuman, kegiatan, jadwal sholat,
+// kontak. Tidak ada halaman Profil/Virtual Tour/Wisata/Aula/Reservasi.
 type MenuChild = { name: string; href: string };
 type MenuItem = { name: string; href: string; children?: MenuChild[] };
 
 const MENU: MenuItem[] = [
   { name: "Beranda", href: "#beranda" },
   { name: "Jadwal Sholat", href: "#jadwal-sholat" },
+  { name: "Pengurus", href: "#pengurus" },
   {
     name: "Keuangan",
     href: "#keuangan",

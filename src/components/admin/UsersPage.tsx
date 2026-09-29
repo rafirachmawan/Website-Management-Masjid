@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import { formatDate } from "@/lib/utils";
+import { POSITIONS, normalizePosition, TIER_NAME } from "@/lib/positions";
 import type { Official } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
@@ -18,7 +19,9 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -59,7 +62,7 @@ export function UsersPage() {
   // Form states
   const [formData, setFormData] = useState({
     name: "",
-    role: "",
+    role: "Anggota Takmir",
     systemRole: "pengurus" as "superadmin" | "admin" | "bendahara" | "pengurus",
     phone: "",
     email: "",
@@ -73,7 +76,7 @@ export function UsersPage() {
     return data.filter((item) => {
       const matchSearch =
         item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.role.toLowerCase().includes(search.toLowerCase()) ||
+        normalizePosition(item.role).toLowerCase().includes(search.toLowerCase()) ||
         item.email.toLowerCase().includes(search.toLowerCase()) ||
         item.phone.toLowerCase().includes(search.toLowerCase());
 
@@ -92,7 +95,7 @@ export function UsersPage() {
     setIsEditMode(false);
     setFormData({
       name: "",
-      role: "",
+      role: "Anggota Takmir",
       systemRole: "pengurus",
       phone: "",
       email: "",
@@ -107,7 +110,9 @@ export function UsersPage() {
     setSelectedOfficial(item);
     setFormData({
       name: item.name,
-      role: item.role,
+      // Jabatan lama (mis. "Bendahara") dipetakan ke nilai kanonik supaya
+      // nilainya tidak hilang saat form disimpan ulang.
+      role: normalizePosition(item.role),
       systemRole: item.systemRole,
       phone: item.phone,
       email: item.email,
@@ -360,7 +365,7 @@ export function UsersPage() {
                     {item.name}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5 font-medium line-clamp-1">
-                    {item.role}
+                    {normalizePosition(item.role)}
                   </p>
                 </div>
 
@@ -439,15 +444,32 @@ export function UsersPage() {
               <label className="text-xs font-semibold text-foreground">
                 Jabatan di Kepengurusan DKM <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Contoh: Bendahara Utama / Bidang Dakwah"
+              <Select
                 value={formData.role}
-                onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
-                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+                onValueChange={(val) => {
+                  if (val) setFormData({ ...formData, role: val });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih jabatan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIER_NAME.map((tier, i) => (
+                    <SelectGroup key={tier}>
+                      <SelectLabel>{tier}</SelectLabel>
+                      {POSITIONS.filter((p) => p.level === i).map((p) => (
+                        <SelectItem key={p.value} value={p.value}>
+                          {p.value}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Jabatan menentukan posisi di struktur pengurus. Peran &amp; hak
+                akses di bawah tidak memengaruhi urutan tampil.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
