@@ -88,7 +88,7 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
     }
 
     return result;
-  }, [searchQuery, periodFilter, sortState]);
+  }, [transactions, searchQuery, periodFilter, sortState]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
   const paginatedTransactions = filteredTransactions.slice(

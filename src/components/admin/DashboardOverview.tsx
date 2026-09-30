@@ -57,7 +57,7 @@ const COLORS = {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
   if (!active || !payload) return null;
   return (
-    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-[180px]">
+    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-45">
       <p className="text-xs font-semibold text-muted-foreground mb-2">{label}</p>
       {payload.map((entry, index) => (
         <p key={index} className="flex items-center justify-between gap-3 text-xs py-0.5" style={{ color: entry.color }}>

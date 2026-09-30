@@ -12,13 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, PencilSimple, Trash, Warning } from "@phosphor-icons/react";
 
 type CatType = "income" | "expense";
@@ -58,8 +51,12 @@ export function CategoryManager() {
     setError(null);
     setSaving(true);
     try {
+      // Tipe dikunci dari luar dialog: tombol "Tambah" di grup Kas Masuk
+      // selalu jadi income, di grup Kas Keluar selalu jadi expense.
+      // Mode ubah hanya ganti nama — tipe tidak dikirim agar kategori yang
+      // sudah dipakai transaksi tidak berisiko pindah tipe.
       if (editing) {
-        await apiSend(`/api/categories/${editing.id}`, "PUT", { name: name.trim(), type });
+        await apiSend(`/api/categories/${editing.id}`, "PUT", { name: name.trim() });
       } else {
         await apiSend("/api/categories", "POST", { name: name.trim(), type });
       }
@@ -170,12 +167,18 @@ export function CategoryManager() {
         <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle className="font-display text-lg font-semibold">
-              {editing ? "Ubah Kategori" : "Tambah Kategori"}
+              {editing
+                ? "Ubah Kategori"
+                : type === "income"
+                  ? "Tambah Kategori Kas Masuk"
+                  : "Tambah Kategori Kas Keluar"}
             </DialogTitle>
             <DialogDescription>
               {editing
-                ? "Perubahan nama otomatis mengikuti ke seluruh transaksi berkategori ini."
-                : "Kategori baru langsung bisa dipilih saat mencatat transaksi."}
+                ? "Perubahan nama otomatis mengikuti ke seluruh transaksi berkategori ini. Tipe kategori dikunci."
+                : type === "income"
+                  ? "Kategori baru langsung bisa dipilih saat mencatat kas masuk."
+                  : "Kategori baru langsung bisa dipilih saat mencatat kas keluar."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -192,17 +195,19 @@ export function CategoryManager() {
                 className={inputClass}
               />
             </div>
-            <div>
-              <span className="mb-1.5 block text-[13px] font-semibold text-foreground">Tipe</span>
-              <Select value={type} onValueChange={(v) => v && setType(v as CatType)}>
-                <SelectTrigger className="h-10 w-full text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Kas masuk</SelectItem>
-                  <SelectItem value="expense">Kas keluar</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+              <span className="text-[13px] text-muted-foreground">
+                {editing ? "Tipe (dikunci)" : "Akan disimpan sebagai"}
+              </span>
+              <span
+                className={
+                  type === "income"
+                    ? "inline-flex items-center rounded-full border border-emerald-200 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400"
+                    : "inline-flex items-center rounded-full border border-red-200 bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:text-red-400"
+                }
+              >
+                {type === "income" ? "Kas masuk" : "Kas keluar"}
+              </span>
             </div>
             {error && (
               <p role="alert" className="text-xs font-medium text-destructive">

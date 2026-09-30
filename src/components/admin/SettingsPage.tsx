@@ -6,7 +6,6 @@ import { downloadTextFile } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import type { MosqueProfile, AppConfig } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
-import { CategoryManager } from "@/components/admin/CategoryManager";
 
 // Form kosong untuk masjid yang profilnya belum pernah diisi admin.
 // Bukan data contoh — semua kolom wajib dilengkapi sebelum disimpan.
@@ -304,7 +303,7 @@ export function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="finance" className="gap-2 text-xs sm:text-sm">
             <Bank className="w-4 h-4" />
-            <span>Rekening & Kas</span>
+            <span>Rekening Bank</span>
           </TabsTrigger>
           <TabsTrigger value="preferences" className="gap-2 text-xs sm:text-sm">
             <SlidersHorizontal className="w-4 h-4" />
@@ -608,7 +607,7 @@ export function SettingsPage() {
                 {profileError && (
                   <p
                     role="alert"
-                    className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                    className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
                   >
                     {profileError}
                   </p>
@@ -625,13 +624,14 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* TAB 2: REKENING & KAS */}
+        {/* TAB 2: REKENING BANK */}
         <TabsContent value="finance" className="space-y-6">
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Rekening Bank & QRIS Infaq</CardTitle>
+              <CardTitle className="text-lg">Rekening Bank Donasi</CardTitle>
               <CardDescription>
                 Nomor rekening resmi untuk penerimaan infak, sedekah, dan wakaf jamaah secara transfer.
+                Kelola jenis kas masuk & keluar lewat menu Kategori Kas.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -706,15 +706,10 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Kategori kas — dikelola penuh dari sini, tersimpan di database */}
-                <div className="pt-4 border-t border-border">
-                  <CategoryManager />
-                </div>
-
                 {financeError && (
                   <p
                     role="alert"
-                    className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                    className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
                   >
                     {financeError}
                   </p>
@@ -790,7 +785,7 @@ export function SettingsPage() {
               {financeError && (
                 <p
                   role="alert"
-                  className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+                  className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
                 >
                   {financeError}
                 </p>
@@ -850,7 +845,7 @@ export function SettingsPage() {
             <CardContent>
               <form onSubmit={handleSaveSecurity} className="space-y-4 max-w-lg">
                 {securityError && (
-                  <p role="alert" className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive">
+                  <p role="alert" className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive">
                     {securityError}
                   </p>
                 )}

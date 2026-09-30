@@ -346,7 +346,7 @@ export function UsersPage() {
                       src={item.avatar}
                       alt={item.name}
                       loading="lazy"
-                      className="w-16 h-16 aspect-square rounded-full border-2 border-primary/20 object-cover shadow-xs [object-position:center_20%]"
+                      className="w-16 h-16 aspect-square rounded-full border-2 border-primary/20 object-cover shadow-xs object-[center_20%]"
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-xl overflow-hidden shadow-xs">
@@ -563,7 +563,7 @@ export function UsersPage() {
           {formError && (
             <p
               role="alert"
-              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+              className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
             >
               {formError}
             </p>
@@ -607,7 +607,7 @@ export function UsersPage() {
           {formError && (
             <p
               role="alert"
-              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+              className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
             >
               {formError}
             </p>

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   Layout,
   Coins,
+  Tag,
   FileText,
   ListChecks,
   Users,
@@ -26,6 +27,7 @@ import type { MosqueProfile } from "@/types";
 const navigation = [
   { name: "Overview", href: "/admin", icon: Layout },
   { name: "Transaksi Kas", href: "/admin/transactions", icon: Coins },
+  { name: "Kategori Kas", href: "/admin/categories", icon: Tag },
   { name: "Laporan Keuangan", href: "/admin/reports", icon: FileText },
   { name: "Berita", href: "/admin/announcements", icon: ListChecks },
   { name: "Kegiatan", href: "/admin/activities", icon: ChartBar },

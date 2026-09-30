@@ -570,7 +570,7 @@ export function ActivitiesPage() {
           {formError && (
             <p
               role="alert"
-              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+              className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
             >
               {formError}
             </p>
@@ -614,7 +614,7 @@ export function ActivitiesPage() {
           {formError && (
             <p
               role="alert"
-              className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive"
+              className="rounded-lg border border-destructive/25 bg-destructive/6 px-3 py-2 text-sm font-medium text-destructive"
             >
               {formError}
             </p>

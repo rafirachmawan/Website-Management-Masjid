@@ -1,5 +1,6 @@
 import { Hero } from "@/components/public/Hero";
 import { FinancialSummaryCards } from "@/components/public/FinancialSummaryCards";
+import { DonationTransfer } from "@/components/public/DonationTransfer";
 import { TransactionTable } from "@/components/public/TransactionTable";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
 import { ActivitiesSection } from "@/components/public/ActivitiesSection";
@@ -23,6 +24,7 @@ export default async function Home() {
     announcements,
     activities,
     officials,
+    config,
   } = await getPublicHomeData();
 
   return (
@@ -51,6 +53,10 @@ export default async function Home() {
             financialSummary={financialSummary}
             latestRecorder={transactions[0]?.recordedBy}
           />
+          {/* Rekening admin (/admin → Pengaturan → Rekening & Kas). */}
+          <div className="-mt-6 pb-2 md:-mt-8">
+            <DonationTransfer config={config} />
+          </div>
           <TransactionTable transactions={transactions} />
         </div>
         {/* Informasi */}

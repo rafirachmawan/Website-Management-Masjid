@@ -156,7 +156,7 @@ function TransactionDetailDialog({
   return (
     <Dialog>
       <DialogTrigger render={children as React.ReactElement} />
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-130">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div
@@ -303,7 +303,7 @@ function DeleteConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={children as React.ReactElement} />
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-105">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Warning className="w-5 h-5" />
@@ -539,7 +539,7 @@ export function TransactionsPage() {
     });
 
     return result;
-  }, [searchQuery, typeFilter, categoryFilter, sortField, sortDirection]);
+  }, [transactions, searchQuery, typeFilter, categoryFilter, sortField, sortDirection]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
@@ -692,7 +692,7 @@ export function TransactionsPage() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-[140px] h-9 text-xs rounded-lg">
+                <SelectTrigger className="w-35 h-9 text-xs rounded-lg">
                   <Funnel className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="Tipe" />
                 </SelectTrigger>
@@ -710,7 +710,7 @@ export function TransactionsPage() {
                   handleFilterChange();
                 }}
               >
-                <SelectTrigger className="w-[180px] h-9 text-xs rounded-lg">
+                <SelectTrigger className="w-45 h-9 text-xs rounded-lg">
                   <SelectValue placeholder="Kategori" />
                 </SelectTrigger>
                 <SelectContent>

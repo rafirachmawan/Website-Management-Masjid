@@ -231,8 +231,8 @@ export function Hero({
             ))}
             {/* Kabut warna latar: teks kiri selalu terbaca, foto menyatu
                 halus ke background tanpa garis potong yang keras. */}
-            <div className="absolute inset-0 bg-background/60 lg:bg-gradient-to-r lg:from-background lg:from-10% lg:via-background/40 lg:via-50% lg:to-transparent lg:to-80%" />
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
+            <div className="absolute inset-0 bg-background/60 lg:bg-linear-to-r lg:from-background lg:from-10% lg:via-background/40 lg:via-50% lg:to-transparent lg:to-80%" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent" />
           </div>
         )}
 

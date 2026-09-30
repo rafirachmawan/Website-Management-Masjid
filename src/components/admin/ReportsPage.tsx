@@ -93,7 +93,7 @@ const MONTHS = [
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
   if (!active || !payload) return null;
   return (
-    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-[200px]">
+    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-50">
       <p className="text-xs font-semibold text-muted-foreground mb-2">{label}</p>
       {payload.map((entry, index) => (
         <p key={index} className="flex items-center justify-between gap-4 text-xs py-0.5" style={{ color: entry.color || entry.fill }}>
@@ -112,7 +112,7 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
   if (!active || !payload || !payload[0]) return null;
   const data = payload[0];
   return (
-    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-[180px]">
+    <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-45">
       <p className="flex items-center gap-2 text-xs font-semibold text-foreground mb-1">
         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.payload?.fill }} />
         {data.name}
@@ -284,7 +284,7 @@ function CategoryPieChart({
 }) {
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[260px] text-sm text-muted-foreground">
+      <div className="flex items-center justify-center h-65 text-sm text-muted-foreground">
         Tidak ada data
       </div>
     );
@@ -315,7 +315,7 @@ function CategoryPieChart({
         </PieChart>
       </ResponsiveContainer>
       {/* Legend */}
-      <div className="space-y-1.5 mt-2 max-h-[160px] overflow-y-auto">
+      <div className="space-y-1.5 mt-2 max-h-40 overflow-y-auto">
         {data.map((item) => (
           <div key={item.name} className="flex items-center justify-between text-xs px-1 py-0.5">
             <span className="flex items-center gap-2 text-muted-foreground truncate">
@@ -686,7 +686,7 @@ export function ReportsPage() {
                   if (val) setPeriodType(val as PeriodType);
                 }}
               >
-                <SelectTrigger className="w-[140px] h-9 text-xs rounded-lg">
+                <SelectTrigger className="w-35 h-9 text-xs rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -702,7 +702,7 @@ export function ReportsPage() {
                     if (val) setSelectedMonth(val);
                   }}
                 >
-                  <SelectTrigger className="w-[150px] h-9 text-xs rounded-lg">
+                  <SelectTrigger className="w-37.5 h-9 text-xs rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -719,7 +719,7 @@ export function ReportsPage() {
                   if (val) setSelectedYear(val);
                 }}
               >
-                <SelectTrigger className="w-[110px] h-9 text-xs rounded-lg">
+                <SelectTrigger className="w-27.5 h-9 text-xs rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

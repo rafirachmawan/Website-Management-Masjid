@@ -8,6 +8,7 @@ import { getMosqueProfile } from "./mosque";
 import { getAnnouncements, getActivities } from "./content";
 import { getPrayerSchedule } from "./prayer";
 import { getOfficials } from "./officials";
+import { getAppConfig } from "./config";
 import {
   getFinancialSummary,
   getTransactions,
@@ -20,6 +21,7 @@ import type {
   FinancialSummary,
   Transaction,
   Official,
+  AppConfig,
 } from "@/types";
 
 export interface PublicHomeData {
@@ -30,11 +32,12 @@ export interface PublicHomeData {
   announcements: Announcement[];
   activities: Activity[];
   officials: Official[];
+  config: AppConfig;
 }
 
 export async function getPublicHomeData(): Promise<PublicHomeData> {
   // Semua query independen → jalankan paralel.
-  const [profile, prayer, financialSummary, transactions, announcements, activities, officials] =
+  const [profile, prayer, financialSummary, transactions, announcements, activities, officials, config] =
     await Promise.all([
       getMosqueProfile(),
       getPrayerSchedule(),
@@ -43,6 +46,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
       getAnnouncements(),
       getActivities(),
       getOfficials(),
+      getAppConfig(),
     ]);
 
   return {
@@ -53,5 +57,6 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     announcements,
     activities,
     officials: officials.filter((o) => o.status === "active"),
+    config,
   };
 }
