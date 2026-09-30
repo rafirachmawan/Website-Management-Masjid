@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Layout,
@@ -37,7 +37,9 @@ const navigation = [
 export function Sidebar() {
   const { isMobileOpen, setIsMobileOpen, collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
   const brandName = profile?.shortName || profile?.name || "Masjid";
   const brandInitials = profile ? getInitials(profile.shortName || profile.name) : "M";
@@ -52,6 +54,20 @@ export function Sidebar() {
   // Close mobile drawer on navigation
   const handleNavClick = () => {
     if (isMobile) setIsMobileOpen(false);
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/admin/session", { method: "DELETE" });
+    } catch {
+      // Tetap keluar walau request gagal — cookie akan kedaluwarsa sendiri.
+    } finally {
+      handleNavClick();
+      router.replace("/admin/login");
+      router.refresh();
+    }
   };
 
   const sidebarStyle = isMobile
@@ -143,6 +159,19 @@ export function Sidebar() {
             <Layout className="w-5 h-5 shrink-0" aria-hidden="true" />
             {(isMobile || !collapsed) && <span>Lihat Publik</span>}
           </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={cn(
+              "mt-1 flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-destructive transition-colors disabled:opacity-60",
+              collapsed && !isMobile && "justify-center"
+            )}
+            title={collapsed && !isMobile ? "Keluar" : undefined}
+          >
+            <SignOut className="w-5 h-5 shrink-0" aria-hidden="true" />
+            {(isMobile || !collapsed) && <span>{isLoggingOut ? "Keluar…" : "Keluar"}</span>}
+          </button>
         </div>
       </div>
     </aside>

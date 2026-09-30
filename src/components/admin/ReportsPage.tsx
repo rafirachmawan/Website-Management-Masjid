@@ -10,7 +10,7 @@ import type {
   FinancialSummary,
   MosqueProfile,
 } from "@/types";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, cn, toCsvRow, downloadTextFile } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
@@ -550,8 +550,17 @@ export function ReportsPage() {
   const now = new Date();
   const [periodType, setPeriodType] = useState<PeriodType>("yearly");
   const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
-  const [selectedYear] = useState(String(now.getFullYear()));
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
   const [chartType, setChartType] = useState<ChartType>("area");
+
+  // Tahun yang tersedia dari data transaksi (terbaru dulu).
+  const availableYears = useMemo(() => {
+    const years = new Set(transactions.map((t) => new Date(t.date).getFullYear()));
+    years.add(now.getFullYear());
+    return Array.from(years).sort((a, b) => b - a).map(String);
+  }, [transactions, now.getFullYear()]);
+
+  const activeYear = availableYears.includes(selectedYear) ? selectedYear : availableYears[0];
 
   // Filter transactions by period
   const filteredTxns = useMemo(() => {
@@ -559,12 +568,12 @@ export function ReportsPage() {
       const month = parseInt(selectedMonth);
       return transactions.filter((t) => {
         const d = new Date(t.date);
-        return d.getMonth() + 1 === month && d.getFullYear() === parseInt(selectedYear);
+        return d.getMonth() + 1 === month && d.getFullYear() === parseInt(activeYear);
       });
     }
     // yearly — tahun terpilih
-    return transactions.filter((t) => new Date(t.date).getFullYear() === parseInt(selectedYear));
-  }, [periodType, selectedMonth, selectedYear]);
+    return transactions.filter((t) => new Date(t.date).getFullYear() === parseInt(activeYear));
+  }, [transactions, periodType, selectedMonth, activeYear]);
 
   // Compute totals
   const totalIncome = filteredTxns.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
@@ -573,8 +582,27 @@ export function ReportsPage() {
 
   // Period label
   const periodLabel = periodType === "monthly"
-    ? `${MONTHS[parseInt(selectedMonth) - 1]} ${selectedYear}`
-    : `Tahun ${selectedYear}`;
+    ? `${MONTHS[parseInt(selectedMonth) - 1]} ${activeYear}`
+    : `Tahun ${activeYear}`;
+
+  // Unduh transaksi periode terpilih sebagai CSV (Excel Indonesia).
+  const handleExportCsv = () => {
+    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat"]);
+    const lines = [...filteredTxns]
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+      .map((t) =>
+        toCsvRow([
+          t.date,
+          t.type === "income" ? "Pemasukan" : "Pengeluaran",
+          t.category,
+          t.description,
+          t.amount,
+          t.recordedBy,
+        ]),
+      );
+    const safeLabel = periodLabel.toLowerCase().replace(/[^a-z0-9]+/gi, "-");
+    downloadTextFile(`laporan-keuangan-${safeLabel}.csv`, [header, ...lines].join("\n"));
+  };
 
   // Chart data based on period
   const displayChartData = periodType === "monthly"
@@ -631,13 +659,13 @@ export function ReportsPage() {
         description={`Ringkasan dan analisis keuangan masjid ${mosqueProfile.shortName}`}
         actions={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs" onClick={() => window.print()}>
               <Printer className="w-4 h-4" />
               Cetak
             </Button>
-            <Button size="sm" className="gap-1.5 rounded-xl shadow-xs">
+            <Button size="sm" className="gap-1.5 rounded-xl shadow-xs" onClick={handleExportCsv}>
               <Download className="w-4 h-4" />
-              Export PDF
+              Export CSV
             </Button>
           </>
         }
@@ -685,9 +713,21 @@ export function ReportsPage() {
                 </Select>
               )}
 
-              <div className="h-9 px-3 flex items-center rounded-lg bg-muted/50 border border-border/60 text-xs font-medium text-muted-foreground">
-                Tahun: {selectedYear}
-              </div>
+              <Select
+                value={activeYear}
+                onValueChange={(val) => {
+                  if (val) setSelectedYear(val);
+                }}
+              >
+                <SelectTrigger className="w-[110px] h-9 text-xs rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableYears.map((y) => (
+                    <SelectItem key={y} value={y}>Tahun {y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="sm:ml-auto flex items-center gap-1 p-1 bg-muted/40 rounded-lg border border-border/40">
@@ -859,7 +899,7 @@ export function ReportsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <MonthlySummaryTable data={chartData} year={selectedYear} />
+            <MonthlySummaryTable data={chartData} year={activeYear} />
           </CardContent>
         </Card>
       )}
@@ -874,10 +914,10 @@ export function ReportsPage() {
             <p className="text-sm font-semibold text-foreground">Catatan Laporan</p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
               Laporan ini dihasilkan berdasarkan data transaksi yang telah dicatat.
-              Untuk laporan resmi dengan kop surat masjid dan tanda tangan pengurus,
-              klik tombol <strong>Export PDF</strong> di atas. Data terakhir diperbarui pada{" "}
-              {new Date(financialSummary.lastUpdated).toLocaleDateString("id-ID", {
-                day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+              Gunakan tombol <strong>Cetak</strong> untuk versi kertas atau{" "}
+              <strong>Export CSV</strong> untuk diolah di Excel. Data terakhir diperbarui pada{" "}
+              {formatDate(financialSummary.lastUpdated, {
+                day: "numeric", month: "long", year: "numeric",
               })}.
             </p>
           </div>

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import { formatCurrency, formatDate, formatShortDate, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, formatShortDate, cn, toCsvRow, downloadTextFile } from "@/lib/utils";
 import { TransactionFormDialog } from "@/components/admin/TransactionFormDialog";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
@@ -565,6 +565,22 @@ export function TransactionsPage() {
   const hasActiveFilters =
     typeFilter !== "all" || categoryFilter !== "all" || searchQuery.trim() !== "";
 
+  // Unduh data tersaring (sesuai filter & urutan tabel) sebagai CSV.
+  const handleExportCsv = () => {
+    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat"]);
+    const lines = filteredTransactions.map((t) =>
+      toCsvRow([
+        t.date,
+        t.type === "income" ? "Pemasukan" : "Pengeluaran",
+        t.category,
+        t.description,
+        t.amount,
+        t.recordedBy,
+      ]),
+    );
+    downloadTextFile("transaksi-kas.csv", [header, ...lines].join("\n"));
+  };
+
   const clearAllFilters = () => {
     setSearchQuery("");
     setTypeFilter("all");
@@ -618,7 +634,7 @@ export function TransactionsPage() {
         description="Kelola catatan pemasukan dan pengeluaran kas masjid"
         actions={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs">
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-xl shadow-2xs" onClick={handleExportCsv}>
               <Download className="w-4 h-4" />
               Export
             </Button>

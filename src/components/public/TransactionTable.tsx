@@ -13,7 +13,7 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, MagnifyingGlass, FunnelSimple, ArrowDown } from "@phosphor-icons/react";
+import { CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, MagnifyingGlass, FunnelSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -154,18 +154,6 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                 aria-label="Cari transaksi"
               />
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 shrink-0 gap-2 rounded-xl px-4 text-muted-foreground"
-              disabled
-              title="Ekspor PDF segera hadir"
-              aria-disabled="true"
-            >
-              <ArrowDown className="h-4 w-4" aria-hidden="true" />
-              Ekspor PDF
-            </Button>
           </div>
           <div className="mt-3 flex items-center gap-2 overflow-x-auto border-t border-border/60 pt-3">
             <span className="flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold text-muted-foreground">

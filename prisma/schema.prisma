@@ -61,7 +61,7 @@ model Announcement {
   title       String
   content     String
   imageUrl    String?
-  priority    String   @default("normal") // normal | important | urgent
+  priority    String   @default("normal") // normal (Biasa) | important (Penting, hanya 1)
   publishedAt DateTime @default(now())
   author      String
 

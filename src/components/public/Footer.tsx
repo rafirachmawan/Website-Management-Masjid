@@ -15,13 +15,13 @@ const socialLinks = [
 
 const navigation = {
   Keuangan: [
-    { name: "Ringkasan Kas", href: "#ringkasan" },
-    { name: "Rincian Transaksi", href: "#transaksi" },
+    { name: "Ringkasan Kas", href: "/#ringkasan" },
+    { name: "Rincian Transaksi", href: "/#transaksi" },
   ],
   Informasi: [
-    { name: "Pengumuman", href: "#pengumuman" },
-    { name: "Kegiatan", href: "#kegiatan" },
-    { name: "Jadwal Sholat", href: "#jadwal-sholat" },
+    { name: "Berita", href: "/berita" },
+    { name: "Kegiatan", href: "/kegiatan" },
+    { name: "Jadwal Sholat", href: "/#jadwal-sholat" },
   ],
 };
 

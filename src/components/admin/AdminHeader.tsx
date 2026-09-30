@@ -1,27 +1,42 @@
 "use client";
 
-import { List, Bell, Moon, Sun, User, SignOut, CaretRight } from "@phosphor-icons/react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { List, Moon, Sun, User, SignOut, CaretRight } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Gear } from "@phosphor-icons/react";
 import { useSidebar } from "./AdminLayout";
 
+// Label generik — tidak ada sesi profil per pengguna (satu akun pengurus).
 const user = {
-  name: "Ust. Ahmad",
-  role: "Bendahara",
-  email: "ahmad@masjidarrahman.or.id",
-  initials: "UA",
+  name: "Pengurus",
+  role: "Admin Masjid",
+  initials: "AM",
 };
 
 export function AdminHeader() {
   const { isMobileOpen, setIsMobileOpen } = useSidebar();
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const logout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/admin/session", { method: "DELETE" });
+    } catch {
+      // Tetap keluar walau request gagal — cookie akan kedaluwarsa sendiri.
+    } finally {
+      router.replace("/admin/login");
+      router.refresh();
+    }
+  };
 
   const SEGMENT_LABELS: Record<string, string> = {
     announcements: "Berita",
@@ -41,7 +56,7 @@ export function AdminHeader() {
       label:
         SEGMENT_LABELS[segment] ??
         segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " "),
-      href: "/admin" + arr.slice(0, index + 1).join("/"),
+      href: "/admin/" + arr.slice(0, index + 1).join("/"),
       isLast: index === arr.length - 1,
     }));
 
@@ -99,7 +114,6 @@ export function AdminHeader() {
               render={
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src="/avatar.png" alt={user.name} />
                     <AvatarFallback className="bg-primary/10 text-primary">
                       {user.initials}
                     </AvatarFallback>
@@ -118,11 +132,11 @@ export function AdminHeader() {
               <DropdownMenuItem
                 render={
                   <Link
-                    href="/admin/profile"
+                    href="/admin/settings"
                     className="flex w-full items-center gap-2"
                   >
                     <User className="w-4 h-4" />
-                    Profil
+                    Profil & Pengaturan
                   </Link>
                 }
               />
@@ -140,10 +154,16 @@ export function AdminHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
+                disabled={isLoggingOut}
                 render={
-                  <button type="button" className="flex w-full items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={logout}
+                    disabled={isLoggingOut}
+                    className="flex w-full items-center gap-2"
+                  >
                     <SignOut className="w-4 h-4" />
-                    Keluar
+                    {isLoggingOut ? "Keluar…" : "Keluar"}
                   </button>
                 }
               />

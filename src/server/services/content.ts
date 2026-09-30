@@ -51,6 +51,24 @@ function toActivity(a: {
 
 // ── Pengumuman ───────────────────────────────────────────────────────────────
 
+// Prioritas "important" = kartu besar (featured) di halaman publik.
+// Hanya boleh dipakai 1 berita dalam satu waktu — ditegakkan di sini supaya
+// tidak bisa diakali lewat request API langsung.
+async function assertImportantSlotFree(exceptId?: string): Promise<void> {
+  const holder = await db.announcement.findFirst({
+    where: {
+      priority: "important",
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+    },
+    select: { id: true, title: true },
+  });
+  if (holder) {
+    throw new BadRequestError(
+      `Prioritas Penting sudah dipakai oleh berita "${holder.title}". Ubah berita tersebut menjadi Biasa terlebih dahulu sebelum menetapkan berita lain sebagai Penting.`,
+    );
+  }
+}
+
 export async function getAnnouncements(): Promise<Announcement[]> {
   const rows = await db.announcement.findMany({ orderBy: { publishedAt: "desc" } });
   return rows.map(toAnnouncement);
@@ -62,6 +80,7 @@ export async function getAnnouncementById(id: string): Promise<Announcement | nu
 }
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<Announcement> {
+  if (input.priority === "important") await assertImportantSlotFree();
   const row = await db.announcement.create({
     data: {
       title: input.title,
@@ -81,6 +100,8 @@ export async function updateAnnouncement(
 ): Promise<Announcement> {
   const existing = await db.announcement.findUnique({ where: { id } });
   if (!existing) throw new BadRequestError("Pengumuman yang akan diubah tidak ditemukan.");
+
+  if (input.priority === "important") await assertImportantSlotFree(id);
 
   const row = await db.announcement.update({
     where: { id },

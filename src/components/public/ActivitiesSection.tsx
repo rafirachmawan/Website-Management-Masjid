@@ -4,6 +4,7 @@
 // fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
 // React Context internal.
 import type { Activity } from "@/types";
+import Link from "next/link";
 import { formatDate, cn } from "@/lib/utils";
 import {
   CaretRight,
@@ -103,13 +104,13 @@ function FeaturedCard({ activity }: { activity: Activity }) {
           Sorotan kegiatan
         </p>
         <h3 className="font-display title-hover mt-2 text-balance text-2xl font-semibold leading-[1.2] text-foreground md:text-[1.75rem]">
-          <a
-            href="#kegiatan"
+          <Link
+            href={`/kegiatan/${activity.id}`}
             aria-label={`Detail kegiatan: ${activity.title}`}
             className="transition-colors group-hover:text-primary"
           >
             {activity.title}
-          </a>
+          </Link>
         </h3>
         <p className="mt-3 line-clamp-2 text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
           {activity.description}
@@ -137,13 +138,13 @@ function FeaturedCard({ activity }: { activity: Activity }) {
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2.5 border-t border-border/60 pt-5">
-          <a
-            href="#kegiatan"
+          <Link
+            href={`/kegiatan/${activity.id}`}
             className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-10px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
           >
             Lihat detail kegiatan
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </a>
+          </Link>
           <span className="text-xs text-muted-foreground tabular-nums">
             Oleh {activity.organizer}
           </span>
@@ -158,8 +159,8 @@ function AgendaRow({ activity }: { activity: Activity }) {
 
   return (
     <article className="group">
-      <a
-        href="#kegiatan"
+      <Link
+        href={`/kegiatan/${activity.id}`}
         aria-label={`Detail kegiatan: ${activity.title}`}
         className="flex items-center gap-4 rounded-2xl border border-transparent p-3 transition-all duration-200 hover:-translate-y-px hover:border-primary/25 hover:bg-primary/[0.04] hover:shadow-[0_12px_28px_-18px_rgba(4,47,34,0.5)] focus-visible:border-primary/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.99] sm:gap-5 sm:p-4"
       >
@@ -206,14 +207,26 @@ function AgendaRow({ activity }: { activity: Activity }) {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-all duration-200 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
           <CaretRight className="h-4 w-4 transition-transform group-hover:translate-x-px" aria-hidden="true" />
         </span>
-      </a>
+      </Link>
     </article>
   );
 }
 
 export function ActivitiesSection({ activities }: { activities: Activity[] }) {
   const sorted = [...activities].sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  const [featured, ...rest] = sorted;
+
+  // Sorotan = kegiatan yang paling mendekati hari ini (hari ini / akan datang
+  // yang paling awal). Kegiatan yang sudah lewat tidak boleh jadi sorotan.
+  // Kalau semuanya sudah lewat, pakai yang terakhir lewat sebagai fallback.
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const upcoming = sorted.filter((a) => {
+    const d = new Date(a.date);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() >= todayStart.getTime();
+  });
+  const featured = upcoming[0] ?? sorted[sorted.length - 1];
+  const rest = featured ? sorted.filter((a) => a.id !== featured.id) : [];
 
   return (
     <section
@@ -268,13 +281,13 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
             )}
 
             <div className="mt-8 flex flex-col items-center gap-3 text-center">
-              <a
-                href="#kegiatan"
+              <Link
+                href="/kegiatan"
                 className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-10px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
               >
                 Lihat semua kegiatan
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </a>
+              </Link>
               <p className="text-xs text-muted-foreground">
                 Butuh info pendaftaran? Hubungi sekretariat masjid.
               </p>

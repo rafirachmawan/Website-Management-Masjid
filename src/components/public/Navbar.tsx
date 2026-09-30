@@ -10,21 +10,23 @@ import { cn } from "@/lib/utils";
 type MenuChild = { name: string; href: string };
 type MenuItem = { name: string; href: string; children?: MenuChild[] };
 
+// Menu memakai path absolut ("/#...") supaya tetap berfungsi saat diklik
+// dari halaman detail (/berita/[id], /kegiatan/[id]), bukan hanya beranda.
 const MENU: MenuItem[] = [
-  { name: "Beranda", href: "#beranda" },
-  { name: "Jadwal Sholat", href: "#jadwal-sholat" },
-  { name: "Pengurus", href: "#pengurus" },
+  { name: "Beranda", href: "/#beranda" },
+  { name: "Jadwal Sholat", href: "/#jadwal-sholat" },
+  { name: "Pengurus", href: "/#pengurus" },
   {
     name: "Keuangan",
-    href: "#keuangan",
+    href: "/#keuangan",
     children: [
-      { name: "Ringkasan Kas", href: "#ringkasan" },
-      { name: "Rincian Transaksi", href: "#transaksi" },
+      { name: "Ringkasan Kas", href: "/#ringkasan" },
+      { name: "Rincian Transaksi", href: "/#transaksi" },
     ],
   },
-  { name: "Berita", href: "#pengumuman" },
-  { name: "Kegiatan", href: "#kegiatan" },
-  { name: "Kontak", href: "#kontak" },
+  { name: "Berita", href: "/berita" },
+  { name: "Kegiatan", href: "/kegiatan" },
+  { name: "Kontak", href: "/#kontak" },
 ];
 
 export function Navbar() {

@@ -49,7 +49,6 @@ import {
   DotsThreeVertical,
   Calendar,
   User,
-  WarningCircle,
   CheckCircle,
   BellSimpleRinging,
   Broadcast,
@@ -72,7 +71,7 @@ export function AnnouncementsPage() {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    priority: "normal" as "normal" | "important" | "urgent",
+    priority: "normal" as "normal" | "important",
     author: "Pengurus Masjid",
     imageUrl: "",
   });
@@ -91,7 +90,6 @@ export function AnnouncementsPage() {
     });
   }, [data, search, priorityFilter]);
 
-  const urgentCount = data.filter((a) => a.priority === "urgent").length;
   const importantCount = data.filter((a) => a.priority === "important").length;
   const normalCount = data.filter((a) => a.priority === "normal").length;
 
@@ -122,6 +120,21 @@ export function AnnouncementsPage() {
 
   const handleSave = async () => {
     if (!formData.title || !formData.content) return;
+    // Cek cepat di sisi klien: slot Penting hanya 1. Backend menegakkan
+    // ulang aturan yang sama sehingga tidak bisa diakali via API langsung.
+    if (formData.priority === "important") {
+      const holder = data.find(
+        (a) =>
+          a.priority === "important" &&
+          (!isEditMode || !selectedAnnouncement || a.id !== selectedAnnouncement.id),
+      );
+      if (holder) {
+        setFormError(
+          `Prioritas Penting sudah dipakai oleh berita "${holder.title}". Ubah berita tersebut menjadi Biasa terlebih dahulu sebelum menetapkan berita lain sebagai Penting.`,
+        );
+        return;
+      }
+    }
     setIsSaving(true);
     setFormError(null);
     try {
@@ -157,13 +170,6 @@ export function AnnouncementsPage() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case "urgent":
-        return (
-          <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200 dark:border-red-800 gap-1 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-            Mendesak
-          </Badge>
-        );
       case "important":
         return (
           <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 border-amber-200 dark:border-amber-800 gap-1 font-medium">
@@ -205,7 +211,7 @@ export function AnnouncementsPage() {
       />
 
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
@@ -219,23 +225,6 @@ export function AnnouncementsPage() {
             </div>
             <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <Megaphone className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border shadow-sm">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Mendesak
-              </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-red-600">
-                {urgentCount}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">Butuh perhatian jamaah</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center text-red-600">
-              <WarningCircle className="w-6 h-6" />
             </div>
           </CardContent>
         </Card>
@@ -297,7 +286,6 @@ export function AnnouncementsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Prioritas</SelectItem>
-                  <SelectItem value="urgent">Mendesak</SelectItem>
                   <SelectItem value="important">Penting</SelectItem>
                   <SelectItem value="normal">Biasa</SelectItem>
                 </SelectContent>
@@ -476,26 +464,35 @@ export function AnnouncementsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
                   Prioritas Informasi
                 </label>
-                <Select
+                <select
                   value={formData.priority}
-                  onValueChange={(val) => {
-                    if (val) setFormData({ ...formData, priority: val as "normal" | "important" | "urgent" });
-                  }}
+                  onChange={(e) =>
+                    setFormData({ ...formData, priority: e.target.value as "normal" | "important" })
+                  }
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Biasa</SelectItem>
-                    <SelectItem value="important">Penting</SelectItem>
-                    <SelectItem value="urgent">Mendesak</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="normal">Biasa</option>
+                  <option value="important">Penting — tampil besar</option>
+                </select>
+                {(() => {
+                  const holder = data.find(
+                    (a) =>
+                      a.priority === "important" &&
+                      (!isEditMode || !selectedAnnouncement || a.id !== selectedAnnouncement.id),
+                  );
+                  return (
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                      {holder
+                        ? `Slot Penting sedang dipakai oleh "${holder.title}". Hanya 1 berita yang bisa menjadi Penting.`
+                        : "Slot Penting kosong — berita ini bisa dijadikan tampilan besar."}
+                    </p>
+                  );
+                })()}
               </div>
 
               <div className="space-y-1.5">

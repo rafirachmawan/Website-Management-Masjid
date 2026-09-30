@@ -48,12 +48,16 @@ export function ImageUploadField({
     setPreview(URL.createObjectURL(f));
   };
 
-  const loadLibrary = async () => {
-    if (library !== null) return;
+  const loadLibrary = async (force = false) => {
+    if (!force && library !== null) return;
     try {
       const res = await fetch("/api/uploads");
       const data = await res.json().catch(() => null);
-      setLibrary(res.ok && Array.isArray(data?.files) ? (data.files as string[]) : []);
+      // GET /api/uploads mengembalikan { files: string[] } (URL terbaru dulu).
+      const files = res.ok && Array.isArray(data?.files)
+        ? (data.files as unknown[]).filter((u): u is string => typeof u === "string")
+        : [];
+      setLibrary(files);
     } catch {
       setLibrary([]);
     }
@@ -73,6 +77,9 @@ export function ImageUploadField({
       if (preview) URL.revokeObjectURL(preview);
       setFile(null);
       setPreview(null);
+      // Segarkan galeri agar file yang baru diunggah langsung bisa dipilih.
+      setLibrary(null);
+      void loadLibrary(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal mengunggah gambar.");
     } finally {

@@ -4,24 +4,29 @@
 // fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
 // React Context internal.
 import type { Announcement } from "@/types";
+import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { CaretRight, Calendar, Clock, Star, Warning } from "@phosphor-icons/react";
+import { CaretRight, Calendar, Clock, Star } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 const priorityConfig = {
   normal: { icon: Clock, label: "Info", pill: "bg-muted text-muted-foreground" },
   important: { icon: Star, label: "Penting", pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
-  urgent: { icon: Warning, label: "Urgen", pill: "bg-destructive/10 text-destructive" },
 } as const;
 
 type Priority = keyof typeof priorityConfig;
 
+// Penting (featured/besar) selalu di urutan pertama, sisanya terbaru dulu.
+// Fallback `?? normal` menjaga baris lama berprioritas "urgent" tetap tampil.
 const PRIORITY_WEIGHT: Record<Priority, number> = {
-  urgent: 0,
-  important: 1,
-  normal: 2,
+  important: 0,
+  normal: 1,
 };
+
+function weightOf(priority: string): number {
+  return PRIORITY_WEIGHT[priority as Priority] ?? PRIORITY_WEIGHT.normal;
+}
 
 // Gambar hanya dari data admin (imageUrl). Tanpa gambar → blok netral,
 // bukan gambar acak dari layanan luar.
@@ -47,7 +52,7 @@ function CoverPlaceholder({ title, className }: { title: string; className?: str
 }
 
 function Meta({ announcement, light = false }: { announcement: Announcement; light?: boolean }) {
-  const config = priorityConfig[announcement.priority as Priority];
+  const config = priorityConfig[announcement.priority as Priority] ?? priorityConfig.normal;
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* TODO(admin): tambah field kategori di tabel pengumuman, badge ini sementara memakai prioritas */}
@@ -87,21 +92,21 @@ function FeaturedCard({ announcement }: { announcement: Announcement }) {
       <div className="flex flex-1 flex-col p-5 md:p-6">
         <Meta announcement={announcement} />
         <h3 className="font-display title-hover mt-3 text-balance text-xl font-semibold leading-snug text-foreground transition-colors group-hover:text-primary md:text-2xl">
-          <a href="#pengumuman" aria-label={`Baca selengkapnya: ${announcement.title}`}>
+          <Link href={`/berita/${announcement.id}`} aria-label={`Baca selengkapnya: ${announcement.title}`}>
             {announcement.title}
-          </a>
+          </Link>
         </h3>
         <p className="mt-1.5 text-xs text-muted-foreground">Oleh {announcement.author}</p>
         <p className="mt-2.5 line-clamp-3 text-[15px] leading-relaxed text-muted-foreground">
           {announcement.content}
         </p>
-        <a
-          href="#pengumuman"
+        <Link
+          href={`/berita/${announcement.id}`}
           className="link-lively mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary"
         >
           Baca selengkapnya
           <CaretRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-        </a>
+        </Link>
       </div>
     </article>
   );
@@ -126,9 +131,9 @@ function SideCard({ announcement }: { announcement: Announcement }) {
       <div className="min-w-0 flex-1 py-0.5">
         <Meta announcement={announcement} />
         <h3 className="mt-1.5 line-clamp-2 text-balance text-[15px] font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
-          <a href="#pengumuman" aria-label={`Baca selengkapnya: ${announcement.title}`}>
+          <Link href={`/berita/${announcement.id}`} aria-label={`Baca selengkapnya: ${announcement.title}`}>
             {announcement.title}
-          </a>
+          </Link>
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">Oleh {announcement.author}</p>
       </div>
@@ -154,9 +159,9 @@ function LowerCard({ announcement }: { announcement: Announcement }) {
       </div>
       <div className="min-w-0 flex-1">
         <h3 className="text-balance text-lg font-bold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary">
-          <a href="#pengumuman" aria-label={`Baca selengkapnya: ${announcement.title}`}>
+          <Link href={`/berita/${announcement.id}`} aria-label={`Baca selengkapnya: ${announcement.title}`}>
             {announcement.title}
-          </a>
+          </Link>
         </h3>
         <p className="mt-1.5 text-xs text-muted-foreground">
           Oleh {announcement.author} <span aria-hidden="true">·</span>{" "}
@@ -165,13 +170,13 @@ function LowerCard({ announcement }: { announcement: Announcement }) {
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
           {announcement.content}
         </p>
-        <a
-          href="#pengumuman"
+        <Link
+          href={`/berita/${announcement.id}`}
           className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary"
         >
           Baca selengkapnya
           <CaretRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-        </a>
+        </Link>
       </div>
     </article>
   );
@@ -183,7 +188,7 @@ export function AnnouncementsSection({
   announcements: Announcement[];
 }) {
   const sorted = [...announcements].sort((a, b) => {
-    const w = PRIORITY_WEIGHT[a.priority as Priority] - PRIORITY_WEIGHT[b.priority as Priority];
+    const w = weightOf(a.priority) - weightOf(b.priority);
     if (w !== 0) return w;
     return +new Date(b.publishedAt) - +new Date(a.publishedAt);
   });
@@ -240,13 +245,13 @@ export function AnnouncementsSection({
             )}
 
             <div className="mt-8 text-center">
-              <a
-                href="#pengumuman"
+              <Link
+                href="/berita"
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
               >
                 Lihat semua pengumuman
                 <CaretRight className="h-4 w-4" aria-hidden="true" />
-              </a>
+              </Link>
             </div>
           </>
         )}

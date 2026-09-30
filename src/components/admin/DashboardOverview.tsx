@@ -280,11 +280,11 @@ function QuickActions() {
       desc: "Operasional, honor, belanja, & utilitas",
     },
     {
-      label: "Buat Laporan PDF",
-      href: "/admin/reports/export",
+      label: "Lihat Laporan Keuangan",
+      href: "/admin/reports",
       icon: Download,
       iconBg: "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
-      desc: "Bulanan, tahunan, atau rentang kustom",
+      desc: "Bulanan, tahunan, cetak, & ekspor CSV",
     },
     {
       label: "Tambah Berita",
@@ -353,7 +353,6 @@ function UpcomingAnnouncements({ items }: { items: Announcement[] }) {
             <div
               className={cn(
                 "w-2.5 h-2.5 rounded-full mt-1.5 shrink-0",
-                ann.priority === "urgent" && "bg-red-500 ring-4 ring-red-500/20",
                 ann.priority === "important" && "bg-amber-500 ring-4 ring-amber-500/20",
                 ann.priority === "normal" && "bg-emerald-500 ring-4 ring-emerald-500/20"
               )}
@@ -400,11 +399,11 @@ export function DashboardOverview() {
         actions={
           <>
             <Link
-              href="/admin/reports/export"
+              href="/admin/reports"
               className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium rounded-xl border border-border bg-card hover:bg-muted text-foreground transition-all duration-200 shadow-2xs hover:shadow-xs"
             >
               <Download className="w-4 h-4 text-muted-foreground" />
-              Export PDF
+              Laporan
             </Link>
             <Link
               href="/admin/transactions?type=income"

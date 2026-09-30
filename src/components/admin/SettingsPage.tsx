@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useApi, apiSend } from "@/lib/api";
+import { downloadTextFile } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import type { MosqueProfile, AppConfig } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -98,7 +99,35 @@ export function SettingsPage() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [isSavingSecurity, setIsSavingSecurity] = useState(false);
+  const [securityError, setSecurityError] = useState<string | null>(null);
 
+  // Backup: unduh seluruh data (transaksi, berita, kegiatan, pengurus,
+  // profil, konfigurasi) sebagai satu file JSON untuk kebutuhan audit.
+  const [isExportingBackup, setIsExportingBackup] = useState(false);
+  const [backupError, setBackupError] = useState<string | null>(null);
+
+  const handleExportBackup = async () => {
+    setIsExportingBackup(true);
+    setBackupError(null);
+    try {
+      const paths = ["transactions", "categories", "announcements", "activities", "officials", "mosque-profile", "config"];
+      const backup: Record<string, unknown> = { exportedAt: new Date().toISOString() };
+      for (const p of paths) {
+        const res = await fetch(`/api/${p}`, { cache: "no-store" });
+        const data = await res.json().catch(() => null);
+        // 404 = bagian data belum pernah diisi (mis. profil) — catat null.
+        if (!res.ok && res.status !== 404) throw new Error(`Gagal mengambil data ${p}.`);
+        backup[p] = res.ok ? data : null;
+      }
+      const date = new Date().toISOString().slice(0, 10);
+      downloadTextFile(`backup-masjid-${date}.json`, JSON.stringify(backup, null, 2), "application/json");
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : "Gagal mengekspor cadangan.");
+    } finally {
+      setIsExportingBackup(false);
+    }
+  };
   // Unggah banner: pilih file dari perangkat → unggah ke server → masuk daftar.
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
@@ -205,12 +234,31 @@ export function SettingsPage() {
     }
   };
 
-  const handleSaveSecurity = (e: React.FormEvent) => {
+  const handleSaveSecurity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (securityForm.newPassword && securityForm.newPassword === securityForm.confirmPassword) {
-      setIsSaved(true);
+    if (!securityForm.currentPassword || !securityForm.newPassword) return;
+    if (securityForm.newPassword !== securityForm.confirmPassword) {
+      setSecurityError("Konfirmasi kata sandi baru tidak sama.");
+      return;
+    }
+    if (securityForm.newPassword.length < 8) {
+      setSecurityError("Kata sandi baru minimal 8 karakter.");
+      return;
+    }
+    setIsSavingSecurity(true);
+    setSecurityError(null);
+    try {
+      await apiSend("/api/admin/password", "PUT", {
+        currentPassword: securityForm.currentPassword,
+        newPassword: securityForm.newPassword,
+      });
       setSecurityForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
+    } catch (err) {
+      setSecurityError(err instanceof Error ? err.message : "Gagal memperbarui kata sandi.");
+    } finally {
+      setIsSavingSecurity(false);
     }
   };
 
@@ -769,25 +817,22 @@ export function SettingsPage() {
                     variant="outline"
                     size="sm"
                     className="gap-2"
-                    onClick={() => {
-                      alert("Data berhasil diekspor dalam format JSON!");
-                    }}
+                    onClick={handleExportBackup}
+                    disabled={isExportingBackup}
                   >
                     <DownloadSimple className="w-4 h-4" />
-                    <span>Ekspor Database (JSON)</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => {
-                      alert("Fitur impor data cadangan siap.");
-                    }}
-                  >
-                    <UploadSimple className="w-4 h-4" />
-                    <span>Pulihkan / Impor Cadangan</span>
+                    <span>{isExportingBackup ? "Mengekspor..." : "Ekspor Database (JSON)"}</span>
                   </Button>
                 </div>
+                {backupError && (
+                  <p role="alert" className="text-xs font-medium text-destructive">
+                    {backupError}
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Berkas JSON berisi seluruh data dan dapat dibuka di teks editor untuk audit.
+                  Simpan di tempat aman — berkas ini memuat seluruh database.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -804,6 +849,11 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSaveSecurity} className="space-y-4 max-w-lg">
+                {securityError && (
+                  <p role="alert" className="rounded-lg border border-destructive/25 bg-destructive/[0.06] px-3 py-2 text-sm font-medium text-destructive">
+                    {securityError}
+                  </p>
+                )}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground">
                     Kata Sandi Saat Ini
@@ -863,12 +913,14 @@ export function SettingsPage() {
                     type="submit"
                     className="gap-2"
                     disabled={
+                      isSavingSecurity ||
+                      !securityForm.currentPassword ||
                       !securityForm.newPassword ||
                       securityForm.newPassword !== securityForm.confirmPassword
                     }
                   >
                     <LockKey className="w-4 h-4" />
-                    <span>Perbarui Kata Sandi</span>
+                    <span>{isSavingSecurity ? "Menyimpan..." : "Perbarui Kata Sandi"}</span>
                   </Button>
                 </div>
               </form>

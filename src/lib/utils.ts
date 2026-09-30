@@ -68,3 +68,30 @@ export function getContrastColor(hexColor: string): string {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
+
+// ── Ekspor file (dipakai tombol Cetak/Export yang nyata) ────────────────────
+
+// Satu baris CSV dengan pemisah titik-koma (cocok untuk Excel Indonesia).
+// Nilai yang mengandung koma/petik/baris-baru dibungkus tanda petik.
+export function toCsvRow(values: Array<string | number>): string {
+  return values
+    .map((v) => {
+      const s = String(v);
+      return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    })
+    .join(";");
+}
+
+// Mengunduh teks (CSV/JSON) sebagai file. BOM (byte order mark) ditambahkan
+// agar Excel menampilkan huruf Indonesia dengan benar.
+export function downloadTextFile(filename: string, content: string, mime = "text/csv;charset=utf-8"): void {
+  const blob = new Blob(["\uFEFF" + content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

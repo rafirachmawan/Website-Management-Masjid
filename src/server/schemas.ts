@@ -48,8 +48,8 @@ export const announcementInputSchema = z.object({
     .string()
     .min(10, "Isi pengumuman minimal 10 karakter.")
     .max(5000, "Isi pengumuman maksimal 5.000 karakter."),
-  priority: z.enum(["normal", "important", "urgent"], {
-    error: "Prioritas harus 'normal', 'important', atau 'urgent'.",
+  priority: z.enum(["normal", "important"], {
+    error: "Prioritas harus 'normal' (Biasa) atau 'important' (Penting).",
   }),
   author: z.string().min(2, "Nama penulis minimal 2 karakter.").max(100),
   imageUrl: z

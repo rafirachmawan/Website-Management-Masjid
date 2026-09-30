@@ -40,7 +40,8 @@ export interface Announcement {
   title: string;
   content: string;
   imageUrl?: string;
-  priority: "normal" | "important" | "urgent";
+  // "important" = tampil besar (featured). Hanya boleh 1 dalam satu waktu.
+  priority: "normal" | "important";
   publishedAt: string;
   author: string;
 }
