@@ -16,7 +16,6 @@ const socialLinks = [
 const navigation = {
   Keuangan: [
     { name: "Ringkasan Kas", href: "#ringkasan" },
-    { name: "Grafik Bulanan", href: "#grafik" },
     { name: "Rincian Transaksi", href: "#transaksi" },
   ],
   Informasi: [

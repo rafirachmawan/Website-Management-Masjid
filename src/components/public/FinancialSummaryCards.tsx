@@ -13,7 +13,6 @@ import {
   ArrowRight,
   Wallet,
   Receipt,
-  ChartLineUp,
 } from "@phosphor-icons/react";
 
 /** Satu bahasa warna untuk semua ikon: hijau = pemasukan, merah = pengeluaran,
@@ -136,13 +135,6 @@ export function FinancialSummaryCards({
             >
               Lihat rincian
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </a>
-            <a
-              href="#grafik"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary active:scale-[0.98]"
-            >
-              <ChartLineUp className="h-4 w-4" aria-hidden="true" />
-              Grafik bulanan
             </a>
           </div>
         </div>

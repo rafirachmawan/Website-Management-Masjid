@@ -303,7 +303,7 @@ export function UsersPage() {
                   <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Hak Akses" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="end" alignItemWithTrigger={false}>
                   <SelectItem value="all">Semua Hak Akses</SelectItem>
                   <SelectItem value="superadmin">Super Admin</SelectItem>
                   <SelectItem value="admin">Admin Sistem</SelectItem>
@@ -346,7 +346,7 @@ export function UsersPage() {
                       src={item.avatar}
                       alt={item.name}
                       loading="lazy"
-                      className="w-16 h-16 rounded-full border-2 border-primary/20 object-cover shadow-xs"
+                      className="w-16 h-16 aspect-square rounded-full border-2 border-primary/20 object-cover shadow-xs [object-position:center_20%]"
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary font-bold text-xl overflow-hidden shadow-xs">
@@ -414,7 +414,7 @@ export function UsersPage() {
 
       {/* Modal: Create & Edit Official */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
-        <DialogContent className="sm:max-w-125">
+        <DialogContent className="sm:max-w-125 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? "Edit Data Pengurus" : "Tambah Pengurus DKM"}
@@ -450,13 +450,18 @@ export function UsersPage() {
                   if (val) setFormData({ ...formData, role: val });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih jabatan" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="start" alignItemWithTrigger={false}>
                   {TIER_NAME.map((tier, i) => (
-                    <SelectGroup key={tier}>
-                      <SelectLabel>{tier}</SelectLabel>
+                    <SelectGroup key={`${tier}-${i}`}>
+                      <SelectLabel>
+                        {tier}
+                        <span className="ml-1.5 font-normal normal-case tracking-normal text-muted-foreground/70">
+                          · {POSITIONS.filter((p) => p.level === i).length}
+                        </span>
+                      </SelectLabel>
                       {POSITIONS.filter((p) => p.level === i).map((p) => (
                         <SelectItem key={p.value} value={p.value}>
                           {p.value}
@@ -483,10 +488,10 @@ export function UsersPage() {
                     if (val) setFormData({ ...formData, systemRole: val as "superadmin" | "admin" | "bendahara" | "pengurus" });
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="start" alignItemWithTrigger={false}>
                     <SelectItem value="superadmin">Super Admin</SelectItem>
                     <SelectItem value="admin">Admin Sistem</SelectItem>
                     <SelectItem value="bendahara">Bendahara</SelectItem>
@@ -505,10 +510,10 @@ export function UsersPage() {
                     if (val) setFormData({ ...formData, status: val as "active" | "inactive" });
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="start" alignItemWithTrigger={false}>
                     <SelectItem value="active">Aktif Bertugas</SelectItem>
                     <SelectItem value="inactive">Nonaktif</SelectItem>
                   </SelectContent>

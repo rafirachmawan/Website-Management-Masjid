@@ -1,6 +1,5 @@
 import { Hero } from "@/components/public/Hero";
 import { FinancialSummaryCards } from "@/components/public/FinancialSummaryCards";
-import { FinancialChart } from "@/components/public/FinancialChart";
 import { TransactionTable } from "@/components/public/TransactionTable";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
 import { ActivitiesSection } from "@/components/public/ActivitiesSection";
@@ -20,7 +19,6 @@ export default async function Home() {
     profile,
     prayer,
     financialSummary,
-    chartData,
     transactions,
     announcements,
     activities,
@@ -44,7 +42,7 @@ export default async function Home() {
       <main className="flex flex-1 flex-col">
         {/* Takmir: pengurus masjid dari data admin */}
         <OfficialsSection officials={officials} />
-        {/* Keuangan: ringkasan + grafik + rincian — sesuai menu Navbar */}
+        {/* Keuangan: ringkasan + rincian — sesuai menu Navbar */}
         <div
           id="keuangan"
           className="flex scroll-mt-20 flex-col border-t border-border/60 bg-background"
@@ -53,7 +51,6 @@ export default async function Home() {
             financialSummary={financialSummary}
             latestRecorder={transactions[0]?.recordedBy}
           />
-          <FinancialChart chartData={chartData} />
           <TransactionTable transactions={transactions} />
         </div>
         {/* Informasi */}

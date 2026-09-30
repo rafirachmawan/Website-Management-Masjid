@@ -50,14 +50,8 @@ function prettyPhone(phone: string): string {
     : phone;
 }
 
-/** Badge tingkatan disembunyikan kalau jabatan sudah menyebutnya sendiri —
- *  mencegah "Bendahara" tampil dua kali dalam satu kartu. */
-function tierVisible(o: Official): boolean {
-  const role = normalizePosition(o.role).toLowerCase();
-  if (role.includes(TIER_LABEL[o.systemRole].toLowerCase())) return false;
-  if (o.systemRole === "superadmin" && role.includes("ketua")) return false;
-  return true;
-}
+/** Label peran & hak akses sistem (diatur admin) selalu tampil di kartu agar
+ *  konsisten antar pengurus — jabatan struktural tampil terpisah di bawah nama. */
 
 function Avatar({ official, size }: { official: Official; size: "md" | "sm" }) {
   const url = avatarUrl(official);
@@ -69,7 +63,11 @@ function Avatar({ official, size }: { official: Official; size: "md" | "sm" }) {
         src={url}
         alt={official.name}
         loading="lazy"
-        className={cn(dims, "shrink-0 rounded-full bg-muted object-cover")}
+        draggable={false}
+        className={cn(
+          dims,
+          "aspect-square shrink-0 rounded-full bg-muted object-cover ring-1 ring-border [object-position:center_20%]",
+        )}
       />
     );
   }
@@ -96,11 +94,15 @@ function ContactRow({ official }: { official: Official }) {
     "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/[0.07] hover:text-primary";
 
   if (!tel && !wa && !mail) {
-    return <p className="mt-3.5 text-[11px] text-muted-foreground">Kontak belum dilengkapi.</p>;
+    return (
+      <p className="flex h-9 w-full items-center justify-center text-[11px] text-muted-foreground">
+        Kontak belum dilengkapi.
+      </p>
+    );
   }
 
   return (
-    <div className="mt-3.5 flex items-center gap-1.5">
+    <div className="flex w-full items-center gap-1.5">
       {tel && (
         <a
           href={tel}
@@ -152,7 +154,7 @@ function OfficialCard({
   return (
     <article
       className={cn(
-        "flex flex-col rounded-2xl border bg-card p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-24px_rgba(4,47,34,0.45)]",
+        "flex h-full flex-col items-center rounded-2xl border bg-card p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-24px_rgba(4,47,34,0.45)]",
         lead ? "border-primary/30 shadow-[0_16px_34px_-22px_rgba(4,47,34,0.45)]" : "border-border",
         className,
       )}
@@ -169,25 +171,27 @@ function OfficialCard({
         )}
       </div>
 
-      {tierVisible(official) && (
-        <p className="mt-2.5 inline-flex w-fit items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-          {TIER_LABEL[official.systemRole]}
-        </p>
-      )}
+      {/* Badge peran & hak akses sistem selalu tampil agar konsisten di semua kartu. */}
+      <p className="mt-2.5 inline-flex w-fit items-center self-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+        {TIER_LABEL[official.systemRole]}
+      </p>
 
       <h3
         className={cn(
-          "font-display mt-1.5 text-balance font-semibold leading-snug text-foreground",
-          lead ? "text-lg" : "text-[15px]",
+          "font-display mt-1.5 flex w-full items-center justify-center text-balance font-semibold leading-snug text-foreground",
+          lead ? "min-h-[3.25rem] text-lg" : "min-h-[2.75rem] text-[15px]",
         )}
       >
-        {official.name}
+        <span className="line-clamp-2">{official.name}</span>
       </h3>
-      <p className="mt-0.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
-        {normalizePosition(official.role)}
+      <p className="mt-0.5 flex min-h-[2.625rem] w-full items-start justify-center text-[13px] leading-relaxed text-muted-foreground">
+        <span className="line-clamp-2">{normalizePosition(official.role)}</span>
       </p>
 
-      <ContactRow official={official} />
+      {/* Kontak selalu menempel di dasar kartu supaya sejajar antar kartu. */}
+      <div className="mt-auto w-full pt-3.5">
+        <ContactRow official={official} />
+      </div>
     </article>
   );
 }
@@ -204,12 +208,12 @@ function TierRow({
   down?: boolean;
 }) {
   return (
-    <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid w-full grid-cols-2 items-stretch gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((o) => (
-        <div key={o.id} className="flex flex-col items-center">
-          {!lead && <div aria-hidden="true" className={cn("mb-6 h-6 w-px", LINE)} />}
-          <OfficialCard official={o} lead={lead} className="w-full" />
-          {down && <div aria-hidden="true" className={cn("mt-6 h-6 w-px", LINE)} />}
+        <div key={o.id} className="flex h-full flex-col items-center">
+          {!lead && <div aria-hidden="true" className={cn("mb-6 h-6 w-px shrink-0", LINE)} />}
+          <OfficialCard official={o} lead={lead} className="w-full flex-1" />
+          {down && <div aria-hidden="true" className={cn("mt-6 h-6 w-px shrink-0", LINE)} />}
         </div>
       ))}
     </div>

@@ -10,7 +10,6 @@ import { getPrayerSchedule } from "./prayer";
 import { getOfficials } from "./officials";
 import {
   getFinancialSummary,
-  getChartData,
   getTransactions,
 } from "./finance";
 import type {
@@ -19,7 +18,6 @@ import type {
   Activity,
   DailyPrayerSchedule,
   FinancialSummary,
-  ChartDataPoint,
   Transaction,
   Official,
 } from "@/types";
@@ -28,7 +26,6 @@ export interface PublicHomeData {
   profile: MosqueProfile | null;
   prayer: { today: DailyPrayerSchedule | null; week: DailyPrayerSchedule[] };
   financialSummary: FinancialSummary;
-  chartData: ChartDataPoint[];
   transactions: Transaction[];
   announcements: Announcement[];
   activities: Activity[];
@@ -37,12 +34,11 @@ export interface PublicHomeData {
 
 export async function getPublicHomeData(): Promise<PublicHomeData> {
   // Semua query independen → jalankan paralel.
-  const [profile, prayer, financialSummary, chartData, transactions, announcements, activities, officials] =
+  const [profile, prayer, financialSummary, transactions, announcements, activities, officials] =
     await Promise.all([
       getMosqueProfile(),
       getPrayerSchedule(),
       getFinancialSummary(),
-      getChartData(),
       getTransactions(),
       getAnnouncements(),
       getActivities(),
@@ -53,7 +49,6 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     profile,
     prayer,
     financialSummary,
-    chartData,
     transactions,
     announcements,
     activities,
