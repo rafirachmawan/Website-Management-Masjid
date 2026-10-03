@@ -15,13 +15,13 @@ type MenuItem = { name: string; href: string; children?: MenuChild[] };
 const MENU: MenuItem[] = [
   { name: "Beranda", href: "/#beranda" },
   { name: "Jadwal Sholat", href: "/#jadwal-sholat" },
-  { name: "Pengurus", href: "/#pengurus" },
+  { name: "Pengurus", href: "/pengurus" },
   {
     name: "Keuangan",
-    href: "/#keuangan",
+    href: "/keuangan",
     children: [
-      { name: "Ringkasan Kas", href: "/#ringkasan" },
-      { name: "Rincian Transaksi", href: "/#transaksi" },
+      { name: "Ringkasan Kas", href: "/keuangan#ringkasan" },
+      { name: "Rincian Transaksi", href: "/keuangan#transaksi" },
     ],
   },
   { name: "Berita", href: "/berita" },
@@ -36,7 +36,7 @@ export function Navbar() {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="relative z-10 bg-transparent"
+      className="relative z-10 bg-transparent font-sans"
     >
         <div className="container mx-auto flex h-14 items-center justify-center gap-2 px-4 md:px-6 lg:px-8">
           {/* Mobile toggle */}

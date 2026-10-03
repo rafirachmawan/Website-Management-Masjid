@@ -130,7 +130,7 @@ export function FinancialSummaryCards({
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
             <a
-              href="#transaksi"
+              href="/keuangan#transaksi"
               className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.98]"
             >
               Lihat rincian
@@ -290,7 +290,7 @@ export function FinancialSummaryCards({
                 Masuk {formatCurrency(yearlyIncome)} • Keluar {formatCurrency(yearlyExpense)}
               </p>
               <a
-                href="#transaksi"
+                href="/keuangan#transaksi"
                 className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-border bg-background px-4 text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
               >
                 Telusuri semua transaksi

@@ -1,10 +1,6 @@
 import { Hero } from "@/components/public/Hero";
-import { FinancialSummaryCards } from "@/components/public/FinancialSummaryCards";
-import { DonationTransfer } from "@/components/public/DonationTransfer";
-import { TransactionTable } from "@/components/public/TransactionTable";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
 import { ActivitiesSection } from "@/components/public/ActivitiesSection";
-import { OfficialsSection } from "@/components/public/OfficialsSection";
 import { Footer } from "@/components/public/Footer";
 import { getPublicHomeData } from "@/server/services/public-home";
 
@@ -19,12 +15,8 @@ export default async function Home() {
   const {
     profile,
     prayer,
-    financialSummary,
-    transactions,
     announcements,
     activities,
-    officials,
-    config,
   } = await getPublicHomeData();
 
   return (
@@ -42,23 +34,6 @@ export default async function Home() {
         <Hero profile={profile} prayer={prayer} />
       </div>
       <main className="flex flex-1 flex-col">
-        {/* Takmir: pengurus masjid dari data admin */}
-        <OfficialsSection officials={officials} />
-        {/* Keuangan: ringkasan + rincian — sesuai menu Navbar */}
-        <div
-          id="keuangan"
-          className="flex scroll-mt-20 flex-col border-t border-border/60 bg-background"
-        >
-          <FinancialSummaryCards
-            financialSummary={financialSummary}
-            latestRecorder={transactions[0]?.recordedBy}
-          />
-          {/* Rekening admin (/admin → Pengaturan → Rekening & Kas). */}
-          <div className="-mt-6 pb-2 md:-mt-8">
-            <DonationTransfer config={config} />
-          </div>
-          <TransactionTable transactions={transactions} />
-        </div>
         {/* Informasi */}
         <div id="informasi" className="flex scroll-mt-20 flex-col">
           <div className="border-y border-border/60 bg-muted/40">

@@ -241,17 +241,17 @@ export function Hero({
         <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 pb-12 pt-10 md:px-6 md:pb-16 lg:px-8 lg:pb-20 lg:pt-24">
           <div className="grid w-full gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
             <div className="max-w-2xl">
-              <p className="eyebrow-friendly max-w-full items-start rounded-2xl border border-primary/25 bg-primary/[0.07] text-primary lg:items-center lg:rounded-full">
+              <h1 className="font-display text-display-fluid font-semibold text-foreground">
+                {heading}
+              </h1>
+
+              <p className="eyebrow-friendly mt-5 max-w-full items-start rounded-2xl border border-primary/25 bg-primary/[0.07] text-primary lg:items-center lg:rounded-full">
                 <MapPin
                   className="mt-0.5 h-4 w-4 shrink-0 lg:mt-0"
                   aria-hidden="true"
                 />
                 <span>{mosqueProfile.address}</span>
               </p>
-
-              <h1 className="font-display text-display-fluid mt-6 font-semibold text-foreground">
-                {heading}
-              </h1>
 
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:leading-loose">
                 {mosqueProfile.description?.trim() ||
@@ -260,7 +260,7 @@ export function Hero({
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <a
-                  href="#keuangan"
+                  href="/keuangan"
                   className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-14px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
                 >
                   Lihat Transparansi Kas
