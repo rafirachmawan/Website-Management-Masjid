@@ -130,18 +130,18 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    /* Plus Jakarta Sans: fitur ramah baca — angka tabular konsisten,
-       bentuk huruf terbuka, rendering halus */
-    font-feature-settings: "cv05", "ss01";
+    /* Inter: fitur profesional — angka tabular konsisten,
+       bentuk huruf netral, rendering tegas */
+    font-feature-settings: "cv11", "ss01", "tnum";
     font-optical-sizing: auto;
     text-rendering: optimizeLegibility;
-    letter-spacing: -0.006em;
+    letter-spacing: -0.011em;
   }
-  /* Judul display: serif hangat, kontras lembut, tidak kaku */
+  /* Judul display: serif formal, tegas, dan berwibawa */
   h1.font-display, h2.font-display, h3.font-display,
   .font-display {
     font-optical-sizing: auto;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
     text-wrap: balance;
   }
   /* Arab: tinggi baris longgar agar harakat tidak bertumpuk */
@@ -201,9 +201,9 @@
     font-size: var(--fluid-h2);
     line-height: 1.12;
   }
-  /* Sapaan hangat di atas judul: kecil, ramah, tidak uppercase kaku */
+  /* Label kecil di atas judul: tegas, uppercase, formal */
   .eyebrow-friendly {
-    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold normal-case tracking-normal;
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold uppercase tracking-[0.08em];
   }
   /* Link hidup: garis bawah tumbuh saat hover — umpan balik sentuhan */
   .link-lively {

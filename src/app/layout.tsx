@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Plus_Jakarta_Sans, Fraunces, Amiri } from "next/font/google";
+import { Inter, Source_Serif_4, IBM_Plex_Mono, Amiri } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
-// Tubuh & UI: Plus Jakarta Sans — karya anak bangsa, bulat, ramah,
-// x-height besar sehingga nyaman dibaca jamaah segala usia.
-const jakartaSans = Plus_Jakarta_Sans({
+// Tubuh & UI: Inter — netral, formal, dan profesional. Standar antarmuka
+// institusional dengan keterbacaan tinggi di segala ukuran.
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin", "latin-ext"],
   display: "swap",
 });
 
-// Display / heading: Fraunces — serif hangat & ekspresif untuk kesan
-// teduh-islami tanpa kaku birokrasi. Dipakai khusus judul besar.
-const fraunces = Fraunces({
+// Display / heading: Source Serif 4 — serif formal dan berwibawa untuk kesan
+// institusional yang tepercaya. Dipakai khusus judul besar.
+const sourceSerif = Source_Serif_4({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],
   display: "swap",
@@ -29,9 +29,10 @@ const amiri = Amiri({
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const plexMono = IBM_Plex_Mono({
   variable: "--font-mono",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -99,7 +100,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${jakartaSans.variable} ${fraunces.variable} ${amiri.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${sourceSerif.variable} ${amiri.variable} ${plexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

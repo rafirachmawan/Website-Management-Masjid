@@ -12,7 +12,7 @@ import {
   SunHorizon,
   MapPin,
   Phone,
-  ArrowRight,
+  ArrowDown,
 } from "@phosphor-icons/react";
 
 const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -245,12 +245,15 @@ export function Hero({
                 {heading}
               </h1>
 
-              <p className="eyebrow-friendly mt-5 max-w-full items-start rounded-2xl border border-primary/25 bg-primary/[0.07] text-primary lg:items-center lg:rounded-full">
+              <p
+                title={mosqueProfile.address}
+                className="mt-5 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-primary/25 bg-primary/[0.07] px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-primary"
+              >
                 <MapPin
-                  className="mt-0.5 h-4 w-4 shrink-0 lg:mt-0"
+                  className="h-3.5 w-3.5 shrink-0"
                   aria-hidden="true"
                 />
-                <span>{mosqueProfile.address}</span>
+                <span className="truncate whitespace-nowrap">{mosqueProfile.address}</span>
               </p>
 
               <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:leading-loose">
@@ -260,18 +263,11 @@ export function Hero({
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <a
-                  href="/keuangan"
+                  href="#jadwal-sholat"
                   className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-14px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
                 >
-                  Lihat Transparansi Kas
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </a>
-                <a
-                  href="#jadwal-sholat"
-                  className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-all duration-200 hover:border-primary/40 hover:text-primary active:scale-[0.98]"
-                >
-                  <Clock className="h-4 w-4" aria-hidden="true" />
-                  Jadwal Sholat
+                  Gulir ke Bawah
+                  <ArrowDown className="h-4 w-4 animate-bounce" aria-hidden="true" />
                 </a>
               </div>
 
