@@ -228,16 +228,22 @@ function TransactionDetailDialog({
             />
           </div>
 
-          {/* Proof Image Placeholder */}
+          {/* Bukti transaksi — tautan terverifikasi, bisa dibuka */}
           {transaction.proofUrl && (
             <div className="rounded-xl border border-border/40 p-4">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Bukti Transaksi</p>
-              <div className="w-full h-32 bg-muted/40 rounded-lg flex items-center justify-center border border-dashed border-border">
-                <div className="text-center text-muted-foreground">
-                  <ImageIcon className="w-8 h-8 mx-auto mb-1.5 opacity-50" />
-                  <p className="text-xs">{transaction.proofUrl.split("/").pop()}</p>
-                </div>
-              </div>
+              <a
+                href={transaction.proofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/40 px-3 py-4 text-sm font-medium text-primary transition-colors hover:bg-muted/70 hover:underline"
+              >
+                <ImageIcon className="w-5 h-5 opacity-70" aria-hidden="true" />
+                <span className="max-w-55 truncate">
+                  {transaction.proofUrl.split("/").pop() || "Lihat bukti"}
+                </span>
+              </a>
+              <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{transaction.proofUrl}</p>
             </div>
           )}
         </div>
@@ -424,6 +430,20 @@ function RowActions({
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
 
+function getPageWindow(current: number, total: number): Array<number | "…"> {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const window = new Set<number>([1, 2, current - 1, current, current + 1, total - 1, total]);
+  const sorted = [...window].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  const out: Array<number | "…"> = [];
+  let prev = 0;
+  for (const p of sorted) {
+    if (p - prev > 1) out.push("…");
+    out.push(p);
+    prev = p;
+  }
+  return out;
+}
+
 function Pagination({
   currentPage,
   totalPages,
@@ -433,7 +453,7 @@ function Pagination({
   totalPages: number;
   onPageChange: (page: number) => void;
 }) {
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const pages = getPageWindow(currentPage, totalPages);
 
   return (
     <div className="flex items-center justify-between pt-4 border-t border-border/40">
@@ -448,29 +468,38 @@ function Pagination({
           className="h-8 w-8"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
+          aria-label="Halaman sebelumnya"
         >
           <CaretLeft className="w-4 h-4" />
         </Button>
-        {pages.map((page) => (
-          <Button
-            key={page}
-            variant={page === currentPage ? "default" : "outline"}
-            size="icon"
-            className={cn(
-              "h-8 w-8 text-xs",
-              page === currentPage && "pointer-events-none"
-            )}
-            onClick={() => onPageChange(page)}
-          >
-            {page}
-          </Button>
-        ))}
+        {pages.map((page, i) =>
+          page === "…" ? (
+            <span key={`e-${i}`} className="px-1 text-xs text-muted-foreground" aria-hidden="true">
+              …
+            </span>
+          ) : (
+            <Button
+              key={page}
+              variant={page === currentPage ? "default" : "outline"}
+              size="icon"
+              className={cn(
+                "h-8 w-8 text-xs",
+                page === currentPage && "pointer-events-none"
+              )}
+              onClick={() => onPageChange(page)}
+              aria-current={page === currentPage ? "page" : undefined}
+            >
+              {page}
+            </Button>
+          ),
+        )}
         <Button
           variant="outline"
           size="icon"
           className="h-8 w-8"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
+          aria-label="Halaman berikutnya"
         >
           <CaretRight className="w-4 h-4" />
         </Button>
@@ -561,12 +590,17 @@ export function TransactionsPage() {
     return result;
   }, [transactions, searchQuery, typeFilter, categoryFilter, sortField, sortDirection]);
 
-  // Pagination
+  // Pagination (dijepit agar filter/data menyusut tidak tampil kosong)
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // Reset page when filters change
   const handleFilterChange = () => {
@@ -586,8 +620,9 @@ export function TransactionsPage() {
     typeFilter !== "all" || categoryFilter !== "all" || searchQuery.trim() !== "";
 
   // Unduh data tersaring (sesuai filter & urutan tabel) sebagai CSV.
+  // Kolom ID + Bukti + Waktu input disertakan agar bisa diaudit ulang / re-impor.
   const handleExportCsv = () => {
-    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat"]);
+    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat", "Bukti", "ID"]);
     const lines = filteredTransactions.map((t) =>
       toCsvRow([
         t.date,
@@ -596,9 +631,11 @@ export function TransactionsPage() {
         t.description,
         t.amount,
         t.recordedBy,
+        t.proofUrl ?? "",
+        t.id,
       ]),
     );
-    downloadTextFile("transaksi-kas.csv", [header, ...lines].join("\n"));
+    downloadTextFile("transaksi-kas.csv", [header, ...lines].join("\r\n"));
   };
 
   const clearAllFilters = () => {
@@ -670,8 +707,8 @@ export function TransactionsPage() {
         }
       />
 
-      {/* ── Stats ────────────────────────────────────────────────────────── */}
-      <TransactionStats transactions={transactions} />
+      {/* ── Stats (mengikuti filter aktif agar konsisten dengan Export) ── */}
+      <TransactionStats transactions={filteredTransactions} />
 
       {/* ── Filters & Table ──────────────────────────────────────────────── */}
       <Card className="overflow-hidden">
@@ -847,7 +884,7 @@ export function TransactionsPage() {
                   <TableBody>
                     {paginatedTransactions.map((txn, index) => {
                       const rowNumber =
-                        (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                        (safePage - 1) * ITEMS_PER_PAGE + index + 1;
 
                       return (
                         <TableRow
@@ -953,7 +990,7 @@ export function TransactionsPage() {
               {/* Pagination */}
               <div className="px-5 pb-4">
                 <Pagination
-                  currentPage={currentPage}
+                  currentPage={safePage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
                 />

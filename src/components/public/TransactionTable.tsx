@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Transaction, PeriodFilter } from "@/types";
 import { formatCurrency, formatShortDate } from "@/lib/utils";
 import {
@@ -33,6 +33,30 @@ interface SortState {
 
 const ITEMS_PER_PAGE = 10;
 
+// Tanggal transaksi disimpan yyyy-MM-dd zona masjid — bandingkan sebagai string
+// agar tidak geser sehari karena `new Date("2026-10-01")` = midnight UTC.
+function jakartaParts(now = new Date()): { y: number; m: number; d: number; weekday: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const y = Number(get("year"));
+  const m = Number(get("month"));
+  const d = Number(get("day"));
+  // weekday short en: Sun..Sat — petakan ke 0..6 (Minggu=0, seperti perilaku lama).
+  const wd = get("weekday");
+  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return { y, m, d, weekday: map[wd] ?? new Date().getDay() };
+}
+
+function toKey(y: number, m: number, d: number): string {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 export function TransactionTable({ transactions }: { transactions: Transaction[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("monthly");
@@ -52,25 +76,29 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
       );
     }
 
+    // Batas periode dihitung dari tanggal Jakarta (string), deterministik 00:00.
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const { y, m, d, weekday } = jakartaParts(now);
+    const todayStr = toKey(y, m, d);
+    const monthPrefix = `${y}-${String(m).padStart(2, "0")}`;
+    const yearPrefix = `${y}`;
+    // Awal pekan (Minggu 00:00) sebagai string yyyy-MM-dd.
+    const weekStart = new Date(Date.UTC(y, m - 1, d));
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekday);
+    const weekStr = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, "0")}-${String(weekStart.getUTCDate()).padStart(2, "0")}`;
 
     switch (periodFilter) {
       case "daily":
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        result = result.filter((t) => new Date(t.date) >= today);
+        result = result.filter((t) => t.date >= todayStr);
         break;
       case "weekly":
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        result = result.filter((t) => new Date(t.date) >= startOfWeek);
+        result = result.filter((t) => t.date >= weekStr);
         break;
       case "monthly":
-        result = result.filter((t) => new Date(t.date) >= startOfMonth);
+        result = result.filter((t) => t.date.startsWith(monthPrefix));
         break;
       case "yearly":
-        result = result.filter((t) => new Date(t.date) >= startOfYear);
+        result = result.filter((t) => t.date.startsWith(yearPrefix));
         break;
     }
 
@@ -91,10 +119,16 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
   }, [transactions, searchQuery, periodFilter, sortState]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+  // Jepit halaman saat filter/data menyusut agar tidak tampil kosong (hal 5 → 1 hal).
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
   );
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const handleSort = (key: keyof Transaction) => {
     setSortState((prev) => ({
@@ -233,6 +267,16 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                     </TableCell>
                     <TableCell className="min-w-[260px] max-w-[380px] px-4 py-3 whitespace-normal">
                       <span className="line-clamp-2 text-sm leading-relaxed text-foreground break-words">{transaction.description}</span>
+                      {transaction.proofUrl && (
+                        <a
+                          href={transaction.proofUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          Lihat bukti
+                        </a>
+                      )}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-right font-bold whitespace-nowrap tabular-nums">
                       {transaction.type === "income" ? (
@@ -265,10 +309,10 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
           </Table>
           </div>
 
-          {(currentPage > 1 || currentPage < totalPages) && (
+          {(safePage > 1 || safePage < totalPages) && (
             <div className="flex flex-col gap-3 border-t border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-[13px] text-muted-foreground tabular-nums">
-                Menampilkan {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)} dari {filteredTransactions.length} transaksi
+                Menampilkan {filteredTransactions.length === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(safePage * ITEMS_PER_PAGE, filteredTransactions.length)} dari {filteredTransactions.length} transaksi
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -276,20 +320,20 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
                   size="sm"
                   className="rounded-full"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
+                  disabled={safePage === 1}
                   aria-label="Halaman sebelumnya"
                 >
                   <CaretLeft className="w-4 h-4" />
                 </Button>
                 <span className="px-3 text-sm font-medium tabular-nums">
-                  {currentPage} / {totalPages}
+                  {safePage} / {totalPages}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   className="rounded-full"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  disabled={safePage === totalPages}
                   aria-label="Halaman selanjutnya"
                 >
                   <CaretRight className="w-4 h-4" />

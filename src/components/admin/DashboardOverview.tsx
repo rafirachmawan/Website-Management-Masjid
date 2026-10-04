@@ -10,6 +10,8 @@ import type {
   Transaction,
   ChartDataPoint,
   Announcement,
+  Activity,
+  AppConfig,
 } from "@/types";
 import {
   Card,
@@ -142,6 +144,17 @@ function StatCard({
 }
 
 function MiniChart({ data }: { data: ChartDataPoint[] }) {
+  const hasData = data.some((d) => d.income > 0 || d.expense > 0);
+  if (!hasData) {
+    return (
+      <div className="flex h-57.5 flex-col items-center justify-center gap-1 text-center">
+        <p className="text-sm font-semibold text-foreground">Belum ada arus kas 6 bulan terakhir</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          Catat transaksi pertama lewat tombol Transaksi Baru agar tren tampil di sini.
+        </p>
+      </div>
+    );
+  }
   return (
     <ResponsiveContainer width="100%" height={230}>
       <AreaChart data={data.slice(-6)} margin={{ top: 12, right: 24, left: -5, bottom: 4 }}>
@@ -215,6 +228,14 @@ function RecentTransactions({ items }: { items: Transaction[] }) {
         </Link>
       </CardHeader>
       <CardContent className="p-5 pt-0">
+        {recentTxns.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-1 py-10 text-center">
+            <p className="text-sm font-semibold text-foreground">Belum ada transaksi</p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Mulai dengan Catat Kas Masuk / Kas Keluar — tabel ini akan terisi otomatis.
+            </p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableCaption className="sr-only">5 transaksi terakhir</TableCaption>
@@ -258,6 +279,7 @@ function RecentTransactions({ items }: { items: Transaction[] }) {
             </TableBody>
           </Table>
         </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -345,7 +367,15 @@ function UpcomingAnnouncements({ items }: { items: Announcement[] }) {
         </Link>
       </CardHeader>
       <CardContent className="p-5 pt-0 space-y-2.5">
-        {items.slice(0, 3).map((ann) => (
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-1 py-8 text-center">
+            <p className="text-sm font-semibold text-foreground">Belum ada berita</p>
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Tambah pengumuman pertama agar jamaah melihat info terkini di beranda.
+            </p>
+          </div>
+        ) : (
+        items.slice(0, 3).map((ann) => (
           <div
             key={ann.id}
             className="flex items-start gap-3 p-3 rounded-xl border border-border/70 hover:bg-muted/40 transition-colors"
@@ -365,10 +395,16 @@ function UpcomingAnnouncements({ items }: { items: Announcement[] }) {
               <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">{ann.content}</p>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </CardContent>
     </Card>
   );
+}
+
+function pctChange(current: number, prev: number): number | undefined {
+  if (prev <= 0) return current > 0 ? 100 : undefined;
+  return Math.round(((current - prev) / prev) * 100);
 }
 
 export function DashboardOverview() {
@@ -377,8 +413,11 @@ export function DashboardOverview() {
   const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
   const { data: chartData } = useApi<ChartDataPoint[]>("/api/chart");
   const { data: announcements } = useApi<Announcement[]>("/api/announcements");
+  const { data: activities } = useApi<Activity[]>("/api/activities");
+  const { data: appConfig } = useApi<AppConfig>("/api/config");
 
-  if (!mosqueProfile || !financialSummary || !fetchedTransactions || !chartData || !announcements) {
+  // Header butuh profil; sisanya progresif agar satu API lambat tidak blokir semua.
+  if (!mosqueProfile) {
     return (
       <div className="space-y-6" aria-label="Memuat dashboard">
         <DataSkeleton lines={2} className="max-w-md" />
@@ -387,8 +426,39 @@ export function DashboardOverview() {
     );
   }
 
-  const transactions = fetchedTransactions;
-  const { currentBalance, monthlyIncome, monthlyExpense } = financialSummary;
+  const transactions = fetchedTransactions ?? [];
+  const txnsLoading = !fetchedTransactions;
+  const { currentBalance, monthlyIncome, monthlyExpense } = financialSummary ?? {
+    currentBalance: 0,
+    monthlyIncome: 0,
+    monthlyExpense: 0,
+    yearlyIncome: 0,
+    yearlyExpense: 0,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  // Tren MoM dari prefix yyyy-MM zona Jakarta (tanpa new Date agar imun TZ).
+  const jakartaMonth = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+  const [cy, cm] = jakartaMonth.split("-").map(Number);
+  const prevM = cm === 1 ? 12 : cm - 1;
+  const prevY = cm === 1 ? cy - 1 : cy;
+  const prevPrefix = `${prevY}-${String(prevM).padStart(2, "0")}`;
+  const prevIncome = transactions
+    .filter((t) => t.date.startsWith(prevPrefix) && t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
+  const prevExpense = transactions
+    .filter((t) => t.date.startsWith(prevPrefix) && t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const incomeTrend = financialSummary ? pctChange(monthlyIncome, prevIncome) : undefined;
+  const expenseTrend = financialSummary ? pctChange(monthlyExpense, prevExpense) : undefined;
+
+  const minAlert = appConfig?.minBalanceAlert ?? 0;
+  const lowBalance = financialSummary != null && minAlert > 0 && currentBalance < minAlert;
+  const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-6">
@@ -416,12 +486,40 @@ export function DashboardOverview() {
         }
       />
 
+      {/* Peringatan saldo minimum (config minBalanceAlert akhirnya dipakai) */}
+      {lowBalance && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 p-4 text-sm dark:border-amber-800/50 dark:bg-amber-950/40"
+        >
+          <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+            <Coins className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              Saldo kas di bawah batas minimum ({formatCurrency(minAlert)})
+            </p>
+            <p className="mt-0.5 text-amber-800/90 dark:text-amber-300/90">
+              Saldo saat ini {formatCurrency(currentBalance)}. Tinjau pengeluaran atau dorong
+              pemasukan bulan berjalan.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats Grid */}
+      {!financialSummary ? (
+        <DataSkeleton lines={2} />
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Saldo Kas"
           value={formatCurrency(currentBalance)}
-          description={`Diperbarui ${formatDate(new Date().toISOString(), { day: "numeric", month: "short", year: "numeric" })}`}
+          description={
+            financialSummary.lastUpdated
+              ? `Diperbarui ${formatDate(financialSummary.lastUpdated, { day: "numeric", month: "short", year: "numeric" })}`
+              : monthLabel
+          }
           icon={Coins}
           iconBgClass="bg-primary/10 text-primary"
           valueColorClass="text-foreground"
@@ -429,16 +527,20 @@ export function DashboardOverview() {
         <StatCard
           title="Pemasukan Bulan Ini"
           value={formatCurrency(monthlyIncome)}
-          description={new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+          description={monthLabel}
           icon={TrendUp}
+          trend={incomeTrend}
+          trendLabel="vs bln lalu"
           iconBgClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
           valueColorClass="text-emerald-600 dark:text-emerald-400"
         />
         <StatCard
           title="Pengeluaran Bulan Ini"
           value={formatCurrency(monthlyExpense)}
-          description={new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+          description={monthLabel}
           icon={TrendDown}
+          trend={expenseTrend}
+          trendLabel="vs bln lalu"
           iconBgClass="bg-rose-500/10 text-rose-600 dark:text-rose-400"
           valueColorClass="text-rose-600 dark:text-rose-400"
         />
@@ -450,6 +552,27 @@ export function DashboardOverview() {
           iconBgClass="bg-teal-500/10 text-teal-600 dark:text-teal-400"
           valueColorClass="text-teal-600 dark:text-teal-400"
         />
+      </div>
+      )}
+
+      {/* Kesehatan konten — total berita/kegiatan/transaksi agar tak hanya kas */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {[
+          { label: "Berita aktif", value: announcements?.length, href: "/admin/announcements", ready: announcements !== undefined },
+          { label: "Kegiatan terjadwal", value: (activities ?? []).length, href: "/admin/activities", ready: activities !== undefined },
+          { label: "Total transaksi", value: transactions.length, href: "/admin/transactions", ready: !txnsLoading },
+        ].map((c) => (
+          <Link
+            key={c.label}
+            href={c.href}
+            className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
+          >
+            <span className="text-sm text-muted-foreground">{c.label}</span>
+            <span className="text-lg font-bold tabular-nums text-foreground">
+              {c.ready ? c.value : "…"}
+            </span>
+          </Link>
+        ))}
       </div>
 
       {/* Main Content Grid */}
@@ -474,18 +597,18 @@ export function DashboardOverview() {
               </div>
             </CardHeader>
             <CardContent className="p-5 pt-3">
-              <MiniChart data={chartData} />
+              {!chartData ? <DataSkeleton lines={4} /> : <MiniChart data={chartData} />}
             </CardContent>
           </Card>
 
           {/* Recent Transactions */}
-          <RecentTransactions items={transactions} />
+          {txnsLoading ? <DataSkeleton lines={4} /> : <RecentTransactions items={transactions} />}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           <QuickActions />
-          <UpcomingAnnouncements items={announcements} />
+          {!announcements ? <DataSkeleton lines={3} /> : <UpcomingAnnouncements items={announcements} />}
         </div>
       </div>
     </div>

@@ -40,8 +40,11 @@ export async function getOfficialById(id: string): Promise<Official | null> {
 }
 
 async function ensureEmailFree(email: string, exceptId?: string): Promise<void> {
-  const clash = await db.official.findUnique({ where: { email } });
-  if (clash && clash.id !== exceptId) {
+  const normalized = email.trim().toLowerCase();
+  // Unik case-insensitive: SQLite findUnique case-sensitive, jadi cek manual.
+  const rows = await db.official.findMany({ select: { id: true, email: true } });
+  const clash = rows.find((r) => r.email.trim().toLowerCase() === normalized && r.id !== exceptId);
+  if (clash) {
     throw new BadRequestError(`Email ${email} sudah dipakai pengurus lain.`);
   }
 }

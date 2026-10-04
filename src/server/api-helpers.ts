@@ -26,6 +26,22 @@ export function fail(error: unknown): NextResponse {
   if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") {
     return NextResponse.json({ error: "Data tidak ditemukan." }, { status: 404 });
   }
+  if (typeof error === "object" && error !== null && "code" in error && error.code === "P2003") {
+    return NextResponse.json(
+      { error: "Data masih dipakai di tempat lain — hapus atau pindahkan dulu sebelum menghapus." },
+      { status: 400 },
+    );
+  }
+  if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+    return NextResponse.json(
+      { error: "Data duplikat — nilai unik sudah dipakai data lain." },
+      { status: 400 },
+    );
+  }
+  // Jangan bocorkan pesan driver/Prisma mentah ke klien.
+  if (error instanceof Error && /prisma|Unique constraint|Foreign key/i.test(error.message)) {
+    return NextResponse.json({ error: "Operasi database gagal. Periksa kembali data yang dikirim." }, { status: 500 });
+  }
   const message = error instanceof Error ? error.message : "Terjadi kesalahan server.";
   return NextResponse.json({ error: message }, { status: 500 });
 }

@@ -3,7 +3,7 @@
 
 import { db } from "../db";
 import type { MosqueProfile } from "@/types";
-import type { MosqueProfileInput } from "../schemas";
+import type { MosqueProfileInput, MosqueProfileUpdate } from "../schemas";
 
 function toProfile(row: {
   name: string;
@@ -54,8 +54,8 @@ export async function updateMosqueProfile(input: MosqueProfileInput): Promise<Mo
     timezone: input.timezone,
     establishedYear: input.establishedYear,
     description: input.description,
-    logoUrl: input.logoUrl || null,
-    coverImageUrl: input.coverImageUrl || null,
+    logoUrl: input.logoUrl?.trim() ? input.logoUrl.trim() : null,
+    coverImageUrl: input.coverImageUrl?.trim() ? input.coverImageUrl.trim() : null,
     heroImages: input.heroImages,
   };
   const row = await db.mosqueProfile.upsert({
@@ -63,5 +63,31 @@ export async function updateMosqueProfile(input: MosqueProfileInput): Promise<Mo
     create: { id: "main", ...data },
     update: data,
   });
+  return toProfile(row);
+}
+
+// PATCH parsial — hanya field yang dikirim yang diubah. Aman bila profil belum ada:
+// field wajib yang hilang diisi dari baris existing, atau ditolak bila belum ada sama sekali.
+export async function patchMosqueProfile(input: MosqueProfileUpdate): Promise<MosqueProfile> {
+  const existing = await db.mosqueProfile.findUnique({ where: { id: "main" } });
+  if (!existing) {
+    throw new Error("Profil masjid belum ada — kirim profil lengkap terlebih dahulu (PUT).");
+  }
+  const data: Record<string, unknown> = {};
+  if (input.name !== undefined) data.name = input.name;
+  if (input.shortName !== undefined) data.shortName = input.shortName;
+  if (input.address !== undefined) data.address = input.address;
+  if (input.phone !== undefined) data.phone = input.phone;
+  if (input.email !== undefined) data.email = input.email;
+  if (input.latitude !== undefined) data.latitude = input.latitude;
+  if (input.longitude !== undefined) data.longitude = input.longitude;
+  if (input.timezone !== undefined) data.timezone = input.timezone;
+  if (input.establishedYear !== undefined) data.establishedYear = input.establishedYear;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl?.trim() ? input.logoUrl.trim() : null;
+  if (input.coverImageUrl !== undefined)
+    data.coverImageUrl = input.coverImageUrl?.trim() ? input.coverImageUrl.trim() : null;
+  if (input.heroImages !== undefined) data.heroImages = input.heroImages;
+  const row = await db.mosqueProfile.update({ where: { id: "main" }, data });
   return toProfile(row);
 }

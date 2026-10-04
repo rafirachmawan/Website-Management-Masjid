@@ -49,7 +49,19 @@ export default async function KeuanganPage() {
           <div className="-mt-6 pb-2 md:-mt-8">
             <DonationTransfer config={config} />
           </div>
-          <TransactionTable transactions={transactions} />
+          {config.publicTransparency ? (
+            <TransactionTable transactions={transactions} />
+          ) : (
+            <div className="container mx-auto px-4 pb-16 md:px-6 lg:px-8">
+              <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+                <p className="font-semibold text-foreground">Rincian transaksi disembunyikan pengurus</p>
+                <p className="mx-auto mt-1 max-w-[60ch] text-sm text-muted-foreground">
+                  Pengurus menonaktifkan transparansi publik untuk sementara. Ringkasan di atas
+                  tetap tampil; rincian per transaksi hanya tersedia internal.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 

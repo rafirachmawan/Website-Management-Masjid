@@ -69,9 +69,52 @@ async function assertImportantSlotFree(exceptId?: string): Promise<void> {
   }
 }
 
+export interface ContentListParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+}
+
+function parsePageLimit(params: ContentListParams): { page: number; limit: number } | null {
+  if (params.page === undefined && params.limit === undefined && params.q === undefined) return null;
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const limit = Math.min(100, Math.max(1, Math.floor(params.limit ?? 20)));
+  return { page, limit };
+}
+
 export async function getAnnouncements(): Promise<Announcement[]> {
   const rows = await db.announcement.findMany({ orderBy: { publishedAt: "desc" } });
   return rows.map(toAnnouncement);
+}
+
+export async function getAnnouncementsPaged(params: ContentListParams): Promise<{
+  data: Announcement[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const parsed = parsePageLimit(params) ?? { page: 1, limit: 20 };
+  const q = params.q?.trim();
+  const where = q
+    ? { OR: [{ title: { contains: q } }, { content: { contains: q } }, { author: { contains: q } }] }
+    : {};
+  const [total, rows] = await Promise.all([
+    db.announcement.count({ where: where as never }),
+    db.announcement.findMany({
+      where: where as never,
+      orderBy: { publishedAt: "desc" },
+      skip: (parsed.page - 1) * parsed.limit,
+      take: parsed.limit,
+    }),
+  ]);
+  return {
+    data: rows.map(toAnnouncement),
+    total,
+    page: parsed.page,
+    limit: parsed.limit,
+    totalPages: Math.max(1, Math.ceil(total / parsed.limit)),
+  };
 }
 
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {
@@ -81,14 +124,18 @@ export async function getAnnouncementById(id: string): Promise<Announcement | nu
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<Announcement> {
   if (input.priority === "important") await assertImportantSlotFree();
+  const publishedAt = input.publishedAt ? new Date(input.publishedAt) : new Date();
+  if (Number.isNaN(publishedAt.getTime())) {
+    throw new BadRequestError("Tanggal terbit tidak valid.");
+  }
   const row = await db.announcement.create({
     data: {
       title: input.title,
       content: input.content,
-      imageUrl: input.imageUrl || null,
+      imageUrl: input.imageUrl?.trim() ? input.imageUrl.trim() : null,
       priority: input.priority,
       author: input.author,
-      publishedAt: input.publishedAt ? new Date(input.publishedAt) : new Date(),
+      publishedAt,
     },
   });
   return toAnnouncement(row);
@@ -103,6 +150,14 @@ export async function updateAnnouncement(
 
   if (input.priority === "important") await assertImportantSlotFree(id);
 
+  let publishedAt: Date | undefined;
+  if (input.publishedAt !== undefined) {
+    publishedAt = new Date(input.publishedAt);
+    if (Number.isNaN(publishedAt.getTime())) {
+      throw new BadRequestError("Tanggal terbit tidak valid.");
+    }
+  }
+
   const row = await db.announcement.update({
     where: { id },
     data: {
@@ -110,8 +165,8 @@ export async function updateAnnouncement(
       ...(input.content !== undefined && { content: input.content }),
       ...(input.priority !== undefined && { priority: input.priority }),
       ...(input.author !== undefined && { author: input.author }),
-      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl || null }),
-      ...(input.publishedAt !== undefined && { publishedAt: new Date(input.publishedAt) }),
+      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl?.trim() ? input.imageUrl.trim() : null }),
+      ...(publishedAt !== undefined && { publishedAt }),
     },
   });
   return toAnnouncement(row);
@@ -128,6 +183,43 @@ export async function getActivities(): Promise<Activity[]> {
   return rows.map(toActivity);
 }
 
+export async function getActivitiesPaged(params: ContentListParams): Promise<{
+  data: Activity[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const parsed = parsePageLimit(params) ?? { page: 1, limit: 20 };
+  const q = params.q?.trim();
+  const where = q
+    ? {
+        OR: [
+          { title: { contains: q } },
+          { description: { contains: q } },
+          { location: { contains: q } },
+          { organizer: { contains: q } },
+        ],
+      }
+    : {};
+  const [total, rows] = await Promise.all([
+    db.activity.count({ where: where as never }),
+    db.activity.findMany({
+      where: where as never,
+      orderBy: { date: "asc" },
+      skip: (parsed.page - 1) * parsed.limit,
+      take: parsed.limit,
+    }),
+  ]);
+  return {
+    data: rows.map(toActivity),
+    total,
+    page: parsed.page,
+    limit: parsed.limit,
+    totalPages: Math.max(1, Math.ceil(total / parsed.limit)),
+  };
+}
+
 export async function getActivityById(id: string): Promise<Activity | null> {
   const row = await db.activity.findUnique({ where: { id } });
   return row ? toActivity(row) : null;
@@ -142,7 +234,7 @@ export async function createActivity(input: ActivityInput): Promise<Activity> {
       time: input.time,
       location: input.location,
       organizer: input.organizer,
-      imageUrl: input.imageUrl || null,
+      imageUrl: input.imageUrl?.trim() ? input.imageUrl.trim() : null,
     },
   });
   return toActivity(row);
@@ -161,7 +253,7 @@ export async function updateActivity(id: string, input: Partial<ActivityInput>):
       ...(input.time !== undefined && { time: input.time }),
       ...(input.location !== undefined && { location: input.location }),
       ...(input.organizer !== undefined && { organizer: input.organizer }),
-      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl || null }),
+      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl?.trim() ? input.imageUrl.trim() : null }),
     },
   });
   return toActivity(row);

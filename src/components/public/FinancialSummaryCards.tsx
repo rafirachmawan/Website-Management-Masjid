@@ -98,7 +98,8 @@ export function FinancialSummaryCards({
     financialSummary;
   const surplus = monthlyIncome - monthlyExpense;
   const totalFlow = monthlyIncome + monthlyExpense;
-  const incomeShare = totalFlow > 0 ? Math.round((monthlyIncome / totalFlow) * 100) : 0;
+  const hasFlow = totalFlow > 0;
+  const incomeShare = hasFlow ? Math.round((monthlyIncome / totalFlow) * 100) : 0;
   const yearlySurplus = yearlyIncome - yearlyExpense;
   const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long" });
   const isSurplus = surplus >= 0;
@@ -173,17 +174,27 @@ export function FinancialSummaryCards({
               <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground">
                 <span>Komposisi {monthLabel}</span>
                 <span className="tabular-nums">
-                  {incomeShare}% pemasukan
+                  {hasFlow ? `${incomeShare}% pemasukan` : "Belum ada arus bulan ini"}
                 </span>
               </div>
-              <div
-                className="mt-2.5 flex h-2 w-full overflow-hidden rounded-full bg-muted"
-                role="img"
-                aria-label={`Pemasukan ${incomeShare} persen, pengeluaran ${100 - incomeShare} persen`}
-              >
-                <div className="h-full bg-primary" style={{ width: `${incomeShare}%` }} />
-                <div className="h-full bg-destructive" style={{ width: `${100 - incomeShare}%` }} />
-              </div>
+              {hasFlow ? (
+                <div
+                  className="mt-2.5 flex h-2 w-full overflow-hidden rounded-full bg-muted"
+                  role="img"
+                  aria-label={`Pemasukan ${incomeShare} persen, pengeluaran ${100 - incomeShare} persen`}
+                >
+                  <div className="h-full bg-primary" style={{ width: `${incomeShare}%` }} />
+                  <div className="h-full bg-destructive" style={{ width: `${100 - incomeShare}%` }} />
+                </div>
+              ) : (
+                <div
+                  className="mt-2.5 flex h-2 w-full items-center justify-center overflow-hidden rounded-full bg-muted"
+                  role="img"
+                  aria-label="Belum ada pemasukan maupun pengeluaran bulan ini"
+                >
+                  <span className="text-[10px] font-medium text-muted-foreground">—</span>
+                </div>
+              )}
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Pemasukan</p>

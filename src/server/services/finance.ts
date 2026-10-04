@@ -41,6 +41,7 @@ function toTransaction(t: {
   recordedBy: string;
   createdAt: Date;
 }): Transaction {
+  const proof = typeof t.proofUrl === "string" ? t.proofUrl.trim() : "";
   return {
     id: t.id,
     date: t.date,
@@ -49,10 +50,16 @@ function toTransaction(t: {
     categoryId: t.categoryId,
     amount: t.amount,
     description: t.description,
-    proofUrl: t.proofUrl ?? undefined,
+    proofUrl: proof ? proof : undefined,
     recordedBy: t.recordedBy,
     createdAt: t.createdAt.toISOString(),
   };
+}
+
+function normalizeProofUrl(v: string | undefined): string | null {
+  if (v === undefined) return null;
+  const trimmed = v.trim();
+  return trimmed ? trimmed : null;
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -67,14 +74,16 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function createCategory(input: CategoryInput): Promise<Category> {
-  const clash = await db.category.findFirst({
-    where: { name: { equals: input.name.trim() }, type: input.type },
-  });
-  if (clash) throw new BadRequestError(`Kategori "${input.name.trim()}" sudah ada.`);
+  const name = input.name.trim();
+  // SQLite `equals` case-sensitive — bandingkan lower agar "Infak" vs "infak" ketahuan.
+  const siblings = await db.category.findMany({ where: { type: input.type }, select: { name: true } });
+  if (siblings.some((c) => c.name.trim().toLowerCase() === name.toLowerCase())) {
+    throw new BadRequestError(`Kategori "${name}" sudah ada.`);
+  }
   const row = await db.category.create({
     data: {
       id: `cat-${randomUUID().slice(0, 8)}`,
-      name: input.name.trim(),
+      name,
       type: input.type,
       icon: input.icon || null,
       color: input.color || null,
@@ -107,10 +116,13 @@ export async function updateCategory(id: string, input: Partial<CategoryInput>):
     }
   }
 
-  const clash = await db.category.findFirst({
-    where: { name: { equals: name }, type, NOT: { id } },
+  const siblings = await db.category.findMany({
+    where: { type, NOT: { id } },
+    select: { name: true },
   });
-  if (clash) throw new BadRequestError(`Kategori "${name}" sudah ada.`);
+  if (siblings.some((c) => c.name.trim().toLowerCase() === name.trim().toLowerCase())) {
+    throw new BadRequestError(`Kategori "${name}" sudah ada.`);
+  }
 
   const row = await db.category.update({
     where: { id },
@@ -148,9 +160,67 @@ export async function deleteCategory(id: string): Promise<void> {
   await db.category.delete({ where: { id } });
 }
 
+export interface TransactionListParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+  type?: "income" | "expense";
+  categoryId?: string;
+  from?: string; // yyyy-MM-dd
+  to?: string; // yyyy-MM-dd
+}
+
 export async function getTransactions(): Promise<Transaction[]> {
   const rows = await db.transaction.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
   return rows.map(toTransaction);
+}
+
+// Server-side pagination + filter agar tabel besar tidak mengunduh full-table.
+// Dipakai bila query ?page&limit ada; tanpa param tetap kembalikan semua (kompatibel lama).
+export async function getTransactionsPaged(params: TransactionListParams): Promise<{
+  data: Transaction[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const limit = Math.min(100, Math.max(1, Math.floor(params.limit ?? 20)));
+  const where: Record<string, unknown> = {};
+  if (params.type === "income" || params.type === "expense") where.type = params.type;
+  if (params.categoryId) where.categoryId = params.categoryId;
+  if (params.from || params.to) {
+    const date: Record<string, string> = {};
+    if (params.from) date.gte = params.from;
+    if (params.to) date.lte = params.to;
+    where.date = date;
+  }
+  if (params.q) {
+    const q = params.q.trim();
+    if (q) {
+      where.OR = [
+        { description: { contains: q } },
+        { category: { contains: q } },
+        { recordedBy: { contains: q } },
+      ];
+    }
+  }
+  const [total, rows] = await Promise.all([
+    db.transaction.count({ where: where as never }),
+    db.transaction.findMany({
+      where: where as never,
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+  ]);
+  return {
+    data: rows.map(toTransaction),
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
 }
 
 export async function getTransactionById(id: string): Promise<Transaction | null> {
@@ -168,6 +238,7 @@ export async function createTransaction(input: TransactionInput): Promise<Transa
         : `Kategori "${category.name}" hanya untuk pengeluaran, bukan pemasukan.`,
     );
   }
+  const proof = normalizeProofUrl(input.proofUrl);
   const row = await db.transaction.create({
     data: {
       date: input.date,
@@ -175,34 +246,50 @@ export async function createTransaction(input: TransactionInput): Promise<Transa
       category: category.name,
       categoryId: category.id,
       amount: input.amount,
-      description: input.description,
-      proofUrl: input.proofUrl,
-      recordedBy: input.recordedBy,
+      description: input.description.trim(),
+      proofUrl: proof,
+      recordedBy: input.recordedBy.trim(),
     },
   });
   return toTransaction(row);
 }
 
 export async function updateTransaction(id: string, input: TransactionUpdate): Promise<Transaction> {
-  const patch: Record<string, unknown> = { ...input };
-  delete patch.categoryId;
-  delete patch.category;
+  if (Object.keys(input).length === 0) {
+    throw new BadRequestError("Tidak ada perubahan — kirim minimal satu field yang diubah.");
+  }
+  const existing = await db.transaction.findUnique({ where: { id } });
+  if (!existing) throw new BadRequestError("Transaksi yang akan diubah tidak ditemukan.");
 
-  if (input.categoryId) {
-    const existing = await db.transaction.findUniqueOrThrow({ where: { id } });
-    const category = await db.category.findUnique({ where: { id: input.categoryId } });
-    if (!category) throw new BadRequestError("Kategori yang dipilih tidak ditemukan.");
-    const type = input.type ?? existing.type;
-    if (category.type !== type) {
-      throw new BadRequestError(
-        category.type === "income"
-          ? `Kategori "${category.name}" hanya untuk pemasukan, bukan pengeluaran.`
-          : `Kategori "${category.name}" hanya untuk pengeluaran, bukan pemasukan.`,
-      );
-    }
+  // Tentukan tipe & kategori akhir, lalu validasi silang SELALU
+  // (menutup celah PUT {type} tanpa categoryId yang dulu desinkron).
+  const nextType = input.type ?? (existing.type as "income" | "expense");
+  const nextCategoryId = input.categoryId ?? existing.categoryId;
+  const category = await db.category.findUnique({ where: { id: nextCategoryId } });
+  if (!category) throw new BadRequestError("Kategori yang dipilih tidak ditemukan.");
+  if (category.type !== nextType) {
+    throw new BadRequestError(
+      category.type === "income"
+        ? `Kategori "${category.name}" hanya untuk pemasukan, bukan pengeluaran.`
+        : `Kategori "${category.name}" hanya untuk pengeluaran, bukan pemasukan.`,
+    );
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (input.date !== undefined) patch.date = input.date;
+  if (input.type !== undefined) patch.type = input.type;
+  if (input.categoryId !== undefined) {
     patch.categoryId = category.id;
     patch.category = category.name;
+  } else if (input.type !== undefined) {
+    // Tipe berubah tapi kategori sama tidak mungkin lolos validasi di atas
+    // kecuali kategori memang cocok — sinkronkan label untuk keamanan.
+    patch.category = category.name;
   }
+  if (input.amount !== undefined) patch.amount = input.amount;
+  if (input.description !== undefined) patch.description = input.description.trim();
+  if (input.recordedBy !== undefined) patch.recordedBy = input.recordedBy.trim();
+  if (input.proofUrl !== undefined) patch.proofUrl = normalizeProofUrl(input.proofUrl);
 
   const row = await db.transaction.update({ where: { id }, data: patch });
   return toTransaction(row);
@@ -213,7 +300,10 @@ export async function deleteTransaction(id: string): Promise<void> {
 }
 
 export async function getFinancialSummary(now = new Date()): Promise<FinancialSummary> {
-  const rows = await db.transaction.findMany({ select: { date: true, type: true, amount: true } });
+  const [rows, latest] = await Promise.all([
+    db.transaction.findMany({ select: { date: true, type: true, amount: true } }),
+    db.transaction.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+  ]);
   const monthKey = jakartaMonthKey(now);
   const yearKey = monthKey.slice(0, 4);
 
@@ -242,11 +332,39 @@ export async function getFinancialSummary(now = new Date()): Promise<FinancialSu
     monthlyExpense,
     yearlyIncome,
     yearlyExpense,
-    lastUpdated: now.toISOString(),
+    // Freshness data = waktu catat terakhir, bukan waktu request.
+    lastUpdated: (latest?.createdAt ?? now).toISOString(),
   };
 }
 
-export async function getChartData(): Promise<ChartDataPoint[]> {
+function isValidMonthKey(key: string): boolean {
+  const m = /^(\d{4})-(\d{2})$/.exec(key);
+  if (!m) return false;
+  const month = Number(m[2]);
+  return month >= 1 && month <= 12;
+}
+
+function lastNMonthKeys(n: number, now = new Date(), timeZone = "Asia/Jakarta"): string[] {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(now);
+  let y = Number(parts.find((p) => p.type === "year")?.value);
+  let m = Number(parts.find((p) => p.type === "month")?.value);
+  const keys: string[] = [];
+  for (let i = 0; i < n; i++) {
+    keys.push(`${y}-${String(m).padStart(2, "0")}`);
+    m -= 1;
+    if (m === 0) {
+      m = 12;
+      y -= 1;
+    }
+  }
+  return keys.reverse();
+}
+
+export async function getChartData(months = 12, now = new Date()): Promise<ChartDataPoint[]> {
   const rows = await db.transaction.findMany({
     orderBy: { date: "asc" },
     select: { date: true, type: true, amount: true },
@@ -255,21 +373,22 @@ export async function getChartData(): Promise<ChartDataPoint[]> {
   const byMonth = new Map<string, { income: number; expense: number }>();
   for (const t of rows) {
     const key = t.date.slice(0, 7); // yyyy-MM
+    if (!isValidMonthKey(key)) continue; // lewati data kotor warisan, jangan crash
     const bucket = byMonth.get(key) ?? { income: 0, expense: 0 };
     if (t.type === "income") bucket.income += t.amount;
     else bucket.expense += t.amount;
     byMonth.set(key, bucket);
   }
 
-  return [...byMonth.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([key, v]) => {
-      const [y, m] = key.split("-").map(Number);
-      return {
-        period: `${ID_MONTHS[m - 1]} ${y}`,
-        income: v.income,
-        expense: v.expense,
-        balance: v.income - v.expense,
-      };
-    });
+  // Zero-fill 12 bulan terakhir agar garis tidak menyesatkan (sparse → penuh).
+  return lastNMonthKeys(months, now).map((key) => {
+    const v = byMonth.get(key) ?? { income: 0, expense: 0 };
+    const [y, m] = key.split("-").map(Number);
+    return {
+      period: `${ID_MONTHS[m - 1]} ${y}`,
+      income: v.income,
+      expense: v.expense,
+      balance: v.income - v.expense,
+    };
+  });
 }

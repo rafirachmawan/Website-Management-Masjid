@@ -25,7 +25,13 @@ import type { Category, Transaction } from "@/types";
 type TxnType = "income" | "expense";
 
 function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
+  // Tanggal zona masjid (WIB), bukan UTC — cegah off-by-one jam 00:00–07:00.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 // Nominal diketik sebagai angka polos, ditampilkan dengan pemisah ribuan
@@ -277,8 +283,9 @@ export function TransactionFormDialog({
               </label>
               <input
                 id="txn-proof"
-                type="text"
-                placeholder="https://…"
+                type="url"
+                inputMode="url"
+                placeholder="https://… atau /uploads/…"
                 value={proofUrl}
                 onChange={(e) => setProofUrl(e.target.value)}
                 className={inputClass}

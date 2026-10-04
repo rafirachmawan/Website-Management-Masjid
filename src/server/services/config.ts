@@ -50,8 +50,11 @@ export async function updateAppConfig(input: AppConfigInput): Promise<AppConfig>
   if (input.showDonationQRIS !== undefined)
     entries.push(["showDonationQRIS", String(input.showDonationQRIS)]);
 
-  for (const [key, value] of entries) {
-    await db.config.upsert({ where: { key }, create: { key, value }, update: { value } });
-  }
+  // Tulis atomik agar gagal tengah tidak meninggalkan config parsial.
+  await db.$transaction(
+    entries.map(([key, value]) =>
+      db.config.upsert({ where: { key }, create: { key, value }, update: { value } }),
+    ),
+  );
   return getAppConfig();
 }

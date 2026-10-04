@@ -531,7 +531,7 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
-type PeriodType = "monthly" | "yearly" | "custom";
+type PeriodType = "monthly" | "yearly";
 type ChartType = "area" | "bar";
 
 export function ReportsPage() {
@@ -548,31 +548,30 @@ export function ReportsPage() {
   const mosqueProfile = fetchedProfile;
 
   const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
   const [periodType, setPeriodType] = useState<PeriodType>("yearly");
-  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
-  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
+  const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
+  const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [chartType, setChartType] = useState<ChartType>("area");
 
-  // Tahun yang tersedia dari data transaksi (terbaru dulu).
+  // Tahun yang tersedia dari data transaksi (terbaru dulu, string-prefix agar imun zona).
   const availableYears = useMemo(() => {
-    const years = new Set(transactions.map((t) => new Date(t.date).getFullYear()));
-    years.add(now.getFullYear());
-    return Array.from(years).sort((a, b) => b - a).map(String);
-  }, [transactions, now.getFullYear()]);
+    const years = new Set(transactions.map((t) => t.date.slice(0, 4)));
+    years.add(String(currentYear));
+    return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }, [transactions, currentYear]);
 
   const activeYear = availableYears.includes(selectedYear) ? selectedYear : availableYears[0];
 
-  // Filter transactions by period
+  // Filter transactions by period — string prefix (zona-masjid), bukan new Date().
   const filteredTxns = useMemo(() => {
     if (periodType === "monthly") {
-      const month = parseInt(selectedMonth);
-      return transactions.filter((t) => {
-        const d = new Date(t.date);
-        return d.getMonth() + 1 === month && d.getFullYear() === parseInt(activeYear);
-      });
+      const prefix = `${activeYear}-${String(selectedMonth).padStart(2, "0")}`;
+      return transactions.filter((t) => t.date.startsWith(prefix));
     }
     // yearly — tahun terpilih
-    return transactions.filter((t) => new Date(t.date).getFullYear() === parseInt(activeYear));
+    return transactions.filter((t) => t.date.startsWith(activeYear));
   }, [transactions, periodType, selectedMonth, activeYear]);
 
   // Compute totals
@@ -587,7 +586,7 @@ export function ReportsPage() {
 
   // Unduh transaksi periode terpilih sebagai CSV (Excel Indonesia).
   const handleExportCsv = () => {
-    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat"]);
+    const header = toCsvRow(["Tanggal", "Tipe", "Kategori", "Keterangan", "Nominal (Rp)", "Pencatat", "Bukti", "ID"]);
     const lines = [...filteredTxns]
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
       .map((t) =>
@@ -598,16 +597,27 @@ export function ReportsPage() {
           t.description,
           t.amount,
           t.recordedBy,
+          t.proofUrl ?? "",
+          t.id,
         ]),
       );
     const safeLabel = periodLabel.toLowerCase().replace(/[^a-z0-9]+/gi, "-");
-    downloadTextFile(`laporan-keuangan-${safeLabel}.csv`, [header, ...lines].join("\n"));
+    downloadTextFile(`laporan-keuangan-${safeLabel}.csv`, [header, ...lines].join("\r\n"));
   };
 
-  // Chart data based on period
-  const displayChartData = periodType === "monthly"
-    ? chartData.filter((c) => c.period.includes(MONTHS[parseInt(selectedMonth) - 1].slice(0, 3)))
-    : chartData;
+  // Chart data based on period — samakan tahun terpilih (dulu abaikan tahun).
+  const displayChartData = useMemo(() => {
+    if (periodType === "monthly") {
+      const short = MONTHS[parseInt(selectedMonth) - 1].slice(0, 3);
+      return chartData.filter((c) => c.period === `${short} ${activeYear}`);
+    }
+    return chartData.filter((c) => c.period.endsWith(` ${activeYear}`));
+  }, [chartData, periodType, selectedMonth, activeYear]);
+
+  const yearlyTableData = useMemo(
+    () => chartData.filter((c) => c.period.endsWith(` ${activeYear}`)),
+    [chartData, activeYear],
+  );
 
   // Category pie data
   const incomePieData: CategoryBreakdownItem[] = useMemo(() => {
@@ -899,7 +909,7 @@ export function ReportsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-0">
-            <MonthlySummaryTable data={chartData} year={activeYear} />
+            <MonthlySummaryTable data={yearlyTableData} year={activeYear} />
           </CardContent>
         </Card>
       )}
