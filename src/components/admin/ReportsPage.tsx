@@ -366,13 +366,13 @@ function CategorySummaryTable({
   }, [filtered]);
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="overflow-x-auto border border-border/60 rounded-lg">
+      <Table className="border-collapse">
         <TableCaption className="sr-only">
           Rincian {type === "income" ? "pemasukan" : "pengeluaran"} per kategori
         </TableCaption>
         <TableHeader>
-          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30">
+          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
             <TableHead className="py-2.5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
               Kategori
             </TableHead>
@@ -392,7 +392,7 @@ function CategorySummaryTable({
             const pct = total > 0 ? Math.round((row.total / total) * 100) : 0;
             const cat = categories.find((c) => c.id === row.categoryId);
             return (
-              <TableRow key={row.categoryId} className="border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors">
+              <TableRow key={row.categoryId} className="border-b border-border/60 hover:bg-muted/30 transition-colors divide-x divide-border/60">
                 <TableCell className="py-3">
                   <div className="flex items-center gap-2.5">
                     <div
@@ -429,7 +429,7 @@ function CategorySummaryTable({
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30">
+          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30 divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total</TableCell>
             <TableCell className="py-3 text-center text-sm font-semibold text-foreground tabular-nums">
               {filtered.length}
@@ -455,11 +455,11 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
   const totalExpense = data.reduce((s, d) => s + d.expense, 0);
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="overflow-x-auto border border-border/60 rounded-lg">
+      <Table className="border-collapse">
         <TableCaption className="sr-only">Ringkasan keuangan per bulan</TableCaption>
         <TableHeader>
-          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30">
+          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
             <TableHead className="py-2.5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Periode</TableHead>
             <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">Pemasukan</TableHead>
             <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">Pengeluaran</TableHead>
@@ -471,7 +471,7 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
           {data.map((row) => {
             const surplus = row.income - row.expense;
             return (
-              <TableRow key={row.period} className="border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors">
+              <TableRow key={row.period} className="border-b border-border/60 hover:bg-muted/30 transition-colors divide-x divide-border/60">
                 <TableCell className="py-3 text-sm font-semibold text-foreground">{row.period}</TableCell>
                 <TableCell className="py-3 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(row.income)}
@@ -503,7 +503,7 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30">
+          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30 divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total Tahun {year}</TableCell>
             <TableCell className="py-3 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalIncome)}

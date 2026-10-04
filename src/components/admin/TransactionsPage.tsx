@@ -35,7 +35,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
   DialogFooter,
   DialogClose,
@@ -145,17 +144,20 @@ function TransactionStats({ transactions }: { transactions: Transaction[] }) {
 function TransactionDetailDialog({
   transaction,
   categories,
-  children,
+  open,
+  onOpenChange,
+  onEdit,
 }: {
   transaction: Transaction;
   categories: Category[];
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit?: (txn: Transaction) => void;
 }) {
   const category = categories.find((c) => c.id === transaction.categoryId);
 
   return (
-    <Dialog>
-      <DialogTrigger render={children as React.ReactElement} />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-130">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -241,7 +243,15 @@ function TransactionDetailDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              onOpenChange(false);
+              onEdit?.(transaction);
+            }}
+          >
             <PencilSimple className="w-4 h-4" />
             Edit
           </Button>
@@ -275,14 +285,15 @@ function DetailItem({
 
 function DeleteConfirmDialog({
   transaction,
-  children,
+  open,
+  onOpenChange,
   onDeleted,
 }: {
   transaction: Transaction;
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onDeleted: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -292,7 +303,7 @@ function DeleteConfirmDialog({
     try {
       await apiSend(`/api/transactions/${transaction.id}`, "DELETE");
       onDeleted();
-      setOpen(false);
+      onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal menghapus transaksi.");
     } finally {
@@ -301,8 +312,7 @@ function DeleteConfirmDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={children as React.ReactElement} />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-105">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -361,44 +371,54 @@ function RowActions({
   onDeleted: () => void;
   onEdit: (txn: Transaction) => void;
 }) {
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-            <DotsThreeVertical className="w-4.5 h-4.5" />
-            <span className="sr-only">Aksi</span>
-          </Button>
-        }
-      />
-      <DropdownMenuContent align="end" className="w-44">
-        <TransactionDetailDialog transaction={transaction} categories={categories}>
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+              <DotsThreeVertical className="w-4.5 h-4.5" />
+              <span className="sr-only">Aksi</span>
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onClick={() => setDetailOpen(true)}>
             <Eye className="w-4 h-4 mr-2" />
             Lihat Detail
           </DropdownMenuItem>
-        </TransactionDetailDialog>
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            onEdit(transaction);
-          }}
-        >
-          <PencilSimple className="w-4 h-4 mr-2" />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DeleteConfirmDialog transaction={transaction} onDeleted={onDeleted}>
+          <DropdownMenuItem onClick={() => onEdit(transaction)}>
+            <PencilSimple className="w-4 h-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
-            onSelect={(e) => e.preventDefault()}
+            onClick={() => setDeleteOpen(true)}
             className="text-destructive focus:text-destructive"
           >
             <Trash className="w-4 h-4 mr-2" />
             Hapus
           </DropdownMenuItem>
-        </DeleteConfirmDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <TransactionDetailDialog
+        transaction={transaction}
+        categories={categories}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onEdit={onEdit}
+      />
+      <DeleteConfirmDialog
+        transaction={transaction}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onDeleted={onDeleted}
+      />
+    </>
   );
 }
 
@@ -761,13 +781,13 @@ export function TransactionsPage() {
             <EmptyState />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto border-y border-border/60">
+                <Table className="border-collapse">
                   <TableCaption className="sr-only">
                     Daftar transaksi kas masjid
                   </TableCaption>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30">
+                    <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
                       <TableHead className="w-12 py-3 pl-5 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                         No
                       </TableHead>
@@ -832,7 +852,7 @@ export function TransactionsPage() {
                       return (
                         <TableRow
                           key={txn.id}
-                          className="group border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors"
+                          className="group border-b border-border/60 last:border-b-0 hover:bg-muted/30 transition-colors divide-x divide-border/60"
                         >
                           {/* No */}
                           <TableCell className="py-3.5 pl-5 text-center text-xs font-medium text-muted-foreground tabular-nums">
