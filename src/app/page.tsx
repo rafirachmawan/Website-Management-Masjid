@@ -1,4 +1,5 @@
 import { Hero } from "@/components/public/Hero";
+import { Navbar } from "@/components/public/Navbar";
 import { AnnouncementsSection } from "@/components/public/AnnouncementsSection";
 import { ActivitiesSection } from "@/components/public/ActivitiesSection";
 import { Footer } from "@/components/public/Footer";
@@ -30,7 +31,13 @@ export default async function Home() {
           dan jadwal lewat halaman admin.
         </p>
       )}
-      <div id="beranda" className="scroll-mt-20">
+      {/* Navbar sticky: tetap di atas saat scroll. Dibuat transparan di
+          atas hero (Hero ditarik naik -mt-14) lalu Navbar memberi latar
+          blur otomatis setelah di-scroll (lihat Navbar `scrolled`). */}
+      <div className="sticky top-0 z-50">
+        <Navbar />
+      </div>
+      <div id="beranda" className="-mt-14 scroll-mt-20">
         <Hero profile={profile} prayer={prayer} />
       </div>
       <main className="flex flex-1 flex-col">

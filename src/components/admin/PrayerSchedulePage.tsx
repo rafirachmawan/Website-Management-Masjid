@@ -118,15 +118,15 @@ export function PrayerSchedulePage() {
             <div className="rounded-lg border border-border overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-semibold text-xs">Hari & Tanggal</TableHead>
-                    <TableHead className="font-semibold text-xs">Hijriyah</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Subuh</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Terbit</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Dzuhur</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Ashar</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Maghrib</TableHead>
-                    <TableHead className="font-semibold text-xs text-center">Isya</TableHead>
+                  <TableRow className="bg-muted border-b-2 border-border hover:bg-muted">
+                    <TableHead className="font-bold text-xs text-foreground">Hari & Tanggal</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground">Hijriyah</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Subuh</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Terbit</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Dzuhur</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Ashar</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Maghrib</TableHead>
+                    <TableHead className="font-bold text-xs text-foreground text-center">Isya</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

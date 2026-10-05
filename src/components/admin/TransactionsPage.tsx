@@ -751,7 +751,9 @@ export function TransactionsPage() {
               >
                 <SelectTrigger className="w-35 h-9 text-xs rounded-lg">
                   <Funnel className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="Tipe" />
+                  <SelectValue placeholder="Tipe">
+                    {typeFilter === "all" ? "Semua Tipe" : typeFilter === "income" ? "Kas Masuk" : "Kas Keluar"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Tipe</SelectItem>
@@ -768,7 +770,11 @@ export function TransactionsPage() {
                 }}
               >
                 <SelectTrigger className="w-45 h-9 text-xs rounded-lg">
-                  <SelectValue placeholder="Kategori" />
+                  <SelectValue placeholder="Kategori">
+                    {categoryFilter === "all"
+                      ? "Semua Kategori"
+                      : (categories.find((c) => c.id === categoryFilter)?.name ?? "Semua Kategori")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Kategori</SelectItem>
@@ -824,14 +830,14 @@ export function TransactionsPage() {
                     Daftar transaksi kas masjid
                   </TableCaption>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
-                      <TableHead className="w-12 py-3 pl-5 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                    <TableRow className="bg-muted border-b-2 border-border hover:bg-muted divide-x divide-border/60">
+                      <TableHead className="w-12 py-3 pl-5 text-center text-[11px] font-bold text-foreground uppercase tracking-widest">
                         No
                       </TableHead>
                       <TableHead className="w-28 py-3">
                         <button
                           onClick={() => toggleSort("date")}
-                          className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors"
+                          className="flex items-center gap-1 text-[11px] font-bold text-foreground uppercase tracking-widest hover:text-foreground transition-colors"
                         >
                           Tanggal
                           <ArrowsDownUp
@@ -845,7 +851,7 @@ export function TransactionsPage() {
                       <TableHead className="py-3">
                         <button
                           onClick={() => toggleSort("category")}
-                          className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors"
+                          className="flex items-center gap-1 text-[11px] font-bold text-foreground uppercase tracking-widest hover:text-foreground transition-colors"
                         >
                           Kategori
                           <ArrowsDownUp
@@ -856,16 +862,16 @@ export function TransactionsPage() {
                           />
                         </button>
                       </TableHead>
-                      <TableHead className="py-3 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <TableHead className="py-3 text-[11px] font-bold text-foreground uppercase tracking-widest">
                         Keterangan
                       </TableHead>
-                      <TableHead className="w-28 py-3 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <TableHead className="w-28 py-3 text-center text-[11px] font-bold text-foreground uppercase tracking-widest">
                         Tipe
                       </TableHead>
                       <TableHead className="w-40 py-3">
                         <button
                           onClick={() => toggleSort("amount")}
-                          className="flex items-center justify-end gap-1 w-full text-[11px] font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors"
+                          className="flex items-center justify-end gap-1 w-full text-[11px] font-bold text-foreground uppercase tracking-widest hover:text-foreground transition-colors"
                         >
                           Jumlah
                           <ArrowsDownUp
@@ -876,7 +882,7 @@ export function TransactionsPage() {
                           />
                         </button>
                       </TableHead>
-                      <TableHead className="w-14 py-3 pr-5 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <TableHead className="w-14 py-3 pr-5 text-center text-[11px] font-bold text-foreground uppercase tracking-widest">
                         Aksi
                       </TableHead>
                     </TableRow>

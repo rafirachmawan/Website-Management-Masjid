@@ -259,7 +259,9 @@ export function ActivitiesPage() {
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "all")}>
                 <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status Kegiatan" />
+                  <SelectValue placeholder="Status Kegiatan">
+                    {statusFilter === "all" ? "Semua Status" : statusFilter === "upcoming" ? "Akan Datang" : "Selesai"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Status</SelectItem>

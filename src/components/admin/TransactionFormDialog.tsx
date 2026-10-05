@@ -203,7 +203,9 @@ export function TransactionFormDialog({
               </label>
               <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
                 <SelectTrigger id="txn-category" className="h-10 w-full text-sm">
-                  <SelectValue placeholder="Pilih kategori" />
+                  <SelectValue placeholder="Pilih kategori">
+                    {availableCategories.find((c) => c.id === categoryId)?.name ?? "Pilih kategori"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableCategories.map((c) => (

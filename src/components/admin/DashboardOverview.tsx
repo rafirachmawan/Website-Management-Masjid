@@ -240,12 +240,12 @@ function RecentTransactions({ items }: { items: Transaction[] }) {
           <Table>
             <TableCaption className="sr-only">5 transaksi terakhir</TableCaption>
             <TableHeader>
-              <TableRow className="border-b border-border/80">
-                <TableHead className="w-24 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tanggal</TableHead>
-                <TableHead className="py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori</TableHead>
-                <TableHead className="py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keterangan</TableHead>
-                <TableHead className="w-32 py-2.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Jumlah</TableHead>
-                <TableHead className="w-24 py-2.5 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipe</TableHead>
+              <TableRow className="bg-muted border-b-2 border-border hover:bg-muted">
+                <TableHead className="w-24 py-2.5 text-left text-xs font-bold text-foreground uppercase tracking-wider">Tanggal</TableHead>
+                <TableHead className="py-2.5 text-left text-xs font-bold text-foreground uppercase tracking-wider">Kategori</TableHead>
+                <TableHead className="py-2.5 text-left text-xs font-bold text-foreground uppercase tracking-wider">Keterangan</TableHead>
+                <TableHead className="w-32 py-2.5 text-right text-xs font-bold text-foreground uppercase tracking-wider">Jumlah</TableHead>
+                <TableHead className="w-24 py-2.5 text-center text-xs font-bold text-foreground uppercase tracking-wider">Tipe</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

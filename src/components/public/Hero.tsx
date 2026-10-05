@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { MosqueProfile, DailyPrayerSchedule } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
-import { Navbar } from "@/components/public/Navbar";
 import {
   Sun,
   Moon,
@@ -171,13 +170,13 @@ export function Hero({
   }, [isSlider, goToNext]);
 
   // Profil/jadwal belum diisi admin — tampilkan sambutan netral, bukan skeleton.
+  // pt-16 = ruang navbar sticky (h-14) + jarak asal (pt-2).
   if (!mosqueProfile) {
     return (
       <header
         aria-label="Sambutan masjid"
-        className="relative flex min-h-svh flex-col pb-14 pt-2 text-center md:pb-16 md:pt-3"
+        className="relative flex min-h-svh flex-col pb-14 pt-16 text-center md:pb-16 md:pt-[4.25rem]"
       >
-        <Navbar />
         <div className="container mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-4">
           <p
             lang="ar"
@@ -206,7 +205,7 @@ export function Hero({
 
   return (
     <>
-      <header className="relative isolate flex min-h-svh flex-col overflow-hidden">
+      <header className="relative isolate flex min-h-svh flex-col overflow-hidden pt-14">
         {/* ─── Foto masjid ────────────────────────────────────────────────
             Layar lebar: foto naik ke tepi kanan dan terpotong di bawah,
             teks kiri berdiri di atas warna latar yang bersih.
@@ -235,8 +234,6 @@ export function Hero({
             <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent" />
           </div>
         )}
-
-        <Navbar />
 
         <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 pb-12 pt-10 md:px-6 md:pb-16 lg:px-8 lg:pb-20 lg:pt-24">
           <div className="grid w-full gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">

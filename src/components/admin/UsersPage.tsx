@@ -301,7 +301,17 @@ export function UsersPage() {
               <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || "all")}>
                 <SelectTrigger className="w-42.5">
                   <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Hak Akses" />
+                  <SelectValue placeholder="Hak Akses">
+                    {roleFilter === "all"
+                      ? "Semua Hak Akses"
+                      : roleFilter === "superadmin"
+                        ? "Super Admin"
+                        : roleFilter === "admin"
+                          ? "Admin Sistem"
+                          : roleFilter === "bendahara"
+                            ? "Bendahara"
+                            : "Pengurus DKM"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent align="end" alignItemWithTrigger={false}>
                   <SelectItem value="all">Semua Hak Akses</SelectItem>
@@ -489,7 +499,15 @@ export function UsersPage() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {formData.systemRole === "superadmin"
+                        ? "Super Admin"
+                        : formData.systemRole === "admin"
+                          ? "Admin Sistem"
+                          : formData.systemRole === "bendahara"
+                            ? "Bendahara"
+                            : "Pengurus DKM"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     <SelectItem value="superadmin">Super Admin</SelectItem>
@@ -511,7 +529,9 @@ export function UsersPage() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {formData.status === "active" ? "Aktif Bertugas" : "Nonaktif"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent align="start" alignItemWithTrigger={false}>
                     <SelectItem value="active">Aktif Bertugas</SelectItem>

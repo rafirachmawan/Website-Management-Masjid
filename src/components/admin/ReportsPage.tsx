@@ -372,17 +372,17 @@ function CategorySummaryTable({
           Rincian {type === "income" ? "pemasukan" : "pengeluaran"} per kategori
         </TableCaption>
         <TableHeader>
-          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
-            <TableHead className="py-2.5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+          <TableRow className="bg-muted border-b-2 border-border hover:bg-muted divide-x divide-border/60">
+            <TableHead className="py-2.5 text-[11px] font-bold text-foreground uppercase tracking-widest">
               Kategori
             </TableHead>
-            <TableHead className="py-2.5 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-20">
+            <TableHead className="py-2.5 text-center text-[11px] font-bold text-foreground uppercase tracking-widest w-20">
               Transaksi
             </TableHead>
-            <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">
+            <TableHead className="py-2.5 text-right text-[11px] font-bold text-foreground uppercase tracking-widest w-36">
               Jumlah
             </TableHead>
-            <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-20">
+            <TableHead className="py-2.5 text-right text-[11px] font-bold text-foreground uppercase tracking-widest w-20">
               %
             </TableHead>
           </TableRow>
@@ -429,7 +429,7 @@ function CategorySummaryTable({
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30 divide-x divide-border/60">
+          <TableRow className="bg-primary/[0.08] border-t-2 border-primary/30 hover:bg-primary/[0.12] divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total</TableCell>
             <TableCell className="py-3 text-center text-sm font-semibold text-foreground tabular-nums">
               {filtered.length}
@@ -459,12 +459,12 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
       <Table className="border-collapse">
         <TableCaption className="sr-only">Ringkasan keuangan per bulan</TableCaption>
         <TableHeader>
-          <TableRow className="bg-muted/30 border-b border-border/60 hover:bg-muted/30 divide-x divide-border/60">
-            <TableHead className="py-2.5 text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Periode</TableHead>
-            <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">Pemasukan</TableHead>
-            <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">Pengeluaran</TableHead>
-            <TableHead className="py-2.5 text-right text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-36">Saldo</TableHead>
-            <TableHead className="py-2.5 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-widest w-24">Status</TableHead>
+          <TableRow className="bg-muted border-b-2 border-border hover:bg-muted divide-x divide-border/60">
+            <TableHead className="py-2.5 text-[11px] font-bold text-foreground uppercase tracking-widest">Periode</TableHead>
+            <TableHead className="py-2.5 text-right text-[11px] font-bold text-foreground uppercase tracking-widest w-36">Pemasukan</TableHead>
+            <TableHead className="py-2.5 text-right text-[11px] font-bold text-foreground uppercase tracking-widest w-36">Pengeluaran</TableHead>
+            <TableHead className="py-2.5 text-right text-[11px] font-bold text-foreground uppercase tracking-widest w-36">Saldo</TableHead>
+            <TableHead className="py-2.5 text-center text-[11px] font-bold text-foreground uppercase tracking-widest w-24">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -503,7 +503,7 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-muted/20 border-t-2 border-border/60 hover:bg-muted/30 divide-x divide-border/60">
+          <TableRow className="bg-primary/[0.08] border-t-2 border-primary/30 hover:bg-primary/[0.12] divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total Tahun {year}</TableCell>
             <TableCell className="py-3 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalIncome)}
@@ -697,7 +697,9 @@ export function ReportsPage() {
                 }}
               >
                 <SelectTrigger className="w-35 h-9 text-xs rounded-lg">
-                  <SelectValue />
+                  <SelectValue>
+                    {periodType === "monthly" ? "Bulanan" : "Tahunan"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="monthly">Bulanan</SelectItem>
@@ -713,7 +715,9 @@ export function ReportsPage() {
                   }}
                 >
                   <SelectTrigger className="w-37.5 h-9 text-xs rounded-lg">
-                    <SelectValue />
+                    <SelectValue>
+                      {MONTHS[parseInt(selectedMonth) - 1] ?? selectedMonth}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {MONTHS.map((m, i) => (
@@ -730,7 +734,9 @@ export function ReportsPage() {
                 }}
               >
                 <SelectTrigger className="w-27.5 h-9 text-xs rounded-lg">
-                  <SelectValue />
+                  <SelectValue>
+                    Tahun {activeYear}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {availableYears.map((y) => (

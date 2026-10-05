@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CaretDown, List, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
@@ -32,11 +32,26 @@ const MENU: MenuItem[] = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDrop, setOpenDrop] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Setelah di-scroll sedikit, beri latar solid + blur supaya menu
+  // tetap terbaca di atas foto/ konten dan terlihat "mengikuti".
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <nav
       aria-label="Navigasi utama"
-      className="relative z-10 bg-transparent font-sans"
+      className={cn(
+        "relative z-10 font-sans transition-all duration-300",
+        scrolled || mobileOpen
+          ? "border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-md"
+          : "border-b border-transparent bg-transparent",
+      )}
     >
         <div className="container mx-auto flex h-14 items-center justify-center gap-2 px-4 md:px-6 lg:px-8">
           {/* Mobile toggle */}
@@ -111,9 +126,10 @@ export function Navbar() {
           <span className="w-9 lg:hidden" aria-hidden="true" />
         </div>
 
-        {/* Mobile panel */}
+        {/* Mobile panel: mengambang (absolute) supaya tidak mendorong
+            konten saat dibuka, baik di beranda maupun halaman lain */}
         {mobileOpen && (
-          <div className="mx-4 rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur lg:hidden">
+          <div className="absolute inset-x-4 top-full z-50 rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur lg:hidden">
             <div className="container mx-auto space-y-1 px-4 py-3 md:px-6">
               <ul className="space-y-1">
                 {MENU.map((item) => (

@@ -79,15 +79,24 @@ export function AnnouncementsPage() {
   const data = announcements ?? [];
 
   const filteredAnnouncements = useMemo(() => {
-    return data.filter((item) => {
-      const matchSearch =
-        item.title.toLowerCase().includes(search.toLowerCase()) ||
-        item.content.toLowerCase().includes(search.toLowerCase()) ||
-        item.author.toLowerCase().includes(search.toLowerCase());
-      const matchPriority =
-        priorityFilter === "all" || item.priority === priorityFilter;
-      return matchSearch && matchPriority;
-    });
+    return data
+      .filter((item) => {
+        const matchSearch =
+          item.title.toLowerCase().includes(search.toLowerCase()) ||
+          item.content.toLowerCase().includes(search.toLowerCase()) ||
+          item.author.toLowerCase().includes(search.toLowerCase());
+        const matchPriority =
+          priorityFilter === "all" || item.priority === priorityFilter;
+        return matchSearch && matchPriority;
+      })
+      .sort((a, b) => {
+        // Penting selalu paling atas (jadi banner besar di beranda),
+        // sisanya terbaru dulu. Otomatis tergeser saat prioritas diubah.
+        if (a.priority === b.priority) {
+          return +new Date(b.publishedAt) - +new Date(a.publishedAt);
+        }
+        return a.priority === "important" ? -1 : 1;
+      });
   }, [data, search, priorityFilter]);
 
   const importantCount = data.filter((a) => a.priority === "important").length;
@@ -172,8 +181,8 @@ export function AnnouncementsPage() {
     switch (priority) {
       case "important":
         return (
-          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 border-amber-200 dark:border-amber-800 gap-1 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-200 dark:border-emerald-800 gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             Penting
           </Badge>
         );
@@ -235,12 +244,12 @@ export function AnnouncementsPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Penting
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-amber-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {importantCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Agenda & kegiatan utama</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
               <BellSimpleRinging className="w-6 h-6" />
             </div>
           </CardContent>
@@ -282,7 +291,9 @@ export function AnnouncementsPage() {
               <Select value={priorityFilter} onValueChange={(val) => setPriorityFilter(val || "all")}>
                 <SelectTrigger className="w-40">
                   <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Prioritas" />
+                  <SelectValue placeholder="Prioritas">
+                    {priorityFilter === "all" ? "Semua Prioritas" : priorityFilter === "important" ? "Penting" : "Biasa"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Prioritas</SelectItem>
