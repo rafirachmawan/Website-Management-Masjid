@@ -3,11 +3,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
-import { Badge } from "@/components/ui/badge";
+import { ShareButtons } from "@/components/public/ShareButtons";
 import { getAnnouncementById, getAnnouncements } from "@/server/services/content";
 import { getMosqueProfile } from "@/server/services/mosque";
-import { formatDate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 
 // Selalu baca dari database — begitu pengurus menyimpan di /admin,
 // kunjungan berikutnya langsung melihat data terbaru.
@@ -16,9 +15,74 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ id: string }> };
 
 const priorityConfig = {
-  normal: { label: "Info", pill: "bg-muted text-muted-foreground" },
-  important: { label: "Penting", pill: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
+  normal: { label: "Berita Umum" },
+  important: { label: "Penting" },
 } as const;
+
+function toShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+// Ikon SVG inline — aman dipakai di Server Component
+// (paket ikon berbasis context tidak bisa diimpor langsung di RSC).
+function MetaIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      className="h-4 w-4 shrink-0 text-primary"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <MetaIcon>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </MetaIcon>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <MetaIcon>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </MetaIcon>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <MetaIcon>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </MetaIcon>
+  );
+}
+
+function UserIcon() {
+  return (
+    <MetaIcon>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </MetaIcon>
+  );
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -43,7 +107,14 @@ export default async function BeritaDetailPage({ params }: Props) {
   const config =
     priorityConfig[item.priority as keyof typeof priorityConfig] ??
     priorityConfig.normal;
-  const related = all.filter((a) => a.id !== item.id).slice(0, 3);
+  const latest = all.filter((a) => a.id !== item.id).slice(0, 5);
+  const fullDate = formatDate(item.publishedAt, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const time = formatTime(item.publishedAt).replaceAll(".", ":");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -52,106 +123,124 @@ export default async function BeritaDetailPage({ params }: Props) {
       </header>
 
       <main className="flex flex-1 flex-col">
-        <div className="container mx-auto w-full max-w-3xl px-4 py-8 md:px-6 md:py-12 lg:px-8">
-          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
-            <Link href="/" className="transition-colors hover:text-primary">
-              Beranda
-            </Link>
-            <span aria-hidden="true">/</span>
-            <Link href="/berita" className="transition-colors hover:text-primary">
-              Berita
-            </Link>
-            <span aria-hidden="true">/</span>
-            <span className="max-w-55 truncate font-medium text-foreground">
-              {item.title}
-            </span>
-          </nav>
+        <div className="container mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-10">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+            {/* ── Artikel utama ─────────────────────────────────── */}
+            <article className="h-fit overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="p-5 md:p-7 md:pb-5">
+                <h1 className="text-2xl leading-tight font-bold text-primary md:text-[2rem] md:leading-[1.2]">
+                  {item.title}
+                </h1>
 
-          <article className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            {item.imageUrl && (item.imageUrl.startsWith("http") || item.imageUrl.startsWith("/")) && (
-              <img
-                src={item.imageUrl}
-                alt={item.title}
-                className="aspect-[16/9] w-full object-cover"
-              />
-            )}
-            <div className="p-5 md:p-8">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", config.pill)}>
-                  {config.label}
-                </Badge>
-                <time dateTime={item.publishedAt} className="text-xs text-muted-foreground tabular-nums">
-                  {formatDate(item.publishedAt, { day: "numeric", month: "long", year: "numeric" })}
-                </time>
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <TagIcon />
+                    {config.label}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarIcon />
+                    <time dateTime={item.publishedAt} className="tabular-nums">
+                      {fullDate}
+                    </time>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ClockIcon />
+                    <span className="tabular-nums">{time}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <UserIcon />
+                    {item.author}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 border-y border-border/70 py-2.5">
+                  <span className="text-sm font-medium text-foreground">Share :</span>
+                  <ShareButtons title={item.title} />
+                </div>
               </div>
-              <h1 className="font-display mt-3 text-balance text-2xl font-semibold leading-snug text-foreground md:text-[2rem] md:leading-[1.25]">
-                {item.title}
-              </h1>
-              <p className="mt-2 text-xs text-muted-foreground">Oleh {item.author}</p>
-              <div className="mt-5 border-t border-border/60 pt-5">
-                <p className="text-[15px] leading-relaxed whitespace-pre-line text-foreground/90 md:text-base md:leading-loose">
+
+              {item.imageUrl && (item.imageUrl.startsWith("http") || item.imageUrl.startsWith("/")) && (
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  className="aspect-[16/9] w-full object-cover"
+                />
+              )}
+
+              <div className="p-5 md:p-7">
+                <div className="text-[15px] leading-relaxed whitespace-pre-line text-foreground/90 md:text-base md:leading-loose">
                   {item.content}
-                </p>
+                </div>
+
+                <div className="mt-8 flex flex-wrap gap-2.5">
+                  <Link
+                    href="/berita"
+                    className="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    ← Semua berita
+                  </Link>
+                  <Link
+                    href="/"
+                    className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
+                  >
+                    Kembali ke Beranda
+                  </Link>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            <Link
-              href="/berita"
-              className="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
-            >
-              ← Semua berita
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110"
-            >
-              Kembali ke Beranda
-            </Link>
-          </div>
-
-          {related.length > 0 && (
-            <section aria-label="Berita lainnya" className="mt-10">
-              <h2 className="font-display text-xl font-semibold text-foreground">
-                Berita lainnya
-              </h2>
-              <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {related.map((a) => (
-                  <li key={a.id}>
-                    <Link
-                      href={`/berita/${a.id}`}
-                      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-colors hover:border-primary/40"
-                    >
-                      {a.imageUrl && (a.imageUrl.startsWith("http") || a.imageUrl.startsWith("/")) ? (
-                        <img
-                          src={a.imageUrl}
-                          alt=""
-                          aria-hidden="true"
-                          loading="lazy"
-                          className="aspect-[16/9] w-full object-cover"
-                        />
-                      ) : (
-                        <div aria-hidden="true" className="flex aspect-[16/9] w-full items-center justify-center bg-gradient-to-br from-primary/[0.12] via-muted to-muted">
-                          <span className="font-display text-3xl font-bold text-primary/30">
-                            {a.title.trim().charAt(0).toUpperCase() || "•"}
+            {/* ── Sidebar berita terbaru ────────────────────────── */}
+            <aside aria-label="Berita terbaru">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <h2 className="bg-primary px-4 py-2.5 text-sm font-bold tracking-wide text-primary-foreground uppercase">
+                  Berita Terbaru
+                </h2>
+                {latest.length === 0 ? (
+                  <p className="p-4 text-sm text-muted-foreground">
+                    Belum ada berita lain.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border/70">
+                    {latest.map((a) => (
+                      <li key={a.id}>
+                        <Link
+                          href={`/berita/${a.id}`}
+                          className="group flex gap-3 p-3.5 transition-colors hover:bg-muted/50"
+                        >
+                          {a.imageUrl && (a.imageUrl.startsWith("http") || a.imageUrl.startsWith("/")) ? (
+                            <img
+                              src={a.imageUrl}
+                              alt=""
+                              aria-hidden="true"
+                              loading="lazy"
+                              className="h-20 w-24 shrink-0 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/[0.15] via-muted to-muted"
+                            >
+                              <span className="font-display text-2xl font-bold text-primary/40">
+                                {a.title.trim().charAt(0).toUpperCase() || "•"}
+                              </span>
+                            </span>
+                          )}
+                          <span className="min-w-0">
+                            <span className="line-clamp-3 text-sm leading-snug font-semibold text-foreground transition-colors group-hover:text-primary">
+                              {a.title}
+                            </span>
+                            <span className="mt-1 block text-xs text-muted-foreground tabular-nums">
+                              {toShortDate(a.publishedAt)}
+                            </span>
                           </span>
-                        </div>
-                      )}
-                      <span className="flex flex-1 flex-col p-4">
-                        <span className="text-[11px] text-muted-foreground tabular-nums">
-                          {formatDate(a.publishedAt, { day: "numeric", month: "short", year: "numeric" })}
-                        </span>
-                        <span className="mt-1 line-clamp-2 text-sm font-bold leading-snug text-foreground transition-colors group-hover:text-primary">
-                          {a.title}
-                        </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
       </main>
 
