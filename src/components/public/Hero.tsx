@@ -53,6 +53,8 @@ export function Hero({
 
   // Quick Infaq Copy State
   const [copied, setCopied] = useState(false);
+  // Deskripsi dipadatkan: 2 baris + "Baca selengkapnya" (data tetap utuh)
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Countdown ke waktu sholat berikutnya
   const [timeCountdown, setTimeCountdown] = useState<string>("");
@@ -77,26 +79,35 @@ export function Hero({
     const prayers = prayer.today?.prayers;
     if (!prayers || prayers.length === 0) return;
 
+    // Parser "HH:MM" yang aman — kembalikan null bila format rusak
+    function parseMinutes(t: string): number | null {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
+      if (!m) return null;
+      const h = Number(m[1]);
+      const min = Number(m[2]);
+      if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+      return h * 60 + min;
+    }
+
     function calculateCountdown() {
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
       // Cari sholat berikutnya yang waktunya setelah jam sekarang
       let targetPrayer = prayers?.find((p) => {
-        const [h, m] = p.time.split(":").map(Number);
-        return h * 60 + m > currentMinutes;
+        const mins = parseMinutes(p.time);
+        return mins !== null && mins > currentMinutes;
       });
 
       let diffMinutes = 0;
       if (targetPrayer) {
-        const [h, m] = targetPrayer.time.split(":").map(Number);
-        diffMinutes = h * 60 + m - currentMinutes;
+        diffMinutes = (parseMinutes(targetPrayer.time) ?? currentMinutes) - currentMinutes;
       } else {
         // Jika sudah lewat Isya, sholat berikutnya adalah Subuh besok
-        targetPrayer = prayers?.[0];
+        targetPrayer = prayers?.find((p) => parseMinutes(p.time) !== null) ?? prayers?.[0];
         if (targetPrayer) {
-          const [h, m] = targetPrayer.time.split(":").map(Number);
-          diffMinutes = (24 * 60 - currentMinutes) + (h * 60 + m);
+          const mins = parseMinutes(targetPrayer.time);
+          diffMinutes = mins !== null ? (24 * 60 - currentMinutes) + mins : 0;
         }
       }
 
@@ -207,8 +218,8 @@ export function Hero({
           <div className="grid w-full items-center gap-10 lg:grid-cols-12 lg:gap-12">
             {/* ─── Kolom Kiri: Sambutan & Identitas Masjid (7 Kolom) ───────── */}
             <div className="flex max-w-2xl flex-col items-start lg:col-span-7">
-              {/* Kaligrafi Basmalah & Status Badge */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              {/* Satu eyebrow: basmalah menyatu dengan status */}
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
                   lang="ar"
                   dir="rtl"
@@ -217,17 +228,14 @@ export function Hero({
                 >
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                 </span>
-                <span className="hidden text-border sm:inline" aria-hidden="true">
-                  |
-                </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  <span className="relative flex h-2 w-2">
+                  <span className="relative flex h-2 w-2" aria-hidden="true">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
                   </span>
                   Terbuka untuk Jamaah 24 Jam
                 </span>
-              </div>
+              </p>
 
               {/* Judul Megah Masjid */}
               <h1 className="font-display mt-4 text-balance text-4xl font-bold leading-[1.06] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.4rem]">
@@ -243,11 +251,26 @@ export function Hero({
                 <span className="min-w-0 break-words">{mosqueProfile.address}</span>
               </p>
 
-              {/* Deskripsi Masjid */}
-              <p className="mt-4 max-w-xl text-pretty text-[15px] leading-[1.75] text-muted-foreground sm:text-base">
+              {/* Deskripsi Masjid — dipadatkan 2 baris + selengkapnya */}
+              <p
+                className={cn(
+                  "mt-4 max-w-xl text-pretty text-[15px] leading-[1.75] text-muted-foreground sm:text-base",
+                  !descExpanded && "line-clamp-2",
+                )}
+              >
                 {mosqueProfile.description?.trim() ||
                   "Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan penyaluran dana tercatat tertib untuk kemaslahatan jamaah."}
               </p>
+              {mosqueProfile.description && mosqueProfile.description.trim().length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded((v) => !v)}
+                  aria-expanded={descExpanded}
+                  className="mt-1.5 cursor-pointer text-xs font-semibold text-primary hover:underline"
+                >
+                  {descExpanded ? "Tutup" : "Baca selengkapnya"}
+                </button>
+              )}
 
               {/* Dual Action CTA Buttons — susun vertikal penuh di HP kecil */}
               <div className="mt-7 flex w-full flex-col items-stretch gap-2.5 min-[420px]:w-auto min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
@@ -268,29 +291,23 @@ export function Hero({
                 </a>
               </div>
 
-              {/* Info Tambahan Bawah */}
-              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+              {/* Info Tambahan Bawah — ringkas (tanggal Hijriah menyatu di kartu sholat) */}
+              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 {mosqueProfile.phone && (
                   <a
-                    href={`tel:${mosqueProfile.phone}`}
+                    href={`tel:${mosqueProfile.phone.replace(/[^+\d]/g, "")}`}
                     className="flex items-center gap-1.5 transition-colors hover:text-primary"
                   >
-                    <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
                     <span>{mosqueProfile.phone}</span>
                   </a>
                 )}
                 {mosqueProfile.establishedYear ? (
                   <span className="flex items-center gap-1.5">
-                    <Sparkle className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    <Sparkle className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
                     Berdiri sejak {mosqueProfile.establishedYear}
                   </span>
                 ) : null}
-                {today && (
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <CalendarBlank className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    {today.hijriDate}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -342,6 +359,7 @@ export function Hero({
                             day: "numeric",
                             month: "short",
                           })}
+                          {today?.hijriDate ? ` • ${today.hijriDate}` : null}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
@@ -405,63 +423,58 @@ export function Hero({
                   </div>
                 )}
 
-                {/* Quick Infaq Box (Rekening Resmi DKM) */}
-                {hasDonationAccount ? (
-                  <div className="relative mt-2 rounded-2xl border border-white/40 bg-white/50 p-3.5 backdrop-blur-md sm:p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                      <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-primary">
-                        <Bank className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className="truncate">Rekening Donasi & Infaq</span>
-                      </div>
-                      <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                        <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                        DKM Resmi
-                      </span>
-                    </div>
-
-                    <div className="mt-2.5 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-xs font-medium text-muted-foreground">
-                          {config?.bankName} · {config?.accountHolder}
-                        </div>
-                        <div className="mt-0.5 break-all text-sm font-bold tabular-nums tracking-wide text-foreground sm:text-base">
-                          {config?.accountNumber}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCopyAccount(config?.accountNumber || "")}
-                        className={cn(
-                          "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200",
-                          copied
-                            ? "bg-primary text-primary-foreground"
-                            : "border border-white/40 bg-white/70 text-foreground backdrop-blur-sm hover:bg-white/90 active:scale-95 dark:border-white/10 dark:bg-white/10 dark:hover:bg-white/15",
-                        )}
-                        aria-label="Salin nomor rekening donasi"
-                      >
-                        {copied ? (
-                          <>
-                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                            Tersalin!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                            Salin
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative mt-2 rounded-2xl border border-white/30 bg-white/40 p-3 text-center text-xs text-muted-foreground backdrop-blur-sm">
-                    Salurkan infaq dan sedekah melalui kotak amal masjid atau hubungi pengurus.
-                  </div>
-                )}
               </div>
             </div>
           </div>
+
+          {/* Strip Rekening Donasi — di luar kartu sholat agar satu kartu satu pesan */}
+          {hasDonationAccount ? (
+            <div className="mt-4 flex w-full flex-col gap-2 rounded-2xl border border-white/40 bg-white/55 px-4 py-3 shadow-lg backdrop-blur-lg sm:flex-row sm:items-center sm:gap-3 dark:border-white/10 dark:bg-zinc-900/55">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Bank className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    Rekening Donasi & Infaq
+                    <span className="inline-flex items-center gap-0.5 font-medium text-muted-foreground">
+                      <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                      DKM Resmi
+                    </span>
+                  </p>
+                  <p
+                    title={config?.accountHolder ? `a.n. ${config.accountHolder}` : undefined}
+                    className="truncate text-sm font-bold tabular-nums text-foreground"
+                  >
+                    {config?.bankName} · {config?.accountNumber}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCopyAccount(config?.accountNumber || "")}
+                className={cn(
+                  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all duration-200 active:scale-95",
+                  copied
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-background text-foreground hover:bg-accent",
+                )}
+                aria-label="Salin nomor rekening donasi"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                    Tersalin!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    Salin
+                  </>
+                )}
+              </button>
+            </div>
+          ) : null}
 
           {/* Navigasi Titik Carousel (jika foto > 1) */}
           {isSlider && (

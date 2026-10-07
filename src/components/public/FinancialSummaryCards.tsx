@@ -141,7 +141,7 @@ export function FinancialSummaryCards({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-12 lg:gap-6">
-          {/* Kartu saldo — permukaan polos, angka jadi TRAININGUTAMA */}
+          {/* Kartu saldo — permukaan polos, angka jadi fokus utama */}
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-7 md:p-8 lg:col-span-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="inline-flex items-center gap-2 text-[13px] font-semibold text-muted-foreground">
@@ -300,33 +300,31 @@ export function FinancialSummaryCards({
               <p className="mt-1 text-xs leading-relaxed tabular-nums text-muted-foreground">
                 Masuk {formatCurrency(yearlyIncome)} • Keluar {formatCurrency(yearlyExpense)}
               </p>
-              <a
-                href="/keuangan#transaksi"
-                className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full border border-border bg-background px-4 text-[13px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
-              >
-                Telusuri semua transaksi
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
+              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                Rincian per transaksi tersedia lewat tombol{" "}
+                <span className="font-semibold text-foreground">Lihat rincian</span> di atas.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Trust strip — sejajar, ikon satu warna */}
-        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3 md:mt-6">
-          {[
-            { icon: Receipt, text: "Setiap rupiah tercatat rapi" },
-            { icon: ShieldCheck, text: "Diverifikasi bendahara" },
-            { icon: Scales, text: "Surplus disalurkan transparan" },
-          ].map((item) => (
-            <p
-              key={item.text}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-[13px] font-medium text-muted-foreground"
-            >
-              <item.icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              {item.text}
-            </p>
-          ))}
-        </div>
+        {/* Penegas kepercayaan — satu baris tenang, tanpa kartu-kartu */}
+        <p className="mt-5 flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground sm:flex-row md:mt-6">
+          <span className="inline-flex items-center gap-1.5">
+            <Receipt className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Setiap rupiah tercatat rapi
+          </span>
+          <span aria-hidden="true" className="hidden h-3 w-px bg-border sm:inline-block" />
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Diverifikasi bendahara
+          </span>
+          <span aria-hidden="true" className="hidden h-3 w-px bg-border sm:inline-block" />
+          <span className="inline-flex items-center gap-1.5">
+            <Scales className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Surplus disalurkan transparan
+          </span>
+        </p>
       </div>
     </section>
   );

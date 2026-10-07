@@ -6,12 +6,24 @@
 import type { MosqueProfile } from "@/types";
 import { FacebookLogo, InstagramLogo, YoutubeLogo, TwitterLogo } from "@phosphor-icons/react";
 
+// Isi href asli bila akun sudah ada. Entri bertanda "#" disembunyikan
+// otomatis agar tidak ada ikon mati yang diklik jamaah.
 const socialLinks = [
   { name: "Facebook", href: "#", icon: FacebookLogo },
   { name: "Instagram", href: "#", icon: InstagramLogo },
   { name: "YouTube", href: "#", icon: YoutubeLogo },
   { name: "Twitter", href: "#", icon: TwitterLogo },
 ];
+
+const legalLinks = [
+  { name: "Kebijakan Privasi", href: "#" },
+  { name: "Syarat Penggunaan", href: "#" },
+  { name: "Aksesibilitas", href: "#" },
+];
+
+function isRealHref(href: string): boolean {
+  return href !== "#" && href.trim().length > 0;
+}
 
 export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | null }) {
   const currentYear = new Date().getFullYear();
@@ -77,20 +89,24 @@ export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | nu
                 {mosqueProfile.email}
               </a>
             </p>
-            <div className="mt-4 flex items-center gap-2">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0B2B23] transition-opacity hover:opacity-85"
-                  aria-label={social.name}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <social.icon className="h-4 w-4" weight="fill" />
-                </a>
-              ))}
-            </div>
+            {socialLinks.some((s) => isRealHref(s.href)) && (
+              <div className="mt-4 flex items-center gap-2">
+                {socialLinks
+                  .filter((social) => isRealHref(social.href))
+                  .map((social) => (
+                    <a
+                      key={social.name}
+                      href={social.href}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0B2B23] transition-opacity hover:opacity-85"
+                      aria-label={social.name}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <social.icon className="h-4 w-4" weight="fill" />
+                    </a>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* Peta lokasi */}
@@ -118,12 +134,19 @@ export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | nu
           <p className="text-[13px] text-white/60">
             Copyright &copy; {currentYear} {mosqueProfile.name}
           </p>
-          <div className="mt-2 flex items-center justify-center gap-3 text-xs text-white/50">
-            <a href="#" className="transition-colors hover:text-white">Kebijakan Privasi</a>
-            <span aria-hidden="true" className="h-3 w-px bg-white/15" />
-            <a href="#" className="transition-colors hover:text-white">Syarat Penggunaan</a>
-            <span aria-hidden="true" className="h-3 w-px bg-white/15" />
-            <a href="#" className="transition-colors hover:text-white">Aksesibilitas</a>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-white/50">
+            {legalLinks.map((link, i) => (
+              <span key={link.name} className="inline-flex items-center gap-3">
+                {i > 0 && <span aria-hidden="true" className="h-3 w-px bg-white/15" />}
+                {isRealHref(link.href) ? (
+                  <a href={link.href} className="transition-colors hover:text-white">
+                    {link.name}
+                  </a>
+                ) : (
+                  <span>{link.name}</span>
+                )}
+              </span>
+            ))}
           </div>
         </div>
       </div>
