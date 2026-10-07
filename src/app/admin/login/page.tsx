@@ -52,7 +52,9 @@ function LoginForm() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Gagal masuk.");
-      router.replace(data?.shouldChangePassword ? "/admin/settings" : next);
+      // Login pertama (password bawaan) selalu masuk ke Overview (/admin).
+      // Banner peringatan di AdminLayout akan mengarahkan untuk ganti password.
+      router.replace(data?.shouldChangePassword ? "/admin" : next);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal masuk.");

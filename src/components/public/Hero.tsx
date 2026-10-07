@@ -296,15 +296,19 @@ export function Hero({
 
             {/* ─── Kolom Kanan: Interactive Mosque Hub Card (5 Kolom) ──────── */}
             <div id="jadwal-sholat" className="scroll-mt-24 lg:col-span-5">
-              <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 p-4 shadow-2xl backdrop-blur-xl sm:p-7 dark:bg-card/80">
-                {/* Aksen kilau halus di pojok kanan atas kartu */}
+              <div className="relative overflow-hidden rounded-3xl border border-white/50 bg-white/60 p-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)] backdrop-blur-lg backdrop-saturate-150 sm:p-7 dark:border-white/10 dark:bg-zinc-900/55 dark:backdrop-blur-xl">
+                {/* Lapisan kaca: sheen halus + aksen kilau di pojok kanan atas */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-2xl"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-white/10 to-transparent dark:from-white/10 dark:via-transparent dark:to-transparent"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/20 blur-2xl"
                 />
 
                 {/* Header Kartu: Highlight Sholat Berikutnya */}
-                <div className="relative border-b border-border/60 pb-5">
+                <div className="relative border-b border-white/40 pb-5 dark:border-white/10">
                   <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
                     <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <Clock className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
@@ -365,10 +369,10 @@ export function Hero({
                           <div
                             key={p.name}
                             className={cn(
-                              "flex min-w-0 flex-col items-center rounded-xl p-1.5 text-center transition-all sm:p-2",
+                              "flex min-w-0 flex-col items-center rounded-xl border p-1.5 text-center backdrop-blur-sm transition-all sm:p-2",
                               isCurrentActive
-                                ? "border border-primary/40 bg-primary/15 ring-1 ring-primary/30 shadow-xs"
-                                : "bg-muted/40 hover:bg-muted/70",
+                                ? "border-primary/40 bg-primary/15 shadow-xs ring-1 ring-primary/30"
+                                : "border-white/30 bg-white/40 hover:bg-white/65 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10",
                             )}
                           >
                             <Icon
@@ -403,7 +407,7 @@ export function Hero({
 
                 {/* Quick Infaq Box (Rekening Resmi DKM) */}
                 {hasDonationAccount ? (
-                  <div className="relative mt-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
+                  <div className="relative mt-2 rounded-2xl border border-white/40 bg-white/50 p-3.5 backdrop-blur-md sm:p-4 dark:border-white/10 dark:bg-white/5">
                     <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                       <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-primary">
                         <Bank className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -432,7 +436,7 @@ export function Hero({
                           "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200",
                           copied
                             ? "bg-primary text-primary-foreground"
-                            : "border border-border bg-card text-foreground hover:bg-muted active:scale-95",
+                            : "border border-white/40 bg-white/70 text-foreground backdrop-blur-sm hover:bg-white/90 active:scale-95 dark:border-white/10 dark:bg-white/10 dark:hover:bg-white/15",
                         )}
                         aria-label="Salin nomor rekening donasi"
                       >
@@ -451,7 +455,7 @@ export function Hero({
                     </div>
                   </div>
                 ) : (
-                  <div className="relative mt-2 rounded-2xl border border-border/60 bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+                  <div className="relative mt-2 rounded-2xl border border-white/30 bg-white/40 p-3 text-center text-xs text-muted-foreground backdrop-blur-sm">
                     Salurkan infaq dan sedekah melalui kotak amal masjid atau hubungi pengurus.
                   </div>
                 )}

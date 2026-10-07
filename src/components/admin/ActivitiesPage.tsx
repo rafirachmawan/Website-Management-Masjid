@@ -213,12 +213,12 @@ export function ActivitiesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Akan Datang
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-emerald-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {upcomingCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Siap diselenggarakan</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <Hourglass className="w-6 h-6" />
             </div>
           </CardContent>
@@ -230,12 +230,12 @@ export function ActivitiesPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Telah Terlaksana
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-muted-foreground">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {completedCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Arsip kegiatan lampau</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <CheckCircle className="w-6 h-6" />
             </div>
           </CardContent>
@@ -298,29 +298,59 @@ export function ActivitiesPage() {
             return (
               <Card
                 key={act.id}
-                className="border-border hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between group"
+                className="border-border hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between group overflow-hidden"
               >
+                {/* Foto sampul kegiatan */}
+                {act.imageUrl ? (
+                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                    <img
+                      src={act.imageUrl}
+                      alt={`Foto ${act.title}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/45 to-transparent" aria-hidden="true" />
+                    <div className="absolute left-3 top-3">
+                      {isUpcoming ? (
+                        <Badge className="gap-1 border-primary/25 bg-primary font-medium text-primary-foreground shadow-sm">
+                          <Sparkle className="w-3 h-3" />
+                          Akan Datang
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1 font-medium shadow-sm">
+                          Selesai
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                      <CalendarBlank className="h-3 w-3" />
+                      {formatDate(act.date)}
+                    </span>
+                  </div>
+                ) : null}
                 <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
-                    {/* Top status & date badge */}
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <div className="flex items-center gap-2">
-                        {isUpcoming ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1 font-medium">
-                            <Sparkle className="w-3 h-3" />
-                            Akan Datang
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="gap-1 font-medium text-muted-foreground">
-                            Selesai
-                          </Badge>
-                        )}
+                    {/* Top status & date badge (hanya bila tanpa foto — kalau ada foto, badge sudah di atas gambar) */}
+                    {!act.imageUrl && (
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <div className="flex items-center gap-2">
+                          {isUpcoming ? (
+                            <Badge className="bg-primary/10 text-primary border-primary/25 gap-1 font-medium">
+                              <Sparkle className="w-3 h-3" />
+                              Akan Datang
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="gap-1 font-medium text-muted-foreground">
+                              Selesai
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <CalendarBlank className="w-3.5 h-3.5" />
+                          {formatDate(act.date)}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                        <CalendarBlank className="w-3.5 h-3.5" />
-                        {formatDate(act.date)}
-                      </span>
-                    </div>
+                    )}
 
                     <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
                       {act.title}

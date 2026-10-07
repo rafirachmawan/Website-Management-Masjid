@@ -6,6 +6,7 @@ import { downloadTextFile } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import type { MosqueProfile, AppConfig } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
 // Form kosong untuk masjid yang profilnya belum pernah diisi admin.
 // Bukan data contoh — semua kolom wajib dilengkapi sebelum disimpan.
@@ -20,6 +21,8 @@ const EMPTY_PROFILE: MosqueProfile = {
   timezone: "Asia/Jakarta",
   establishedYear: new Date().getFullYear(),
   description: "",
+  logoUrl: "",
+  coverImageUrl: "",
   heroImages: [],
 };
 
@@ -204,6 +207,8 @@ export function SettingsPage() {
       });
       setProfile(saved);
       refreshProfile();
+      // Beri tahu Sidebar agar logo baru langsung tampil tanpa reload.
+      window.dispatchEvent(new CustomEvent("mosque-profile-updated"));
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err) {
@@ -331,42 +336,111 @@ export function SettingsPage() {
                   data tampil di halaman publik.
                 </p>
               )}
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleSaveProfile} className="space-y-6">
+                {/* ── Bagian 1: Logo ─────────────────────────────────── */}
+                <section aria-labelledby="profil-logo-heading" className="rounded-xl border border-border bg-muted/30 p-4">
+                  <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+                    <div className="min-w-0">
+                      <h3 id="profil-logo-heading" className="text-sm font-bold text-foreground">
+                        1. Logo Masjid
+                      </h3>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Logo tampil kecil di pojok kiri atas sidebar admin dan halaman publik.
+                      </p>
+                      <div className="mt-3">
+                        <ImageUploadField
+                          label="File logo"
+                          description="Pilih file → klik Unggah logo → jangan lupa Simpan Profil di bawah."
+                          value={profile.logoUrl ?? ""}
+                          onChange={(url) => setProfile({ ...profile, logoUrl: url })}
+                          variant="logo"
+                        />
+                      </div>
+                    </div>
+                    {/* Pratinjau langsung: persis seperti di sidebar */}
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        Pratinjau sidebar
+                      </p>
+                      <div className="mt-2 flex items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2.5">
+                        {profile.logoUrl ? (
+                          <img
+                            src={profile.logoUrl}
+                            alt="Pratinjau logo sidebar"
+                            className="h-8 w-8 shrink-0 rounded-lg border border-border bg-white object-contain p-0.5"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+                            {(profile.shortName || profile.name || "M").slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="truncate text-sm font-semibold text-foreground">
+                          {profile.shortName || profile.name || "Nama Masjid"}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                        {profile.logoUrl
+                          ? "Seperti ini logo akan terlihat di sidebar."
+                          : "Belum ada logo — sidebar memakai inisial nama."}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ── Bagian 2: Identitas ────────────────────────────── */}
+                <section aria-labelledby="profil-identitas-heading" className="space-y-4">
+                  <div>
+                    <h3 id="profil-identitas-heading" className="text-sm font-bold text-foreground">
+                      2. Identitas Masjid
+                    </h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Nama ini tampil besar di halaman depan publik dan laporan resmi.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="profil-name" className="text-xs font-semibold text-foreground">
                       Nama Lengkap Masjid <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="profil-name"
                       type="text"
+                      placeholder="Contoh: Masjid Ar-Rahman"
                       value={profile.name}
                       onChange={(e) =>
                         setProfile({ ...profile, name: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="profil-short" className="text-xs font-semibold text-foreground">
                       Nama Singkat / Panggilan
                     </label>
                     <input
+                      id="profil-short"
                       type="text"
+                      placeholder="Contoh: Ar-Rahman"
                       value={profile.shortName}
                       onChange={(e) =>
                         setProfile({ ...profile, shortName: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                     />
+                    <p className="text-[11px] text-muted-foreground">Dipakai di sidebar agar pendek dan rapi.</p>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="profil-year" className="text-xs font-semibold text-foreground">
                       Tahun Berdiri
                     </label>
                     <input
+                      id="profil-year"
                       type="number"
+                      min={1900}
+                      max={2100}
+                      placeholder="Contoh: 2019"
                       value={profile.establishedYear}
                       onChange={(e) =>
                         setProfile({
@@ -378,62 +452,117 @@ export function SettingsPage() {
                     />
                   </div>
 
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label htmlFor="profil-desc" className="text-xs font-semibold text-foreground">
+                      Deskripsi & Sejarah Singkat Masjid
+                    </label>
+                    <textarea
+                      id="profil-desc"
+                      rows={4}
+                      placeholder="Contoh: Masjid Ar-Rahman terletak di utara Stadion Supriyadi, diresmikan tahun 2019…"
+                      value={profile.description}
+                      onChange={(e) =>
+                        setProfile({ ...profile, description: e.target.value })
+                      }
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder:text-muted-foreground/60"
+                    />
+                    <p className="text-[11px] text-muted-foreground">Tampil di halaman depan, di bawah nama masjid.</p>
+                  </div>
+                  </div>
+                </section>
+
+                {/* ── Bagian 3: Kontak & alamat ──────────────────────── */}
+                <section aria-labelledby="profil-kontak-heading" className="space-y-4 border-t border-border pt-5">
+                  <div>
+                    <h3 id="profil-kontak-heading" className="text-sm font-bold text-foreground">
+                      3. Kontak & Alamat
+                    </h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Dipakai jamaah untuk menghubungi dan menemukan lokasi masjid.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="profil-phone" className="text-xs font-semibold text-foreground">
                       Nomor Telepon / WhatsApp Sekretariat
                     </label>
                     <input
+                      id="profil-phone"
                       type="text"
+                      inputMode="tel"
+                      placeholder="Contoh: 0857-0718-5783"
                       value={profile.phone}
                       onChange={(e) =>
                         setProfile({ ...profile, phone: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                     />
                   </div>
 
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-foreground">
+                  <div className="space-y-1.5">
+                    <label htmlFor="profil-email" className="text-xs font-semibold text-foreground">
                       Email Resmi DKM
                     </label>
                     <input
+                      id="profil-email"
                       type="email"
+                      placeholder="Contoh: takmir@arrahman.id"
                       value={profile.email}
                       onChange={(e) =>
                         setProfile({ ...profile, email: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                     />
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="profil-address" className="text-xs font-semibold text-foreground">
                       Alamat Lengkap Masjid
                     </label>
                     <input
+                      id="profil-address"
                       type="text"
+                      placeholder="Contoh: Jl. Ciliwung No.2, Bendo, Kepanjenkidul, Kota Blitar 66116"
                       value={profile.address}
                       onChange={(e) =>
                         setProfile({ ...profile, address: e.target.value })
                       }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground/60"
                     />
                   </div>
+                  </div>
+                </section>
 
-                  {/* Lokasi — menentukan jadwal sholat otomatis */}
-                  <div className="space-y-1.5 md:col-span-2">
-                    <p className="text-xs font-semibold text-foreground">
-                      Lokasi Masjid <span className="font-normal text-muted-foreground">(menentukan jadwal sholat otomatis)</span>
-                    </p>
+                  {/* ── Bagian 4: Lokasi (jadwal sholat otomatis) ─────── */}
+                  <section aria-labelledby="profil-lokasi-heading" className="space-y-3 border-t border-border pt-5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <h3 id="profil-lokasi-heading" className="text-sm font-bold text-foreground">
+                          4. Lokasi Masjid
+                        </h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Lokasi ini dipakai untuk menghitung jadwal sholat otomatis setiap hari.
+                        </p>
+                      </div>
+                      <a
+                        href="https://www.google.com/maps"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-8 items-center rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                      >
+                        Buka Google Maps →
+                      </a>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="profil-lat" className="text-xs font-semibold text-foreground">
                           Garis Lintang <span className="text-red-500">*</span>
                         </label>
                         <input
+                          id="profil-lat"
                           type="number"
                           step="any"
-                          placeholder="-7.56"
+                          placeholder="-8,09"
                           value={profile.latitude || ""}
                           onChange={(e) =>
                             setProfile({ ...profile, latitude: parseFloat(e.target.value) || 0 })
@@ -442,13 +571,14 @@ export function SettingsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="profil-lng" className="text-xs font-semibold text-foreground">
                           Garis Bujur <span className="text-red-500">*</span>
                         </label>
                         <input
+                          id="profil-lng"
                           type="number"
                           step="any"
-                          placeholder="112.01"
+                          placeholder="112,16"
                           value={profile.longitude || ""}
                           onChange={(e) =>
                             setProfile({ ...profile, longitude: parseFloat(e.target.value) || 0 })
@@ -457,51 +587,39 @@ export function SettingsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground">
+                        <label htmlFor="profil-tz" className="text-xs font-semibold text-foreground">
                           Zona Waktu
                         </label>
                         <select
+                          id="profil-tz"
                           value={profile.timezone}
                           onChange={(e) =>
                             setProfile({ ...profile, timezone: e.target.value })
                           }
                           className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          <option value="Asia/Jakarta">Asia/Jakarta (WIB)</option>
-                          <option value="Asia/Makassar">Asia/Makassar (WITA)</option>
-                          <option value="Asia/Jayapura">Asia/Jayapura (WIT)</option>
+                          <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
+                          <option value="Asia/Makassar">WITA — Asia/Makassar</option>
+                          <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
                         </select>
                       </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Lihat titik di Google Maps (klik kanan → salin koordinat), contoh Blitar: -8.09, 112.16.
+                    <p className="rounded-lg bg-muted/50 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                      Cara isi: buka Google Maps → klik kanan tepat di masjid → klik angka koordinat untuk menyalin.
+                      Angka pertama = lintang, kedua = bujur. Contoh Blitar: -8,09 dan 112,16.
                     </p>
-                  </div>
+                  </section>
 
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-foreground">
-                      Deskripsi & Sejarah Singkat Masjid
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={profile.description}
-                      onChange={(e) =>
-                        setProfile({ ...profile, description: e.target.value })
-                      }
-                      className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                  </div>
-
-                  {/* Hero Banner Images Management */}
-                  <div className="space-y-3 md:col-span-2 pt-4 border-t border-border">
+                  {/* ── Bagian 5: Foto halaman depan ─────────────────── */}
+                  <section aria-labelledby="profil-foto-heading" className="space-y-3 border-t border-border pt-5">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
-                        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                          <Image className="w-4 h-4 text-primary" />
-                          Foto / Banner Latar Hero Section (Halaman Depan)
-                        </label>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Gambar latar belakang transparan pada bagian sambutan utama di website publik.
+                        <h3 id="profil-foto-heading" className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                          <Image className="h-4 w-4 text-primary" aria-hidden="true" />
+                          5. Foto Halaman Depan
+                        </h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Foto latar di bagian sambutan website publik. 1 foto = diam, lebih dari 1 = geser otomatis.
                         </p>
                       </div>
                       <div>
@@ -598,11 +716,12 @@ export function SettingsPage() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/40 rounded-lg border border-border text-[11px] text-muted-foreground leading-relaxed">
-                      💡 <strong>Ketentuan Sistem:</strong> Jika Anda mengunggah <strong>lebih dari 1 foto</strong>, hero section di halaman utama secara otomatis akan menjadi <em>slide carousel transparan</em> yang bergulir halus beserta titik indikator navigasi. Jika <strong>hanya 1 foto</strong>, foto akan tampil diam (statis) tanpa bergulir.
+                    <div className="rounded-lg border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                      💡 <strong>Cara kerja:</strong> <strong>1 foto</strong> = tampil diam.
+                      <strong> Lebih dari 1 foto</strong> = otomatis jadi slide yang bergeser sendiri
+                      di halaman depan.
                     </div>
-                  </div>
-                </div>
+                  </section>
 
                 {profileError && (
                   <p
@@ -613,9 +732,13 @@ export function SettingsPage() {
                   </p>
                 )}
 
-                <div className="pt-3 flex justify-end">
-                  <Button type="submit" className="gap-2" disabled={isSavingProfile}>
-                    <FloppyDisk className="w-4 h-4" />
+                <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/[0.05] p-3.5 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Selesai mengisi? Klik <strong className="text-foreground">Simpan Profil</strong> agar
+                    logo, nama, dan foto tampil di website & sidebar.
+                  </p>
+                  <Button type="submit" className="gap-2 sm:min-w-40" disabled={isSavingProfile}>
+                    <FloppyDisk className="h-4 w-4" />
                     <span>{isSavingProfile ? "Menyimpan..." : "Simpan Profil"}</span>
                   </Button>
                 </div>

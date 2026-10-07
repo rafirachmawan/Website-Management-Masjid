@@ -48,11 +48,19 @@ export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | nu
         <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
           {/* Identitas masjid */}
           <div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-              <span className="text-base font-bold text-[#0B2B23]">
-                {mosqueProfile.shortName.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
+            {mosqueProfile.logoUrl?.trim() ? (
+              <img
+                src={mosqueProfile.logoUrl}
+                alt={`Logo ${mosqueProfile.name}`}
+                className="h-12 w-12 rounded-full border border-white/20 bg-white object-cover p-0.5"
+              />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
+                <span className="text-base font-bold text-[#0B2B23]">
+                  {(mosqueProfile.shortName?.trim() || mosqueProfile.name?.trim() || "M").slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+            )}
             <h3 className="font-display mt-4 text-xl font-semibold text-white md:text-2xl">
               {mosqueProfile.name}
             </h3>

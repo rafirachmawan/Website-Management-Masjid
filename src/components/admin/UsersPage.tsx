@@ -164,19 +164,19 @@ export function UsersPage() {
     switch (systemRole) {
       case "superadmin":
         return (
-          <Badge className="bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 font-medium">
+          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
             Super Admin
           </Badge>
         );
       case "admin":
         return (
-          <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800 font-medium">
+          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
             Admin Sistem
           </Badge>
         );
       case "bendahara":
         return (
-          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 font-medium">
+          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
             Bendahara
           </Badge>
         );
@@ -237,12 +237,12 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Pengurus Aktif
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-emerald-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {activeCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Status aktif bertugas</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <CheckCircle className="w-6 h-6" />
             </div>
           </CardContent>
@@ -254,12 +254,12 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Pengelola Kas & Web
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-sky-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {adminCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Akses bendahara & admin</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <ShieldCheck className="w-6 h-6" />
             </div>
           </CardContent>
@@ -271,12 +271,12 @@ export function UsersPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Penanggung Jawab Utama
               </p>
-              <h3 className="text-2xl font-bold mt-1 tabular-nums text-purple-600">
+              <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {superAdminCount}
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Ketua DKM (Superadmin)</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <IdentificationBadge className="w-6 h-6" />
             </div>
           </CardContent>
@@ -299,8 +299,8 @@ export function UsersPage() {
             </div>
             <div className="flex gap-2">
               <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || "all")}>
-                <SelectTrigger className="w-42.5">
-                  <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectTrigger className="w-fit max-w-full shrink-0 justify-start">
+                  <Funnel className="w-4 h-4 shrink-0 text-muted-foreground" />
                   <SelectValue placeholder="Hak Akses">
                     {roleFilter === "all"
                       ? "Semua Hak Akses"

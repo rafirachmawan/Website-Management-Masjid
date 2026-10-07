@@ -249,7 +249,7 @@ export function AnnouncementsPage() {
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Agenda & kegiatan utama</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <BellSimpleRinging className="w-6 h-6" />
             </div>
           </CardContent>
@@ -266,7 +266,7 @@ export function AnnouncementsPage() {
               </h3>
               <p className="text-xs text-muted-foreground mt-1">Pemberitahuan rutin</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
               <Broadcast className="w-6 h-6" />
             </div>
           </CardContent>
@@ -289,13 +289,13 @@ export function AnnouncementsPage() {
             </div>
             <div className="flex gap-2">
               <Select value={priorityFilter} onValueChange={(val) => setPriorityFilter(val || "all")}>
-                <SelectTrigger className="w-40">
-                  <Funnel className="w-4 h-4 mr-2 text-muted-foreground" />
+                <SelectTrigger className="w-fit max-w-full shrink-0 justify-start">
+                  <Funnel className="w-4 h-4 shrink-0 text-muted-foreground" />
                   <SelectValue placeholder="Prioritas">
                     {priorityFilter === "all" ? "Semua Prioritas" : priorityFilter === "important" ? "Penting" : "Biasa"}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent align="end">
                   <SelectItem value="all">Semua Prioritas</SelectItem>
                   <SelectItem value="important">Penting</SelectItem>
                   <SelectItem value="normal">Biasa</SelectItem>

@@ -42,9 +42,17 @@ export function Sidebar() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const { data: profile, refresh: refreshProfile } = useApi<MosqueProfile>("/api/mosque-profile");
   const brandName = profile?.shortName || profile?.name || "Masjid";
   const brandInitials = profile ? getInitials(profile.shortName || profile.name) : "M";
+  const brandLogoUrl = profile?.logoUrl?.trim() ? profile.logoUrl : null;
+
+  // Segarkan brand (logo/nama) segera setelah profil disimpan di Pengaturan.
+  useEffect(() => {
+    const onUpdated = () => refreshProfile();
+    window.addEventListener("mosque-profile-updated", onUpdated);
+    return () => window.removeEventListener("mosque-profile-updated", onUpdated);
+  }, [refreshProfile]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -87,17 +95,60 @@ export function Sidebar() {
       aria-label="Navigasi admin"
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+        <div
+          className={cn(
+            "flex border-b border-border",
+            collapsed && !isMobile
+              ? "flex-col items-center justify-center gap-1 px-2 py-3"
+              : "h-16 items-center justify-between px-4",
+          )}
+        >
           {!collapsed && !isMobile && (
-            <Link href="/admin" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <span className="text-primary font-bold text-sm">{brandInitials}</span>
-              </div>
-              <span className="font-display text-[15px] font-semibold text-foreground">{brandName}</span>
+            <Link href="/admin" className="flex min-w-0 items-center gap-3">
+              {brandLogoUrl ? (
+                <img
+                  src={brandLogoUrl}
+                  alt={`Logo ${brandName}`}
+                  className="h-8 w-8 shrink-0 rounded-lg border border-border bg-white object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <span className="text-primary font-bold text-sm">{brandInitials}</span>
+                </div>
+              )}
+              <span className="truncate font-display text-[15px] font-semibold text-foreground">{brandName}</span>
+            </Link>
+          )}
+          {collapsed && !isMobile && (
+            <Link href="/admin" className="flex items-center" aria-label={brandName}>
+              {brandLogoUrl ? (
+                <img
+                  src={brandLogoUrl}
+                  alt={`Logo ${brandName}`}
+                  className="h-8 w-8 rounded-lg border border-border bg-white object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <span className="text-sm font-bold text-primary">{brandInitials}</span>
+                </div>
+              )}
             </Link>
           )}
           {isMobile && (
-            <span className="font-display text-[15px] font-semibold text-foreground">{brandName}</span>
+            <Link href="/admin" className="flex min-w-0 items-center gap-2.5">
+              {brandLogoUrl ? (
+                <img
+                  src={brandLogoUrl}
+                  alt={`Logo ${brandName}`}
+                  className="h-8 w-8 shrink-0 rounded-lg border border-border bg-white object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <span className="text-sm font-bold text-primary">{brandInitials}</span>
+                </div>
+              )}
+              <span className="truncate font-display text-[15px] font-semibold text-foreground">{brandName}</span>
+            </Link>
           )}
           <button
             onClick={() => {
@@ -109,7 +160,7 @@ export function Sidebar() {
             }}
             className={cn(
               "p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-              !isMobile && collapsed && "ml-auto"
+              !isMobile && collapsed && "p-1.5",
             )}
             aria-label={isMobile ? "Tutup menu" : collapsed ? "Perluas sidebar" : "Collapse sidebar"}
             aria-expanded={isMobile ? isMobileOpen : !collapsed}
