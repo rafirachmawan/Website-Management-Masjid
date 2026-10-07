@@ -18,6 +18,7 @@ export default async function Home() {
     prayer,
     announcements,
     activities,
+    config,
   } = await getPublicHomeData();
 
   return (
@@ -38,7 +39,7 @@ export default async function Home() {
         <Navbar />
       </div>
       <div id="beranda" className="-mt-14 scroll-mt-20">
-        <Hero profile={profile} prayer={prayer} />
+        <Hero profile={profile} prayer={prayer} config={config} />
       </div>
       <main className="flex flex-1 flex-col">
         {/* Informasi */}

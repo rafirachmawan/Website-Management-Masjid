@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { MosqueProfile, DailyPrayerSchedule } from "@/types";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import type { MosqueProfile, DailyPrayerSchedule, PrayerTime, AppConfig } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import {
   Sun,
@@ -11,7 +11,13 @@ import {
   SunHorizon,
   MapPin,
   Phone,
-  ArrowDown,
+  Bank,
+  Copy,
+  Check,
+  Heart,
+  CalendarBlank,
+  ShieldCheck,
+  Sparkle,
 } from "@phosphor-icons/react";
 
 const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -22,155 +28,113 @@ const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   Isya: Star,
 };
 
-/**
- * Pita jadwal sholat di bawah hero — lima waktu dalam satu baris.
- * Dipisah dari hero supaya kolom kanan hero bisa dipakai foto masjid
- * penuh ke tepi layar, dan tautan Navbar/Footer ke #jadwal-sholat tetap hidup.
- */
-function PrayerTimesBand({
-  today,
-  shortName,
-}: {
-  today: DailyPrayerSchedule | null;
-  shortName: string;
-}) {
-  return (
-    <section
-      id="jadwal-sholat"
-      aria-label="Jadwal sholat hari ini"
-      className="scroll-mt-20 border-t border-border/60 bg-muted/40"
-    >
-      <div className="container mx-auto px-4 py-12 md:px-6 md:py-14 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-12">
-          <div>
-            <p className="eyebrow-friendly border border-primary/25 bg-primary/[0.07] text-primary">
-              <Clock className="h-4 w-4" aria-hidden="true" />
-              Waktu Sholat
-            </p>
-            <h2 className="font-display text-h2-fluid mt-4 font-semibold text-foreground">
-              Jadwal Sholat Hari Ini
-            </h2>
-            {today ? (
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {formatDate(today.date, {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-                <span aria-hidden="true"> · </span>
-                <span className="font-medium text-primary">{today.hijriDate}</span>
-              </p>
-            ) : (
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Jadwal sholat hari ini belum tersedia. Pengurus dapat melengkapi
-                lokasi masjid di halaman admin.
-              </p>
-            )}
-          </div>
 
-          {today && (
-            <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-              {today.prayers.map((p) => {
-                const Icon = PRAYER_ICONS[p.name] || Clock;
-                return (
-                  <li
-                    key={p.name}
-                    className={cn(
-                      "rounded-2xl border p-3.5 transition-colors",
-                      p.isNext
-                        ? "border-primary/45 bg-primary/[0.07]"
-                        : "border-border/70 bg-card",
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <Icon
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          p.isNext ? "text-primary" : "text-primary/60",
-                        )}
-                        aria-hidden="true"
-                      />
-                      <span className="truncate text-[13px] font-semibold text-foreground">
-                        {p.name}
-                      </span>
-                    </span>
-                    <span className="mt-2 block text-xl font-bold tabular-nums text-foreground">
-                      {p.time}
-                    </span>
-                    <span
-                      lang="ar"
-                      dir="rtl"
-                      aria-hidden="true"
-                      className="font-arabic block text-base text-muted-foreground"
-                    >
-                      {p.arabic}
-                    </span>
-                    {p.isNext && (
-                      <span className="mt-1.5 block text-[11px] font-bold tracking-wide text-primary">
-                        Berikutnya
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {today && (
-          <p className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-border/60 pt-4 text-[13px] text-muted-foreground">
-            <span className="flex items-center gap-1.5 tabular-nums">
-              <SunHorizon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              Terbit {today.sunrise}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              {shortName}
-            </span>
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
 
 export function Hero({
   profile: mosqueProfile,
   prayer,
+  config,
 }: {
   profile: MosqueProfile | null;
   prayer: { today: DailyPrayerSchedule | null; week: DailyPrayerSchedule[] };
+  config?: AppConfig | null;
 }) {
   // Background images from admin / mosque profile
-  const images =
-    mosqueProfile?.heroImages && mosqueProfile.heroImages.length > 0
+  const images = useMemo(() => {
+    return mosqueProfile?.heroImages && mosqueProfile.heroImages.length > 0
       ? mosqueProfile.heroImages
       : mosqueProfile?.coverImageUrl
         ? [mosqueProfile.coverImageUrl]
         : [];
+  }, [mosqueProfile]);
 
   const isSlider = images.length > 1;
   const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Quick Infaq Copy State
+  const [copied, setCopied] = useState(false);
+
+  // Countdown ke waktu sholat berikutnya
+  const [timeCountdown, setTimeCountdown] = useState<string>("");
+  const [currentNextPrayer, setCurrentNextPrayer] = useState<PrayerTime | null>(null);
 
   const goToNext = useCallback(() => {
     if (!isSlider) return;
     setCurrentIdx((prev) => (prev + 1) % images.length);
   }, [isSlider, images.length]);
 
-  // Auto slide automatically every 2 seconds if there are multiple images
+  // Auto slide automatically every 5 seconds if there are multiple images
   useEffect(() => {
     if (!isSlider) return;
-
     const timer = setInterval(() => {
       goToNext();
-    }, 2000);
-
+    }, 5000);
     return () => clearInterval(timer);
   }, [isSlider, goToNext]);
 
-  // Profil/jadwal belum diisi admin — tampilkan sambutan netral, bukan skeleton.
-  // pt-16 = ruang navbar sticky (h-14) + jarak asal (pt-2).
+  // Dynamic live countdown calculation
+  useEffect(() => {
+    const prayers = prayer.today?.prayers;
+    if (!prayers || prayers.length === 0) return;
+
+    function calculateCountdown() {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Cari sholat berikutnya yang waktunya setelah jam sekarang
+      let targetPrayer = prayers?.find((p) => {
+        const [h, m] = p.time.split(":").map(Number);
+        return h * 60 + m > currentMinutes;
+      });
+
+      let diffMinutes = 0;
+      if (targetPrayer) {
+        const [h, m] = targetPrayer.time.split(":").map(Number);
+        diffMinutes = h * 60 + m - currentMinutes;
+      } else {
+        // Jika sudah lewat Isya, sholat berikutnya adalah Subuh besok
+        targetPrayer = prayers?.[0];
+        if (targetPrayer) {
+          const [h, m] = targetPrayer.time.split(":").map(Number);
+          diffMinutes = (24 * 60 - currentMinutes) + (h * 60 + m);
+        }
+      }
+
+      setCurrentNextPrayer(targetPrayer || null);
+
+      if (diffMinutes <= 0) {
+        setTimeCountdown("Waktu Sholat Telah Tiba");
+      } else if (diffMinutes < 60) {
+        setTimeCountdown(`${diffMinutes} menit lagi`);
+      } else {
+        const hours = Math.floor(diffMinutes / 60);
+        const mins = diffMinutes % 60;
+        setTimeCountdown(mins > 0 ? `${hours} jam ${mins} mnt lagi` : `${hours} jam lagi`);
+      }
+    }
+
+    calculateCountdown();
+    const interval = setInterval(calculateCountdown, 10000);
+    return () => clearInterval(interval);
+  }, [prayer.today]);
+
+  const handleCopyAccount = async (text: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Profil belum diisi admin — sambutan ramah
   if (!mosqueProfile) {
     return (
       <header
@@ -200,19 +164,18 @@ export function Hero({
 
   const today = prayer.today;
   const rawName = mosqueProfile.name.trim();
-  // Cegah dobel kata "Masjid" bila pengurus sudah menuliskannya di profil.
   const heading = /masjid/i.test(rawName) ? rawName : `Masjid ${rawName}`;
+  const nextPrayerToShow = currentNextPrayer || today?.prayers.find((p) => p.isNext) || today?.prayers[0];
+
+  const hasDonationAccount =
+    Boolean(config?.accountNumber && config.accountNumber.trim().length > 0);
 
   return (
-    <>
-      <header className="relative isolate flex min-h-svh flex-col overflow-hidden pt-14">
-        {/* ─── Foto masjid ────────────────────────────────────────────────
-            Layar lebar: foto naik ke tepi kanan dan terpotong di bawah,
-            teks kiri berdiri di atas warna latar yang bersih.
-            Layar kecil: foto turun ke belakang layar jadi backdrop lembut. */}
+    <header className="relative isolate flex min-h-[92vh] flex-col justify-center overflow-hidden pt-16 lg:pt-20">
+        {/* ─── Foto masjid latar dengan kejernihan maksimal ─────────────── */}
         {images.length > 0 && (
           <div
-            className="pointer-events-none absolute inset-0 -z-10 select-none"
+            className="pointer-events-none absolute inset-0 -z-10 select-none overflow-hidden"
             aria-hidden="true"
           >
             {images.map((img, idx) => (
@@ -223,75 +186,279 @@ export function Hero({
                 aria-hidden="true"
                 referrerPolicy="no-referrer"
                 className={cn(
-                  "absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-700 ease-in-out",
-                  idx === currentIdx ? "opacity-100" : "opacity-0",
+                  "absolute inset-0 h-full w-full object-cover object-center transition-all duration-1000 ease-out",
+                  idx === currentIdx
+                    ? "scale-100 opacity-100 brightness-[1.02] contrast-[1.03]"
+                    : "scale-105 opacity-0",
                 )}
               />
             ))}
-            {/* Kabut warna latar: teks kiri selalu terbaca, foto menyatu
-                halus ke background tanpa garis potong yang keras. */}
-            <div className="absolute inset-0 bg-background/60 lg:bg-linear-to-r lg:from-background lg:from-10% lg:via-background/40 lg:via-50% lg:to-transparent lg:to-80%" />
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent" />
+            {/* Overlay lembut: melindungi keterbacaan teks di kiri, membiarkan foto masjid di tengah & kanan tampil jernih dan tajam */}
+            <div className="absolute inset-0 bg-linear-to-r from-background/95 via-background/60 to-transparent lg:from-background/90 lg:from-10% lg:via-background/45 lg:via-45% lg:to-transparent lg:to-75%" />
+            <div className="absolute inset-x-0 top-0 h-20 bg-linear-to-b from-background/80 via-background/20 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-background to-transparent" />
           </div>
         )}
 
-        <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 pb-12 pt-10 md:px-6 md:pb-16 lg:px-8 lg:pb-20 lg:pt-24">
-          <div className="grid w-full gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
-            <div className="max-w-2xl">
-              <h1 className="font-display text-display-fluid font-semibold text-foreground">
+        <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 py-10 md:px-6 md:py-14 lg:px-8 lg:py-16">
+          <div className="grid w-full items-center gap-10 lg:grid-cols-12 lg:gap-12">
+            {/* ─── Kolom Kiri: Sambutan & Identitas Masjid (7 Kolom) ───────── */}
+            <div className="flex flex-col items-start lg:col-span-7">
+              {/* Kaligrafi Basmalah & Status Badge */}
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  lang="ar"
+                  dir="rtl"
+                  aria-label="Bismillahirrahmanirrahim"
+                  className="font-arabic text-xl font-normal text-primary/85 md:text-2xl"
+                >
+                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                </span>
+                <span className="hidden text-border sm:inline" aria-hidden="true">
+                  |
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+                  </span>
+                  Terbuka untuk Jamaah 24 Jam
+                </span>
+              </div>
+
+              {/* Judul Megah Masjid */}
+              <h1 className="font-display mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl lg:leading-[1.12]">
                 {heading}
               </h1>
 
+              {/* Lokasi Alamat */}
               <p
                 title={mosqueProfile.address}
-                className="mt-5 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-primary/25 bg-primary/[0.07] px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-primary"
+                className="mt-4 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-border/80 bg-background/80 px-3.5 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm sm:text-sm"
               >
-                <MapPin
-                  className="h-3.5 w-3.5 shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate whitespace-nowrap">{mosqueProfile.address}</span>
+                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="truncate">{mosqueProfile.address}</span>
               </p>
 
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:leading-loose">
+              {/* Deskripsi Masjid */}
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
                 {mosqueProfile.description?.trim() ||
                   "Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan penyaluran dana tercatat tertib untuk kemaslahatan jamaah."}
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              {/* Dual Action CTA Buttons */}
+              <div className="mt-8 flex flex-wrap items-center gap-3.5">
                 <a
-                  href="#jadwal-sholat"
-                  className="inline-flex h-11 items-center gap-1.5 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_16px_30px_-14px_var(--primary)] transition-all duration-200 hover:-translate-y-px hover:brightness-110 active:translate-y-0 active:scale-[0.98]"
+                  href="/keuangan#donasi"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 active:scale-[0.99]"
                 >
-                  Gulir ke Bawah
-                  <ArrowDown className="h-4 w-4 animate-bounce" aria-hidden="true" />
+                  <Heart className="h-4 w-4" weight="fill" aria-hidden="true" />
+                  Salurkan Infaq
+                </a>
+
+                <a
+                  href="#informasi"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-card/80 px-6 text-sm font-semibold text-foreground backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:scale-[0.99]"
+                >
+                  <CalendarBlank className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Agenda & Informasi
                 </a>
               </div>
 
-              <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
+              {/* Info Tambahan Bawah */}
+              <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground sm:text-sm">
                 {mosqueProfile.phone && (
-                  <span className="flex items-center gap-1.5 tabular-nums">
+                  <a
+                    href={`tel:${mosqueProfile.phone}`}
+                    className="flex items-center gap-1.5 transition-colors hover:text-primary"
+                  >
                     <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                    {mosqueProfile.phone}
-                  </span>
+                    <span>{mosqueProfile.phone}</span>
+                  </a>
                 )}
                 {mosqueProfile.establishedYear ? (
-                  <span>Berdiri sejak {mosqueProfile.establishedYear}</span>
+                  <span className="flex items-center gap-1.5">
+                    <Sparkle className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Berdiri sejak {mosqueProfile.establishedYear}
+                  </span>
                 ) : null}
                 {today && (
-                  <span className="font-medium text-primary">
+                  <span className="flex items-center gap-1.5 font-medium text-foreground">
+                    <CalendarBlank className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {today.hijriDate}
                   </span>
                 )}
               </div>
             </div>
 
-            {/* Kolom kanan sengaja kosong: ruang foto bleed ke tepi layar. */}
-            <div aria-hidden="true" className="hidden lg:block" />
+            {/* ─── Kolom Kanan: Interactive Mosque Hub Card (5 Kolom) ──────── */}
+            <div id="jadwal-sholat" className="scroll-mt-24 lg:col-span-5">
+              <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-7 dark:bg-card/80">
+                {/* Aksen kilau halus di pojok kanan atas kartu */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-2xl"
+                />
+
+                {/* Header Kartu: Highlight Sholat Berikutnya */}
+                <div className="relative border-b border-border/60 pb-5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+                      Waktu Sholat Berikutnya
+                    </span>
+                    {timeCountdown && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                        {timeCountdown}
+                      </span>
+                    )}
+                  </div>
+
+                  {nextPrayerToShow && (
+                    <div className="mt-3.5 flex items-baseline justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                            {nextPrayerToShow.name}
+                          </h3>
+                          <span
+                            lang="ar"
+                            dir="rtl"
+                            className="font-arabic text-lg text-muted-foreground"
+                          >
+                            {nextPrayerToShow.arabic}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDate(today?.date || new Date().toISOString(), {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-3xl font-extrabold tabular-nums tracking-tight text-primary sm:text-4xl">
+                          {nextPrayerToShow.time}
+                        </span>
+                        <span className="ml-1 text-xs font-medium text-muted-foreground">
+                          WIB
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5 Waktu Sholat Hari Ini (Compact Grid) */}
+                {today && (
+                  <div className="relative py-4">
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {today.prayers.map((p) => {
+                        const isCurrentActive =
+                          nextPrayerToShow?.name.toLowerCase() === p.name.toLowerCase();
+                        const Icon = PRAYER_ICONS[p.name] || Clock;
+
+                        return (
+                          <div
+                            key={p.name}
+                            className={cn(
+                              "flex flex-col items-center rounded-xl p-2 text-center transition-all",
+                              isCurrentActive
+                                ? "border border-primary/40 bg-primary/15 ring-1 ring-primary/30 shadow-xs"
+                                : "bg-muted/40 hover:bg-muted/70",
+                            )}
+                          >
+                            <Icon
+                              className={cn(
+                                "h-3.5 w-3.5",
+                                isCurrentActive ? "text-primary" : "text-muted-foreground",
+                              )}
+                              aria-hidden="true"
+                            />
+                            <span
+                              className={cn(
+                                "mt-1 text-[11px] font-semibold leading-none",
+                                isCurrentActive ? "text-foreground" : "text-muted-foreground",
+                              )}
+                            >
+                              {p.name}
+                            </span>
+                            <span
+                              className={cn(
+                                "mt-1 text-xs font-bold tabular-nums",
+                                isCurrentActive ? "text-primary" : "text-foreground",
+                              )}
+                            >
+                              {p.time}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Infaq Box (Rekening Resmi DKM) */}
+                {hasDonationAccount ? (
+                  <div className="relative mt-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Bank className="h-4 w-4" aria-hidden="true" />
+                        <span>Rekening Donasi & Infaq</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                        <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                        DKM Resmi
+                      </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground">
+                          {config?.bankName} · {config?.accountHolder}
+                        </div>
+                        <div className="mt-0.5 text-sm font-bold tabular-nums tracking-wide text-foreground sm:text-base">
+                          {config?.accountNumber}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAccount(config?.accountNumber || "")}
+                        className={cn(
+                          "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all duration-200",
+                          copied
+                            ? "bg-primary text-primary-foreground"
+                            : "border border-border bg-card text-foreground hover:bg-muted active:scale-95",
+                        )}
+                        aria-label="Salin nomor rekening donasi"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                            Tersalin!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                            Salin
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative mt-2 rounded-2xl border border-border/60 bg-muted/30 p-3 text-center text-xs text-muted-foreground">
+                    Salurkan infaq dan sedekah melalui kotak amal masjid atau hubungi pengurus.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
+          {/* Navigasi Titik Carousel (jika foto > 1) */}
           {isSlider && (
-            <div className="flex items-center justify-center gap-2 pt-12 lg:justify-end">
+            <div className="mt-8 flex items-center justify-center gap-2 lg:justify-start">
               {images.map((_, idx) => (
                 <button
                   key={idx}
@@ -299,7 +466,7 @@ export function Hero({
                   className={cn(
                     "h-1.5 cursor-pointer rounded-full transition-all duration-300",
                     idx === currentIdx
-                      ? "w-7 bg-primary shadow-xs"
+                      ? "w-8 bg-primary shadow-xs"
                       : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60",
                   )}
                   aria-label={`Lihat banner ${idx + 1}`}
@@ -309,8 +476,6 @@ export function Hero({
           )}
         </div>
       </header>
-
-      <PrayerTimesBand today={today} shortName={mosqueProfile.shortName} />
-    </>
   );
 }
+
