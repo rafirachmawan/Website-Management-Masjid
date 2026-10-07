@@ -77,7 +77,7 @@ function FlowRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold text-foreground">{title}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{desc}</p>
-        <p className="mt-1.5 text-[17px] font-bold tabular-nums text-foreground">
+        <p className="mt-1.5 text-[15px] font-bold tabular-nums text-foreground sm:text-[17px]">
           {prefix}
           {formatCurrency(value).replace("Rp", "Rp ")}
         </p>
@@ -158,7 +158,7 @@ export function FinancialSummaryCards({
               </p>
             </div>
 
-            <p className="mt-4 text-balance text-4xl font-extrabold tracking-tight tabular-nums text-foreground sm:text-5xl md:text-[3.4rem] md:leading-[1.05]">
+            <p className="mt-4 text-balance break-words text-3xl font-extrabold tracking-tight tabular-nums text-foreground sm:text-5xl md:text-[3.4rem] md:leading-[1.05]">
               {formatCurrency(currentBalance)}
             </p>
 
@@ -195,26 +195,26 @@ export function FinancialSummaryCards({
                   <span className="text-[10px] font-medium text-muted-foreground">—</span>
                 </div>
               )}
-              <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="mt-4 grid grid-cols-1 gap-4 min-[480px]:grid-cols-3 min-[480px]:gap-3">
                 <div>
                   <p className="text-xs text-muted-foreground">Pemasukan</p>
-                  <p className="mt-1 text-[15px] font-bold tabular-nums text-primary">
+                  <p className="mt-1 break-words text-[15px] font-bold tabular-nums text-primary">
                     +{formatCurrency(monthlyIncome)}
                   </p>
                 </div>
-                <div className="border-l border-border pl-3">
+                <div className="border-t border-border pt-3 min-[480px]:border-t-0 min-[480px]:border-l min-[480px]:pt-0 min-[480px]:pl-3">
                   <p className="text-xs text-muted-foreground">Pengeluaran</p>
-                  <p className="mt-1 text-[15px] font-bold tabular-nums text-destructive">
+                  <p className="mt-1 break-words text-[15px] font-bold tabular-nums text-destructive">
                     −{formatCurrency(monthlyExpense)}
                   </p>
                 </div>
-                <div className="border-l border-border pl-3">
+                <div className="border-t border-border pt-3 min-[480px]:border-t-0 min-[480px]:border-l min-[480px]:pt-0 min-[480px]:pl-3">
                   <p className="text-xs text-muted-foreground">
                     {isSurplus ? "Surplus" : "Defisit"}
                   </p>
                   <p
                     className={cn(
-                      "mt-1 text-[15px] font-bold tabular-nums",
+                      "mt-1 break-words text-[15px] font-bold tabular-nums",
                       isSurplus ? "text-foreground" : "text-destructive",
                     )}
                   >

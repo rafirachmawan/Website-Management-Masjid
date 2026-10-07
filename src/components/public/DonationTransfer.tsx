@@ -73,7 +73,7 @@ export function DonationTransfer({ config }: { config: AppConfig }) {
 
           {number ? (
             <p
-              className="mt-1.5 font-mono text-3xl font-bold tracking-tight tabular-nums text-foreground sm:text-4xl"
+              className="mt-1.5 font-mono text-3xl font-bold tracking-tight break-all tabular-nums text-foreground sm:text-4xl"
               aria-label={`Nomor rekening ${bank} ${number}`}
             >
               {number}

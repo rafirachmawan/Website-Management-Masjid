@@ -280,14 +280,14 @@ export function SettingsPage() {
 
       {/* Success Notification Alert */}
       {isSaved && (
-        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-emerald-800 dark:text-emerald-300 text-sm animate-in fade-in duration-300">
-          <div className="flex items-center gap-2">
+        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3 text-emerald-800 dark:text-emerald-300 text-sm animate-in fade-in duration-300">
+          <div className="flex min-w-0 items-center gap-2">
             <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>Perubahan pengaturan berhasil disimpan dan diterapkan!</span>
           </div>
           <button
             onClick={() => setIsSaved(false)}
-            className="text-xs font-semibold hover:underline"
+            className="shrink-0 text-xs font-semibold hover:underline"
           >
             Tutup
           </button>
@@ -737,8 +737,8 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border">
-                  <div>
+                <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                  <div className="min-w-0">
                     <h4 className="text-sm font-semibold text-foreground">
                       Publikasi Saldo Kas Real-time
                     </h4>
@@ -755,12 +755,12 @@ export function SettingsPage() {
                         publicTransparency: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+                    className="w-4 h-4 shrink-0 rounded text-primary focus:ring-primary cursor-pointer"
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border">
-                  <div>
+                <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+                  <div className="min-w-0">
                     <h4 className="text-sm font-semibold text-foreground">
                       Tampilkan Kode QRIS Infaq Digital
                     </h4>
@@ -777,7 +777,7 @@ export function SettingsPage() {
                         showDonationQRIS: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+                    className="w-4 h-4 shrink-0 rounded text-primary focus:ring-primary cursor-pointer"
                   />
                 </div>
               </div>

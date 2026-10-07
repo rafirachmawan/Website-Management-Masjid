@@ -278,11 +278,11 @@ function DetailItem({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg bg-muted/30 p-3 border border-border/30", className)}>
+    <div className={cn("rounded-lg bg-muted/30 p-3 border border-border/30 min-w-0", className)}>
       <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
         {label}
       </p>
-      <p className="text-sm font-medium text-foreground">{value}</p>
+      <p className="text-sm font-medium text-foreground break-words">{value}</p>
     </div>
   );
 }
@@ -456,7 +456,7 @@ function Pagination({
   const pages = getPageWindow(currentPage, totalPages);
 
   return (
-    <div className="flex items-center justify-between pt-4 border-t border-border/40">
+    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border/40">
       <p className="text-xs text-muted-foreground">
         Halaman <span className="font-semibold text-foreground">{currentPage}</span> dari{" "}
         <span className="font-semibold text-foreground">{totalPages}</span>
@@ -472,27 +472,30 @@ function Pagination({
         >
           <CaretLeft className="w-4 h-4" />
         </Button>
-        {pages.map((page, i) =>
-          page === "…" ? (
-            <span key={`e-${i}`} className="px-1 text-xs text-muted-foreground" aria-hidden="true">
-              …
-            </span>
-          ) : (
-            <Button
-              key={page}
-              variant={page === currentPage ? "default" : "outline"}
-              size="icon"
-              className={cn(
-                "h-8 w-8 text-xs",
-                page === currentPage && "pointer-events-none"
-              )}
-              onClick={() => onPageChange(page)}
-              aria-current={page === currentPage ? "page" : undefined}
-            >
-              {page}
-            </Button>
-          ),
-        )}
+        {/* Nomor halaman disembunyikan di HP kecil agar tidak meluber */}
+        <div className="hidden items-center gap-1 sm:flex">
+          {pages.map((page, i) =>
+            page === "…" ? (
+              <span key={`e-${i}`} className="px-1 text-xs text-muted-foreground" aria-hidden="true">
+                …
+              </span>
+            ) : (
+              <Button
+                key={page}
+                variant={page === currentPage ? "default" : "outline"}
+                size="icon"
+                className={cn(
+                  "h-8 w-8 text-xs",
+                  page === currentPage && "pointer-events-none"
+                )}
+                onClick={() => onPageChange(page)}
+                aria-current={page === currentPage ? "page" : undefined}
+              >
+                {page}
+              </Button>
+            ),
+          )}
+        </div>
         <Button
           variant="outline"
           size="icon"

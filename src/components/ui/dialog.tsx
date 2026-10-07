@@ -28,14 +28,14 @@ function DialogOverlay({
   ...props
 }: DialogPrimitive.Backdrop.Props) {
   return (
-    <DialogPrimitive.Backdrop
-      data-slot="dialog-overlay"
-      className={cn(
-        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        className
-      )}
-      {...props}
-    />
+      <DialogPrimitive.Backdrop
+        data-slot="dialog-overlay"
+        className={cn(
+          "fixed inset-0 isolate z-50 bg-black/30 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          className
+        )}
+        {...props}
+      />
   )
 }
 
@@ -43,20 +43,27 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  initialFocus,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const popupRef = React.useRef<HTMLDivElement>(null);
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-5rem)] w-full max-w-[calc(100%-2.5rem)] -translate-x-1/2 -translate-y-1/2 gap-3 overflow-y-auto rounded-2xl bg-popover p-4 text-sm text-popover-foreground shadow-[0_32px_80px_-24px_rgb(0_0_0/0.45)] ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm sm:gap-4 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
+        ref={popupRef}
+        // Jangan autofokus ke input teks saat dialog dibuka — di HP itu
+        // langsung memicu keyboard dan menutupi form. Fokus ke wadah
+        // dialog saja; pengguna mengetuk field yang ingin diisi.
+        initialFocus={initialFocus ?? (() => popupRef.current ?? false)}
       >
         {children}
         {showCloseButton && (
@@ -65,7 +72,7 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-2.5 right-2.5 rounded-full text-muted-foreground hover:text-foreground"
                 size="icon-sm"
               />
             }
@@ -84,7 +91,8 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      // Ruang kanan agar judul/deskripsi tidak bertumpuk tombol close.
+      className={cn("flex flex-col gap-1.5 pr-9 sm:gap-2", className)}
       {...props}
     />
   )
@@ -102,7 +110,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-2xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
         className
       )}
       {...props}

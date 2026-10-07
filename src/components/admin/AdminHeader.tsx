@@ -42,6 +42,7 @@ export function AdminHeader() {
     announcements: "Berita",
     activities: "Kegiatan",
     transactions: "Transaksi Kas",
+    categories: "Kategori Kas",
     reports: "Laporan Keuangan",
     users: "Pengurus",
     settings: "Pengaturan",
@@ -62,16 +63,21 @@ export function AdminHeader() {
 
   return (
     <header className="sticky top-0 z-40 h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-full items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-4">
+      <div className="flex h-full items-center justify-between gap-3 px-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-1 lg:gap-4">
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="lg:hidden p-2 -ml-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             aria-label={isMobileOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={isMobileOpen}
           >
             <List className="w-6 h-6" />
           </button>
+
+          {/* Judul halaman ringkas khusus mobile (breadcrumb hanya tampil di desktop) */}
+          <span className="min-w-0 truncate text-sm font-semibold text-foreground lg:hidden">
+            {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].label : "Overview"}
+          </span>
 
           <nav className="hidden lg:flex items-center gap-1" aria-label="Breadcrumb">
             <span className="text-sm text-muted-foreground">Admin</span>

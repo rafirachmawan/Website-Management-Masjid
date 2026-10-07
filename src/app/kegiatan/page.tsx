@@ -24,7 +24,7 @@ export default async function KegiatanListPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
-        <Navbar />
+        <Navbar profile={profile} />
       </header>
 
       <main className="flex flex-1 flex-col">

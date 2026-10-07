@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
-import { TrendUp, TrendDown, Warning } from "@phosphor-icons/react";
+import { TrendUp, TrendDown, PencilSimple, Warning } from "@phosphor-icons/react";
 import type { Category, Transaction } from "@/types";
 
 type TxnType = "income" | "expense";
@@ -140,21 +140,36 @@ export function TransactionFormDialog({
   const nominal = parseAmount(amount);
   const canSubmit = date && categoryId && nominal > 0 && description.trim().length >= 3 && recordedBy.trim();
 
+  // Ikon pita header mengikuti mode: ubah = kuning, kas masuk = hijau, kas keluar = merah.
+  const HeaderIcon = editing ? PencilSimple : type === "income" ? TrendUp : TrendDown;
+  const headerChip = editing
+    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/25"
+    : type === "income"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/25"
+      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-rose-500/25";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px]">
-        <DialogHeader>
-          <DialogTitle className="font-display text-lg font-semibold">
-            {editing ? "Ubah Transaksi" : "Catat Transaksi Baru"}
-          </DialogTitle>
-          <DialogDescription>
-            {editing
-              ? "Perubahan langsung terlihat di laporan keuangan publik."
-              : "Setiap rupiah yang dicatat akan tampil terbuka di halaman transparansi."}
-          </DialogDescription>
+        <DialogHeader className="sticky top-[-1rem] z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
+          <div className="flex items-center gap-2.5">
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ${headerChip}`}>
+              <HeaderIcon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <DialogTitle className="font-display text-lg font-semibold">
+                {editing ? "Ubah Transaksi" : "Catat Transaksi Baru"}
+              </DialogTitle>
+              <DialogDescription>
+                {editing
+                  ? "Perubahan langsung terlihat di laporan keuangan publik."
+                  : "Setiap rupiah yang dicatat akan tampil terbuka di halaman transparansi."}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Tipe — dua tombol besar, lebih jelas daripada dropdown */}
           <div>
             <span className={labelClass}>Tipe Transaksi</span>

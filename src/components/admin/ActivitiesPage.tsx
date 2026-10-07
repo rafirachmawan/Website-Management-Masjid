@@ -459,13 +459,20 @@ export function ActivitiesPage() {
       {/* Modal: Create & Edit Activity */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent className="sm:max-w-140">
-          <DialogHeader>
-            <DialogTitle>
-              {isEditMode ? "Edit Agenda Kegiatan" : "Tambah Kegiatan Baru"}
-            </DialogTitle>
-            <DialogDescription>
-              Isi data detail kegiatan untuk dijadwalkan di profil masjid.
-            </DialogDescription>
+          <DialogHeader className="sticky top-[-1rem] z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                <CalendarBlank className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <DialogTitle>
+                  {isEditMode ? "Edit Agenda Kegiatan" : "Tambah Kegiatan Baru"}
+                </DialogTitle>
+                <DialogDescription>
+                  Isi data detail kegiatan untuk dijadwalkan di profil masjid.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           <div className="space-y-3.5 py-2">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { CaretDown, List, X } from "@phosphor-icons/react";
+import { CaretDown, List, X, Heart } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import type { MosqueProfile } from "@/types";
 
 // Menu diselaraskan dengan isi halaman publik yang benar-benar ada
 // (PRODUCT.md): hero, takmir, keuangan, pengumuman, kegiatan, jadwal sholat,
@@ -29,10 +30,18 @@ const MENU: MenuItem[] = [
   { name: "Kontak", href: "/#kontak" },
 ];
 
-export function Navbar() {
+export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDrop, setOpenDrop] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+
+  // Identitas masjid untuk bar mobile (logo + nama).
+  const brandName = profile?.name?.trim() || "Website Masjid";
+  const brandShort = (profile?.shortName?.trim() || brandName).slice(0, 2).toUpperCase();
+  const closeMenu = () => {
+    setMobileOpen(false);
+    setOpenDrop(null);
+  };
 
   // Setelah di-scroll sedikit, beri latar solid + blur supaya menu
   // tetap terbaca di atas foto/ konten dan terlihat "mengikuti".
@@ -48,16 +57,36 @@ export function Navbar() {
       aria-label="Navigasi utama"
       className={cn(
         "relative z-10 font-sans transition-all duration-300",
+        // Mobile: selalu berlatar solid supaya rapi & terbaca di atas foto hero.
+        "border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-md",
+        // Desktop: transparan di atas hero, solid setelah di-scroll.
         scrolled || mobileOpen
-          ? "border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-md"
-          : "border-b border-transparent bg-transparent",
+          ? "lg:border-border/60 lg:bg-background/90 lg:shadow-sm lg:backdrop-blur-md"
+          : "lg:border-transparent lg:bg-transparent lg:shadow-none lg:backdrop-blur-none",
       )}
     >
-        <div className="container mx-auto flex h-14 items-center justify-center gap-2 px-4 md:px-6 lg:px-8">
+        <div className="container mx-auto flex h-14 items-center justify-between gap-3 px-4 md:px-6 lg:justify-center lg:gap-2 lg:px-8">
+          {/* Brand mobile: logo + nama masjid */}
+          <a
+            href="/#beranda"
+            onClick={closeMenu}
+            className="flex min-w-0 items-center gap-2.5 lg:hidden"
+            aria-label="Ke beranda"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold tracking-wide text-primary-foreground"
+            >
+              {brandShort}
+            </span>
+            <span className="block max-w-[56vw] truncate text-sm font-bold tracking-tight text-foreground">
+              {brandName}
+            </span>
+          </a>
           {/* Mobile toggle */}
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card/80 text-foreground backdrop-blur lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted active:scale-95 lg:hidden"
             aria-expanded={mobileOpen}
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             onClick={() => setMobileOpen((v) => !v)}
@@ -118,19 +147,13 @@ export function Navbar() {
               </li>
             ))}
           </ul>
-
-          {/* Mobile label */}
-          <p className="text-sm font-semibold tracking-normal text-foreground lg:hidden">
-            Menu
-          </p>
-          <span className="w-9 lg:hidden" aria-hidden="true" />
         </div>
 
         {/* Mobile panel: mengambang (absolute) supaya tidak mendorong
             konten saat dibuka, baik di beranda maupun halaman lain */}
         {mobileOpen && (
-          <div className="absolute inset-x-4 top-full z-50 rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur lg:hidden">
-            <div className="container mx-auto space-y-1 px-4 py-3 md:px-6">
+          <div className="absolute inset-x-3 top-full z-50 rounded-2xl border border-border bg-card shadow-xl backdrop-blur-md lg:hidden">
+            <div className="space-y-1 px-3 py-3">
               <ul className="space-y-1">
                 {MENU.map((item) => (
                   <li key={item.name} className="rounded-lg">
@@ -140,7 +163,12 @@ export function Navbar() {
                           type="button"
                           aria-expanded={openDrop === item.name}
                           onClick={() => setOpenDrop((v) => (v === item.name ? null : item.name))}
-                          className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground hover:bg-muted"
+                          className={cn(
+                            "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal transition-colors",
+                            openDrop === item.name
+                              ? "bg-primary/[0.07] text-primary"
+                              : "text-foreground hover:bg-muted",
+                          )}
                         >
                           {item.name}
                           <CaretDown
@@ -153,6 +181,7 @@ export function Navbar() {
                             <li>
                               <a
                                 href={item.href}
+                                onClick={closeMenu}
                                 className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-primary"
                               >
                                 Semua {item.name}
@@ -162,6 +191,7 @@ export function Navbar() {
                               <li key={child.name}>
                                 <a
                                   href={child.href}
+                                  onClick={closeMenu}
                                   className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted hover:text-primary"
                                 >
                                   {child.name}
@@ -174,7 +204,8 @@ export function Navbar() {
                     ) : (
                       <a
                         href={item.href}
-                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground hover:bg-muted hover:text-primary"
+                        onClick={closeMenu}
+                        className="block rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground transition-colors hover:bg-muted hover:text-primary active:bg-muted"
                       >
                         {item.name}
                       </a>
@@ -182,6 +213,16 @@ export function Navbar() {
                   </li>
                 ))}
               </ul>
+              <div className="border-t border-border/60 px-1 pt-3 pb-1">
+                <a
+                  href="/keuangan#donasi"
+                  onClick={closeMenu}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-[0.99]"
+                >
+                  <Heart className="h-4 w-4" weight="fill" aria-hidden="true" />
+                  Salurkan Infaq
+                </a>
+              </div>
             </div>
           </div>
         )}

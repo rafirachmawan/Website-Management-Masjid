@@ -36,7 +36,7 @@ export default async function Home() {
           atas hero (Hero ditarik naik -mt-14) lalu Navbar memberi latar
           blur otomatis setelah di-scroll (lihat Navbar `scrolled`). */}
       <div className="sticky top-0 z-50">
-        <Navbar />
+        <Navbar profile={profile} />
       </div>
       <div id="beranda" className="-mt-14 scroll-mt-20">
         <Hero profile={profile} prayer={prayer} config={config} />

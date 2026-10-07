@@ -56,16 +56,16 @@ export function Footer({ profile: mosqueProfile }: { profile: MosqueProfile | nu
             <h3 className="font-display mt-4 text-xl font-semibold text-white md:text-2xl">
               {mosqueProfile.name}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-white/70">
+            <p className="mt-2 text-sm leading-relaxed break-words text-white/70">
               {mosqueProfile.address}
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-white/70">
+            <p className="mt-1 text-sm leading-relaxed break-words text-white/70">
               Telp.{" "}
               <a href={`tel:${mosqueProfile.phone}`} className="transition-colors hover:text-white">
                 {mosqueProfile.phone}
               </a>
               <span aria-hidden="true"> | </span>
-              <a href={`mailto:${mosqueProfile.email}`} className="transition-colors hover:text-white">
+              <a href={`mailto:${mosqueProfile.email}`} className="break-all transition-colors hover:text-white">
                 {mosqueProfile.email}
               </a>
             </p>

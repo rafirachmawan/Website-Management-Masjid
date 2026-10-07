@@ -208,7 +208,7 @@ function TierRow({
   down?: boolean;
 }) {
   return (
-    <div className="grid w-full grid-cols-2 items-stretch gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid w-full grid-cols-1 items-stretch gap-4 min-[480px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((o) => (
         <div key={o.id} className="flex h-full flex-col items-center">
           {!lead && <div aria-hidden="true" className={cn("mb-6 h-6 w-px shrink-0", LINE)} />}

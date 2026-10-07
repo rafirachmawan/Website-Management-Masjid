@@ -130,6 +130,9 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    /* Pengaman mobile: satu elemen yang terlalu lebar tidak boleh
+       menggeser seluruh halaman (clip aman untuk sticky navbar). */
+    overflow-x: clip;
     /* Inter: fitur profesional — angka tabular konsisten,
        bentuk huruf netral, rendering tegas */
     font-feature-settings: "cv11", "ss01", "tnum";

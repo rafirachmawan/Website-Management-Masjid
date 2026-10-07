@@ -164,7 +164,10 @@ export function Hero({
 
   const today = prayer.today;
   const rawName = mosqueProfile.name.trim();
-  const heading = /masjid/i.test(rawName) ? rawName : `Masjid ${rawName}`;
+  // Normalisasi "Ar - Rahman" -> "Ar-Rahman" agar judul terlihat rapi.
+  const heading = (/masjid/i.test(rawName) ? rawName : `Masjid ${rawName}`)
+    .replace(/\s+-\s+/g, "-")
+    .replace(/\s+/g, " ");
   const nextPrayerToShow = currentNextPrayer || today?.prayers.find((p) => p.isNext) || today?.prayers[0];
 
   const hasDonationAccount =
@@ -203,9 +206,9 @@ export function Hero({
         <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 py-10 md:px-6 md:py-14 lg:px-8 lg:py-16">
           <div className="grid w-full items-center gap-10 lg:grid-cols-12 lg:gap-12">
             {/* ─── Kolom Kiri: Sambutan & Identitas Masjid (7 Kolom) ───────── */}
-            <div className="flex flex-col items-start lg:col-span-7">
+            <div className="flex max-w-2xl flex-col items-start lg:col-span-7">
               {/* Kaligrafi Basmalah & Status Badge */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <span
                   lang="ar"
                   dir="rtl"
@@ -227,30 +230,30 @@ export function Hero({
               </div>
 
               {/* Judul Megah Masjid */}
-              <h1 className="font-display mt-4 text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl lg:leading-[1.12]">
+              <h1 className="font-display mt-4 text-balance text-4xl font-bold leading-[1.06] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.4rem]">
                 {heading}
               </h1>
 
-              {/* Lokasi Alamat */}
+              {/* Lokasi Alamat — wrap di HP kecil, pill di layar besar */}
               <p
                 title={mosqueProfile.address}
-                className="mt-4 inline-flex max-w-full items-center gap-1.5 overflow-hidden rounded-full border border-border/80 bg-background/80 px-3.5 py-1.5 text-xs font-medium text-foreground backdrop-blur-sm sm:text-sm"
+                className="mt-4 inline-flex max-w-full items-start gap-1.5 rounded-2xl border border-border/80 bg-background/80 px-3.5 py-2 text-left text-xs font-medium text-foreground backdrop-blur-sm sm:items-center sm:rounded-full sm:py-1.5 sm:text-sm"
               >
-                <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                <span className="truncate">{mosqueProfile.address}</span>
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">{mosqueProfile.address}</span>
               </p>
 
               {/* Deskripsi Masjid */}
-              <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
+              <p className="mt-4 max-w-xl text-pretty text-[15px] leading-[1.75] text-muted-foreground sm:text-base">
                 {mosqueProfile.description?.trim() ||
                   "Amanah yang terjaga, laporan yang terbuka. Setiap pemasukan dan penyaluran dana tercatat tertib untuk kemaslahatan jamaah."}
               </p>
 
-              {/* Dual Action CTA Buttons */}
-              <div className="mt-8 flex flex-wrap items-center gap-3.5">
+              {/* Dual Action CTA Buttons — susun vertikal penuh di HP kecil */}
+              <div className="mt-7 flex w-full flex-col items-stretch gap-2.5 min-[420px]:w-auto min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
                 <a
                   href="/keuangan#donasi"
-                  className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 active:scale-[0.99]"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
                 >
                   <Heart className="h-4 w-4" weight="fill" aria-hidden="true" />
                   Salurkan Infaq
@@ -258,7 +261,7 @@ export function Hero({
 
                 <a
                   href="#informasi"
-                  className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-card/80 px-6 text-sm font-semibold text-foreground backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:scale-[0.99]"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-card/80 px-6 text-sm font-semibold text-foreground backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
                 >
                   <CalendarBlank className="h-4 w-4 text-primary" aria-hidden="true" />
                   Agenda & Informasi
@@ -266,7 +269,7 @@ export function Hero({
               </div>
 
               {/* Info Tambahan Bawah */}
-              <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground sm:text-sm">
+              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:text-sm">
                 {mosqueProfile.phone && (
                   <a
                     href={`tel:${mosqueProfile.phone}`}
@@ -293,7 +296,7 @@ export function Hero({
 
             {/* ─── Kolom Kanan: Interactive Mosque Hub Card (5 Kolom) ──────── */}
             <div id="jadwal-sholat" className="scroll-mt-24 lg:col-span-5">
-              <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-7 dark:bg-card/80">
+              <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 p-4 shadow-2xl backdrop-blur-xl sm:p-7 dark:bg-card/80">
                 {/* Aksen kilau halus di pojok kanan atas kartu */}
                 <div
                   aria-hidden="true"
@@ -302,21 +305,21 @@ export function Hero({
 
                 {/* Header Kartu: Highlight Sholat Berikutnya */}
                 <div className="relative border-b border-border/60 pb-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Clock className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                       Waktu Sholat Berikutnya
                     </span>
                     {timeCountdown && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                         {timeCountdown}
                       </span>
                     )}
                   </div>
 
                   {nextPrayerToShow && (
-                    <div className="mt-3.5 flex items-baseline justify-between">
-                      <div>
+                    <div className="mt-3.5 flex items-baseline justify-between gap-3">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                             {nextPrayerToShow.name}
@@ -337,7 +340,7 @@ export function Hero({
                           })}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         <span className="text-3xl font-extrabold tabular-nums tracking-tight text-primary sm:text-4xl">
                           {nextPrayerToShow.time}
                         </span>
@@ -352,7 +355,7 @@ export function Hero({
                 {/* 5 Waktu Sholat Hari Ini (Compact Grid) */}
                 {today && (
                   <div className="relative py-4">
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
                       {today.prayers.map((p) => {
                         const isCurrentActive =
                           nextPrayerToShow?.name.toLowerCase() === p.name.toLowerCase();
@@ -362,7 +365,7 @@ export function Hero({
                           <div
                             key={p.name}
                             className={cn(
-                              "flex flex-col items-center rounded-xl p-2 text-center transition-all",
+                              "flex min-w-0 flex-col items-center rounded-xl p-1.5 text-center transition-all sm:p-2",
                               isCurrentActive
                                 ? "border border-primary/40 bg-primary/15 ring-1 ring-primary/30 shadow-xs"
                                 : "bg-muted/40 hover:bg-muted/70",
@@ -377,7 +380,7 @@ export function Hero({
                             />
                             <span
                               className={cn(
-                                "mt-1 text-[11px] font-semibold leading-none",
+                                "mt-1 text-[10px] font-semibold leading-none sm:text-[11px]",
                                 isCurrentActive ? "text-foreground" : "text-muted-foreground",
                               )}
                             >
@@ -401,23 +404,23 @@ export function Hero({
                 {/* Quick Infaq Box (Rekening Resmi DKM) */}
                 {hasDonationAccount ? (
                   <div className="relative mt-2 rounded-2xl border border-primary/20 bg-primary/[0.04] p-3.5 sm:p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
-                        <Bank className="h-4 w-4" aria-hidden="true" />
-                        <span>Rekening Donasi & Infaq</span>
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                      <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-primary">
+                        <Bank className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="truncate">Rekening Donasi & Infaq</span>
                       </div>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
                         <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
                         DKM Resmi
                       </span>
                     </div>
 
                     <div className="mt-2.5 flex items-center justify-between gap-2">
-                      <div>
-                        <div className="text-xs font-medium text-muted-foreground">
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-medium text-muted-foreground">
                           {config?.bankName} · {config?.accountHolder}
                         </div>
-                        <div className="mt-0.5 text-sm font-bold tabular-nums tracking-wide text-foreground sm:text-base">
+                        <div className="mt-0.5 break-all text-sm font-bold tabular-nums tracking-wide text-foreground sm:text-base">
                           {config?.accountNumber}
                         </div>
                       </div>
