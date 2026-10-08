@@ -36,8 +36,11 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
   const [scrolled, setScrolled] = useState(false);
 
   // Identitas masjid untuk bar mobile (logo + nama).
+  // Logo mengikuti fitur yang diatur portal admin (Pengaturan → File logo / logoUrl).
+  // Bila admin sudah mengunggah logo, tampilkan gambarnya; bila belum, fallback ke inisial.
   const brandName = profile?.name?.trim() || "Website Masjid";
   const brandShort = (profile?.shortName?.trim() || brandName).slice(0, 2).toUpperCase();
+  const brandLogoUrl = profile?.logoUrl?.trim() ? profile.logoUrl.trim() : null;
   const closeMenu = () => {
     setMobileOpen(false);
     setOpenDrop(null);
@@ -73,12 +76,20 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
             className="flex min-w-0 items-center gap-2.5 lg:hidden"
             aria-label="Ke beranda"
           >
-            <span
-              aria-hidden="true"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold tracking-wide text-primary-foreground"
-            >
-              {brandShort}
-            </span>
+            {brandLogoUrl ? (
+              <img
+                src={brandLogoUrl}
+                alt={`Logo ${brandName}`}
+                className="h-8 w-8 shrink-0 rounded-full border border-border bg-white object-cover"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold tracking-wide text-primary-foreground"
+              >
+                {brandShort}
+              </span>
+            )}
             <span className="block max-w-[56vw] truncate text-sm font-bold tracking-tight text-foreground">
               {brandName}
             </span>
