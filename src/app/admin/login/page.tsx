@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -79,24 +79,53 @@ function LoginForm() {
   // ── Branding dinamis dari portal admin (sama seperti Navbar/Footer web) ──
   const brandName = profile?.name?.trim() || "Takmir Masjid";
   const brandLogoUrl = profile?.logoUrl?.trim() ? profile.logoUrl.trim() : null;
-  const coverUrl =
-    profile?.coverImageUrl?.trim() ||
-    profile?.heroImages?.find((u) => u?.trim())?.trim() ||
-    null;
+  // ── Background dari admin — logika sama seperti Hero web publik ──
+  // 1 foto = diam, >1 foto = slider otomatis. Sumber: Pengaturan → Foto Halaman Depan.
+  const images = useMemo(() => {
+    const hero = (profile?.heroImages || []).map((u) => u?.trim()).filter((u) => u);
+    if (hero.length > 0) return hero;
+    const cover = profile?.coverImageUrl?.trim();
+    return cover ? [cover] : [];
+  }, [profile]);
+  const isSlider = images.length > 1;
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  const goToNext = useCallback(() => {
+    if (images.length <= 1) return;
+    setCurrentIdx((prev) => (prev + 1) % images.length);
+  }, [images.length]);
+
+  // Geser otomatis tiap 5 detik bila ada >1 foto — sama seperti Hero.
+  useEffect(() => {
+    if (!isSlider) return;
+    const timer = setInterval(goToNext, 5000);
+    return () => clearInterval(timer);
+  }, [isSlider, goToNext]);
+
+  // Indeks aman bila daftar foto menyusut (tanpa effect agar lolos lint).
+  const safeIdx = images.length === 0 ? 0 : currentIdx % images.length;
   const address = profile?.address?.trim() || "";
   const phone = profile?.phone?.trim() || "";
 
   return (
     <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-background">
-      {/* ─── Foto masjid latar — sama seperti Hero web publik ─── */}
-      {coverUrl ? (
+      {/* ─── Foto masjid latar — slider sama seperti Hero web publik (1=diam, >1=otomatis) ─── */}
+      {images.length > 0 ? (
         <div className="pointer-events-none absolute inset-0 -z-10 select-none overflow-hidden" aria-hidden="true">
-          <img
-            src={coverUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
+          {images.map((img, idx) => (
+            <img
+              key={`${img}-${idx}`}
+              src={img}
+              alt=""
+              referrerPolicy="no-referrer"
+              className={cn(
+                "absolute inset-0 h-full w-full object-cover object-center transition-all duration-1000 ease-out",
+                idx === safeIdx
+                  ? "scale-100 opacity-100 brightness-[1.02] contrast-[1.03]"
+                  : "scale-105 opacity-0",
+              )}
+            />
+          ))}
           {/* Overlay lembut: teks tetap terbaca, foto tetap jernih seperti Hero */}
           <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/70 to-background/95 lg:bg-gradient-to-r lg:from-background/95 lg:via-background/60 lg:to-background/20" />
           <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/90 via-background/20 to-transparent" />

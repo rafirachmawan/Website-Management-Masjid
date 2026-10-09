@@ -228,7 +228,7 @@ export function Hero({
                 >
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-background px-3 py-1 text-xs font-semibold text-primary">
                   <span className="relative flex h-2 w-2" aria-hidden="true">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
