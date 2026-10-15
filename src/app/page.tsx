@@ -40,9 +40,9 @@ export default async function Home() {
         <Hero profile={profile} prayer={prayer} config={config} />
       </div>
       <main className="flex flex-1 flex-col">
-        {/* Informasi */}
+        {/* Informasi — transisi lembut dari hero: tanpa garis keras, hanya alas netral */}
         <div id="informasi" className="flex scroll-mt-20 flex-col">
-          <div className="border-y border-border/60 bg-muted/40">
+          <div className="bg-muted/40">
             <AnnouncementsSection announcements={announcements} />
           </div>
           <ActivitiesSection activities={activities} />

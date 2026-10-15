@@ -205,8 +205,11 @@ export function AnnouncementsSection({
       className="scroll-mt-24 py-16 md:py-20"
     >
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-12">
-          <div>
+        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:mb-12">
+          <div className="min-w-0">
+            <p className="eyebrow-friendly mb-3 bg-primary/[0.08] text-primary ring-1 ring-primary/20 ring-inset">
+              Kabar Masjid
+            </p>
             <h2
               id="announcements-heading"
               className="font-display text-h2-fluid font-semibold text-foreground"
@@ -221,7 +224,7 @@ export function AnnouncementsSection({
           {sorted.length > 0 && (
             <Link
               href="/berita"
-              className="link-lively inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 self-start rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground transition-all duration-200 hover:border-primary/50 hover:text-primary active:scale-[0.98] sm:self-auto"
             >
               Lihat semua berita
               <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
