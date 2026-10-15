@@ -9,6 +9,41 @@ import { ZodError } from "zod";
 // Dipakai service agar backend menolak dengan 400 + pesan jelas, bukan 500.
 export class BadRequestError extends Error {}
 
+export function unauthorized(message = "Sesi admin berakhir. Silakan masuk kembali lewat /admin/login.") {
+  return NextResponse.json({ error: message }, { status: 401 });
+}
+
+// Defense-in-depth: setiap route tulis + route sensitif (officials, uploads)
+// wajib panggil ini, jangan hanya mengandalkan `proxy.ts` di edge.
+// Cek Origin/Referer bila ada agar CSRF lintas-situs ditolak
+// (SameSite=lax sudah menahan, ini lapis kedua tanpa token tambahan).
+export async function requireAdminSession(req?: Request): Promise<boolean> {
+  try {
+    if (req) {
+      const origin = req.headers.get("origin");
+      const referer = req.headers.get("referer");
+      const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+      const src = origin ?? referer;
+      if (src && host) {
+        try {
+          const srcHost = new URL(src).host;
+          if (srcHost !== host) return false;
+        } catch {
+          return false;
+        }
+      }
+    }
+    const { cookies } = await import("next/headers");
+    const { ADMIN_SESSION_COOKIE, verifySessionValue } = await import(
+      "./services/admin-auth"
+    );
+    const jar = await cookies();
+    return verifySessionValue(jar.get(ADMIN_SESSION_COOKIE)?.value);
+  } catch {
+    return false;
+  }
+}
+
 export function ok<T>(data: T, status = 200): NextResponse {
   return NextResponse.json(data, { status });
 }

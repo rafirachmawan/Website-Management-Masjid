@@ -130,9 +130,16 @@ export function UsersPage() {
       if (isEditMode && selectedOfficial) {
         await apiSend(`/api/officials/${selectedOfficial.id}`, "PUT", formData);
       } else {
+        // Tanggal gabung zona masjid (WIB), bukan UTC — cegah off-by-one jam 00:30.
+        const jakartaToday = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Jakarta",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
         await apiSend("/api/officials", "POST", {
           ...formData,
-          joinedDate: new Date().toISOString().split("T")[0],
+          joinedDate: jakartaToday,
         });
       }
       refresh();

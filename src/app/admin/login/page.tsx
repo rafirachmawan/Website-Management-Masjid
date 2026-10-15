@@ -23,7 +23,10 @@ import type { MosqueProfile } from "@/types";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/admin";
+  const rawNext = searchParams.get("next") || "/admin";
+  // Tolak open-redirect: hanya path internal absolut, bukan //evil atau https:.
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/admin";
 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

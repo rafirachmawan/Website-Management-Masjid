@@ -4,7 +4,7 @@ import {
   createTransaction,
 } from "@/server/services/finance";
 import { transactionInputSchema } from "@/server/schemas";
-import { ok, fail } from "@/server/api-helpers";
+import { ok, fail, requireAdminSession, unauthorized } from "@/server/api-helpers";
 
 export async function GET(req: Request) {
   try {
@@ -37,6 +37,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    if (!(await requireAdminSession(req))) return unauthorized();
     const input = transactionInputSchema.parse(await req.json());
     return ok(await createTransaction(input), 201);
   } catch (e) {

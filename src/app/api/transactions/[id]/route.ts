@@ -4,7 +4,7 @@ import {
   deleteTransaction,
 } from "@/server/services/finance";
 import { transactionUpdateSchema } from "@/server/schemas";
-import { ok, fail } from "@/server/api-helpers";
+import { ok, fail, requireAdminSession, unauthorized } from "@/server/api-helpers";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -21,6 +21,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
 export async function PUT(req: Request, { params }: Ctx) {
   try {
+    if (!(await requireAdminSession(req))) return unauthorized();
     const { id } = await params;
     const input = transactionUpdateSchema.parse(await req.json());
     return ok(await updateTransaction(id, input));
@@ -31,6 +32,7 @@ export async function PUT(req: Request, { params }: Ctx) {
 
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
+    if (!(await requireAdminSession(_req))) return unauthorized();
     const { id } = await params;
     await deleteTransaction(id);
     return ok({ success: true });

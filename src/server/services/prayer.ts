@@ -53,7 +53,8 @@ function formatTime(instant: Date, tz: string): string {
 
 function formatHijri(instant: Date, tz: string): string {
   try {
-    const s = new Intl.DateTimeFormat("id-u-ca-islamic", {
+    // umalqura lebih dekat ke Kemenag RI dibanding islamic default (selisih 1-2 hari).
+    const s = new Intl.DateTimeFormat("id-u-ca-islamic-umalqura", {
       timeZone: tz,
       day: "numeric",
       month: "long",
@@ -61,7 +62,17 @@ function formatHijri(instant: Date, tz: string): string {
     }).format(instant);
     return s.replace(" AH", " H").trim();
   } catch {
-    return "";
+    try {
+      const s = new Intl.DateTimeFormat("id-u-ca-islamic", {
+        timeZone: tz,
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(instant);
+      return s.replace(" AH", " H").trim();
+    } catch {
+      return "";
+    }
   }
 }
 
@@ -75,29 +86,24 @@ export async function getWeeklyPrayerSchedule(now = new Date()): Promise<DailyPr
   const params = CalculationMethod.Singapore();
 
   const todayISO = isoInTimeZone(now, tz);
-  const nowMin =
-    Number(
-      new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        hour: "2-digit",
-        hour12: false,
-      }).format(now),
-    ) *
-      60 +
-    Number(
-      new Intl.DateTimeFormat("en-GB", { timeZone: tz, minute: "2-digit", hour12: false }).format(
-        now,
-      ),
-    );
+  // Satu formatToParts agar jam:menit konsisten (dulu 2x format terpisah bisa beda menit).
+  const nowParts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const nowH = Number(nowParts.find((p) => p.type === "hour")?.value ?? "0");
+  const nowM = Number(nowParts.find((p) => p.type === "minute")?.value ?? "0");
+  const nowMin = (Number.isFinite(nowH) ? nowH % 24 : 0) * 60 + (Number.isFinite(nowM) ? nowM : 0);
 
   const week: DailyPrayerSchedule[] = [];
   for (let i = 0; i < WEEK_DAYS; i++) {
     const iso = addDaysISO(todayISO, i);
-    // Tengah hari UTC: komponen lokal server untuk instans ini selalu jatuh
-    // pada hari yang sama untuk zona server yang wajar (UTC−12…UTC+11),
-    // sehingga adhan menghitung hari yang tepat.
-    const noon = new Date(`${iso}T12:00:00Z`);
-    const pt = new PrayerTimes(coords, noon, params);
+    // 05:00 UTC aman untuk semua zona Asia (WIB=WITA=WIT) maupun UTC-12…+14:
+    // komponen lokal adhan selalu jatuh pada hari ISO yang diminta.
+    const anchor = new Date(`${iso}T05:00:00Z`);
+    const pt = new PrayerTimes(coords, anchor, params);
 
     const times: Record<(typeof ORDER)[number], string> = {
       Subuh: formatTime(pt.fajr, tz),
@@ -122,7 +128,7 @@ export async function getWeeklyPrayerSchedule(now = new Date()): Promise<DailyPr
 
     week.push({
       date: iso,
-      hijriDate: formatHijri(noon, tz),
+      hijriDate: formatHijri(anchor, tz),
       sunrise: formatTime(pt.sunrise, tz),
       prayers: ORDER.map((name) => ({
         name,
@@ -143,8 +149,7 @@ export async function getPrayerSchedule(now = new Date()): Promise<{
   const week = await getWeeklyPrayerSchedule(now);
   if (week.length === 0) return { today: null, week };
 
-  const profile = await db.mosqueProfile.findUnique({ where: { id: "main" } });
-  const tz = profile?.timezone || "Asia/Jakarta";
-  const todayISO = isoInTimeZone(now, tz);
-  return { today: week.find((d) => d.date === todayISO) ?? week[0], week };
+  // Hindari fetch profil 2x: pakai tanggal dari week[0] sebagai jangkar.
+  // week[0] selalu hari ini zona masjid (dibangun dari todayISO di atas).
+  return { today: week[0], week };
 }

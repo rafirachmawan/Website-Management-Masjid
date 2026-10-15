@@ -191,6 +191,16 @@ export const officialInputSchema = z.object({
 
 export type OfficialInput = z.infer<typeof officialInputSchema>;
 
+// Update parsial — minimal satu field, tiap field ikut aturan yang sama.
+// Menutup celah PUT {} yang dulu jadi no-op 200.
+export const officialUpdateSchema = officialInputSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "Tidak ada perubahan — kirim minimal satu field yang diubah.",
+  });
+
+export type OfficialUpdate = z.infer<typeof officialUpdateSchema>;
+
 // ── Kategori ───────────────────────────────────────────────────────────────────
 
 export const categoryInputSchema = z.object({

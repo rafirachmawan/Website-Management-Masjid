@@ -84,10 +84,17 @@ export async function changeAdminPassword(currentPassword: string, newPassword: 
   if (newPassword.length < MIN_PASSWORD_LENGTH) {
     throw new Error(`Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter.`);
   }
+  if (newPassword === currentPassword) {
+    throw new Error("Kata sandi baru harus berbeda dari kata sandi saat ini.");
+  }
   const ok = await verifyAdminPassword(currentPassword);
   if (!ok) throw new Error("Kata sandi saat ini salah.");
   await configSet(HASH_KEY, await hashPassword(newPassword));
   await configSet(DEFAULT_FLAG_KEY, "0");
+  // Cabut semua sesi lama agar perangkat lain yang masih login ikut keluar.
+  // Nilai password-nya sendiri tidak diubah di sini selain oleh input pengguna —
+  // password awal "admin123" tetap berlaku sampai diganti lewat UI.
+  await configSet(SECRET_KEY, randomBytes(32).toString("hex"));
 }
 
 async function getSessionSecret(): Promise<string> {

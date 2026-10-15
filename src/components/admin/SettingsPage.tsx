@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { downloadTextFile } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
@@ -75,13 +75,16 @@ export function SettingsPage() {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   // Profil diambil dari server; bila belum ada (404) tampilkan form kosong
-  // agar pengurus langsung bisa mengisi profil pertama. Penyesuaian state
-  // dilakukan saat render (bukan di effect) agar tidak memicu render beruntun.
-  if (fetchedProfile && !profile) setProfile(fetchedProfile);
-  else if (profileLoadError && !profile && !blankTried) {
-    setProfile({ ...EMPTY_PROFILE });
-    setBlankTried(true);
-  }
+  // agar pengurus langsung bisa mengisi profil pertama.
+  useEffect(() => {
+    if (fetchedProfile && !profile) setProfile(fetchedProfile);
+  }, [fetchedProfile, profile]);
+  useEffect(() => {
+    if (profileLoadError && !profile && !blankTried) {
+      setProfile({ ...EMPTY_PROFILE });
+      setBlankTried(true);
+    }
+  }, [profileLoadError, profile, blankTried]);
   const [isSaved, setIsSaved] = useState(false);
 
   // Konfigurasi rekening & preferensi — tersimpan di database (/api/config).
@@ -90,10 +93,12 @@ export function SettingsPage() {
   const [isSavingFinance, setIsSavingFinance] = useState(false);
   const [financeError, setFinanceError] = useState<string | null>(null);
 
-  if (fetchedConfig && !configLoaded) {
-    setFinanceConfig({ ...fetchedConfig });
-    setConfigLoaded(true);
-  }
+  useEffect(() => {
+    if (fetchedConfig && !configLoaded) {
+      setFinanceConfig({ ...fetchedConfig });
+      setConfigLoaded(true);
+    }
+  }, [fetchedConfig, configLoaded]);
 
   // Security Form State
   const [securityForm, setSecurityForm] = useState({
@@ -441,13 +446,16 @@ export function SettingsPage() {
                       min={1900}
                       max={2100}
                       placeholder="Contoh: 2019"
-                      value={profile.establishedYear}
-                      onChange={(e) =>
+                      value={profile.establishedYear || ""}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value, 10);
                         setProfile({
                           ...profile,
-                          establishedYear: parseInt(e.target.value) || 1985,
-                        })
-                      }
+                          // Kosong → 0 agar validasi backend menolak dengan pesan jelas,
+                          // bukan diam-diam jadi 1985.
+                          establishedYear: Number.isFinite(v) ? v : 0,
+                        });
+                      }}
                       className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>

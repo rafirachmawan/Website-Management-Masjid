@@ -458,7 +458,11 @@ export function DashboardOverview() {
 
   const minAlert = appConfig?.minBalanceAlert ?? 0;
   const lowBalance = financialSummary != null && minAlert > 0 && currentBalance < minAlert;
-  const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const monthLabel = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 
   return (
     <div className="space-y-6">

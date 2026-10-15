@@ -15,7 +15,6 @@ async function main() {
     transaksi: await db.transaction.count(),
     pengumuman: await db.announcement.count(),
     kegiatan: await db.activity.count(),
-    jadwalSholat: await db.prayerDay.count(),
     pengurus: await db.official.count(),
   };
   console.log("Seed dinonaktifkan — tidak ada data dummy yang dimasukkan.");

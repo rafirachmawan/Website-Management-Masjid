@@ -89,10 +89,11 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
 
     switch (periodFilter) {
       case "daily":
-        result = result.filter((t) => t.date >= todayStr);
+        result = result.filter((t) => t.date === todayStr);
         break;
       case "weekly":
-        result = result.filter((t) => t.date >= weekStr);
+        // Pekan berjalan (Minggu 00:00 WIB s.d. hari ini) — jangan sertakan masa depan.
+        result = result.filter((t) => t.date >= weekStr && t.date <= todayStr);
         break;
       case "monthly":
         result = result.filter((t) => t.date.startsWith(monthPrefix));

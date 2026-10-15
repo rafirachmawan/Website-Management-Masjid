@@ -577,11 +577,12 @@ export function TransactionsPage() {
       );
     }
 
-    // Sort
+    // Sort — tanggal yyyy-MM-dd dibandingkan sebagai string agar imun zona waktu
+    // (new Date("2026-10-01") = midnight UTC bisa geser hari di TZ lain).
     result.sort((a, b) => {
       let cmp = 0;
       if (sortField === "date") {
-        cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+        cmp = a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
       } else if (sortField === "amount") {
         cmp = a.amount - b.amount;
       } else if (sortField === "category") {
@@ -915,7 +916,7 @@ export function TransactionsPage() {
                                 })}
                               </p>
                               <p className="text-[11px] text-muted-foreground">
-                                {new Date(txn.date).getFullYear()}
+                                {txn.date.slice(0, 4)}
                               </p>
                             </div>
                           </TableCell>

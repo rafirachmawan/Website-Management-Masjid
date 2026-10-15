@@ -101,7 +101,15 @@ export function FinancialSummaryCards({
   const hasFlow = totalFlow > 0;
   const incomeShare = hasFlow ? Math.round((monthlyIncome / totalFlow) * 100) : 0;
   const yearlySurplus = yearlyIncome - yearlyExpense;
-  const monthLabel = new Date().toLocaleDateString("id-ID", { month: "long" });
+  // Label bulan zona masjid agar sinkron dengan backend (jakartaMonthKey).
+  const monthLabel = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    month: "long",
+  }).format(new Date());
+  const currentYear = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+  }).format(new Date());
   const isSurplus = surplus >= 0;
 
   return (
@@ -231,7 +239,7 @@ export function FinancialSummaryCards({
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
               <div>
                 <h3 className="text-[15px] font-bold text-foreground">
-                  Arus {monthLabel} {new Date().getFullYear()}
+                  Arus {monthLabel} {currentYear}
                 </h3>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Infak, zakat, wakaf, operasional

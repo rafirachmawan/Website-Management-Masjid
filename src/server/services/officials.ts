@@ -71,6 +71,23 @@ export async function updateOfficial(id: string, input: Partial<OfficialInput>):
   if (!existing) throw new BadRequestError("Pengurus yang akan diubah tidak ditemukan.");
   if (input.email) await ensureEmailFree(input.email, id);
 
+  // Guard sole-superadmin juga untuk PUT (dulu hanya DELETE):
+  // demote / nonaktifkan satu-satunya superadmin aktif dilarang.
+  if (existing.systemRole === "superadmin" && existing.status === "active") {
+    const nextRole = input.systemRole ?? existing.systemRole;
+    const nextStatus = input.status ?? existing.status;
+    if (nextRole !== "superadmin" || nextStatus !== "active") {
+      const otherSuperadmin = await db.official.count({
+        where: { systemRole: "superadmin", status: "active", NOT: { id } },
+      });
+      if (otherSuperadmin === 0) {
+        throw new BadRequestError(
+          "Ini satu-satunya Superadmin aktif. Tunjuk superadmin lain sebelum menurunkan peran atau menonaktifkannya.",
+        );
+      }
+    }
+  }
+
   const row = await db.official.update({
     where: { id },
     data: {
