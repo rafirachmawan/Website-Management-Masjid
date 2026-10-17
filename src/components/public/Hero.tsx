@@ -18,10 +18,6 @@ import {
   CalendarBlank,
   ShieldCheck,
   Sparkle,
-  CaretLeft,
-  CaretRight,
-  Pause,
-  Play,
 } from "@phosphor-icons/react";
 
 const PRAYER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -107,7 +103,6 @@ export function Hero({
 
   const isSlider = images.length > 1;
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [autoPaused, setAutoPaused] = useState(false);
   const [hoverPaused, setHoverPaused] = useState(false);
 
   // Quick Infaq Copy State
@@ -127,20 +122,15 @@ export function Hero({
     setCurrentIdx((prev) => (prev + 1) % images.length);
   }, [isSlider, images.length]);
 
-  const goToPrev = useCallback(() => {
-    if (!isSlider) return;
-    setCurrentIdx((prev) => (prev - 1 + images.length) % images.length);
-  }, [isSlider, images.length]);
-
-  // Auto slide tiap 5 detik — hormati jeda manual + hover + tab tersembunyi.
+  // Auto slide tiap 5 detik — berhenti saat hover atau tab tersembunyi.
   useEffect(() => {
-    if (!isSlider || autoPaused || hoverPaused) return;
+    if (!isSlider || hoverPaused) return;
     const timer = setInterval(() => {
       if (document.visibilityState === "hidden") return;
       goToNext();
     }, 5000);
     return () => clearInterval(timer);
-  }, [isSlider, autoPaused, hoverPaused, goToNext]);
+  }, [isSlider, hoverPaused, goToNext]);
 
   // Clamp indeks bila daftar gambar menyusut (mis. admin hapus foto).
   useEffect(() => {
@@ -217,7 +207,7 @@ export function Hero({
     return (
       <header
         aria-label="Sambutan masjid"
-        className="relative flex min-h-[70svh] flex-col pb-14 pt-16 text-center md:pb-16 md:pt-[4.25rem]"
+        className="relative flex min-h-[70svh] flex-col pb-14 pt-16 text-center md:pb-16 md:pt-17"
       >
         <div className="container mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-4">
           <p
@@ -250,8 +240,6 @@ export function Hero({
 
   const hasDonationAccount =
     Boolean(config?.accountNumber && config.accountNumber.trim().length > 0);
-
-  const effectivePaused = autoPaused || hoverPaused;
 
   return (
     <header className="relative isolate flex min-h-[78svh] flex-col justify-center overflow-hidden lg:min-h-[84svh]">
@@ -289,53 +277,60 @@ export function Hero({
               })}
             </div>
             {/* Scrim kiri diperkuat agar teks lolos kontras di foto cerah */}
-            <div className="absolute inset-0 bg-gradient-to-r from-background via-background/75 to-background/10 lg:from-background lg:via-background/55 lg:via-45% lg:to-transparent lg:to-75%" />
-            <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/80 via-background/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/40 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-r from-background via-background/75 to-background/10 lg:from-background lg:via-background/55 lg:via-45% lg:to-transparent lg:to-75%" />
+            <div className="absolute inset-x-0 top-0 h-20 bg-linear-to-b from-background/80 via-background/20 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-background via-background/40 to-transparent" />
           </div>
         )}
 
         <div className="container relative mx-auto flex w-full flex-1 flex-col justify-center px-4 py-8 md:px-6 md:py-12 lg:px-8 lg:py-14">
           <div className="grid w-full items-center gap-10 lg:grid-cols-12 lg:gap-12">
             {/* ─── Kolom Kiri: Sambutan & Identitas Masjid (7 Kolom) ───────── */}
-            <div className="flex max-w-2xl flex-col items-start lg:col-span-7">
-              {/* Satu eyebrow: basmalah menyatu dengan status */}
-              <p className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* Mobile: lockup simetris (center penuh). Desktop: rata kiri. */}
+            <div className="flex w-full max-w-2xl flex-col items-center text-center lg:col-span-7 lg:items-start lg:text-left">
+              {/* Basmalah sebagai ornamen baris sendiri, status jadi sub-label di bawahnya.
+                  Gap diatur eksplisit: line-height 2 milik Amiri nyaris tidak
+                  menyisakan ruang kosong, jadi jarak visual tidak bisa diserahkan
+                  ke line-height saja. */}
+              <p className="flex w-full flex-col items-center gap-3 lg:items-start">
                 <span
                   lang="ar"
                   dir="rtl"
                   aria-label="Bismillahirrahmanirrahim"
-                  className="font-arabic text-xl font-normal text-primary/85 md:text-2xl"
+                  className="font-arabic text-[1.65rem] font-normal text-primary/85 sm:text-3xl lg:text-[2.1rem]"
                 >
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-background px-3 py-1 text-xs font-semibold text-primary">
-                  <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="hero-label inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-background/85 px-2.5 py-1 text-primary backdrop-blur-sm">
+                  <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
                   </span>
                   Terbuka untuk Jamaah 24 Jam
                 </span>
               </p>
 
-              {/* Judul Megah Masjid */}
-              <h1 className="font-display mt-4 text-balance text-4xl font-bold leading-[1.06] tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.4rem]">
+              {/* Judul Megah Masjid — puncak hierarki (display) */}
+              <h1 className="font-display mt-3 w-full text-balance text-4xl font-bold leading-[1.06] tracking-[-0.02em] text-foreground sm:text-5xl lg:mt-3.5 lg:text-[3.4rem]">
                 {heading}
               </h1>
 
-              {/* Lokasi Alamat — wrap di HP kecil, pill di layar besar */}
+              {/* Lokasi Alamat — menempel pada blok identitas (14–16px dari judul),
+                  karena alamat MENJELASKAN judul, bukan bagian dari deskripsi. */}
               <p
                 title={mosqueProfile.address}
-                className="mt-4 inline-flex max-w-full items-start gap-1.5 rounded-2xl border border-border/80 bg-background/80 px-3.5 py-2 text-left text-xs font-medium text-foreground backdrop-blur-sm sm:items-center sm:rounded-full sm:py-1.5 sm:text-sm"
+                className="hero-meta mt-3.5 inline-flex max-w-full items-start gap-1.5 text-muted-foreground sm:items-center sm:rounded-full sm:border sm:border-border/80 sm:bg-background/80 sm:px-3.5 sm:py-1.5 sm:text-foreground sm:backdrop-blur-sm lg:mt-4"
               >
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden="true" />
-                <span className="min-w-0 break-words">{mosqueProfile.address}</span>
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary sm:mt-0 sm:h-4 sm:w-4" aria-hidden="true" />
+                <span className="min-w-0 wrap-break-word">{mosqueProfile.address}</span>
               </p>
 
-              {/* Deskripsi Masjid — dipadatkan 2 baris + selengkapnya */}
+              {/* Deskripsi Masjid — SENGAJA DIPISAH JAUH (24–28px) dari alamat supaya
+                  terbaca sebagai bloknya sendiri, bukan lanjutan meta di atasnya.
+                  Jarak inilah pembeda utama antara "header" dan "deskripsi". */}
               <p
                 className={cn(
-                  "mt-4 max-w-xl text-pretty text-[15px] leading-[1.75] text-muted-foreground sm:text-base",
+                  "hero-lead mt-6 w-full max-w-xl text-pretty text-muted-foreground lg:mt-7",
                   !descExpanded && "line-clamp-2",
                 )}
               >
@@ -347,17 +342,17 @@ export function Hero({
                   type="button"
                   onClick={() => setDescExpanded((v) => !v)}
                   aria-expanded={descExpanded}
-                  className="mt-1.5 cursor-pointer text-xs font-semibold text-primary hover:underline"
+                  className="hero-action mt-2.5 cursor-pointer text-primary hover:underline"
                 >
                   {descExpanded ? "Tutup" : "Baca selengkapnya"}
                 </button>
               )}
 
-              {/* Dual Action CTA Buttons — susun vertikal penuh di HP kecil */}
-              <div className="mt-7 flex w-full flex-col items-stretch gap-2.5 min-[420px]:w-auto min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3">
+              {/* Dual Action CTA Buttons — blok aksi, dipisah 28–32px dari deskripsi */}
+              <div className="mt-7 flex w-full flex-col items-stretch gap-2.5 min-[420px]:w-auto min-[420px]:flex-row min-[420px]:items-center min-[420px]:gap-3 lg:mt-8">
                 <a
                   href="/keuangan#donasi"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
+                  className="hero-action inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
                 >
                   <Heart className="h-4 w-4" weight="fill" aria-hidden="true" />
                   Salurkan Infaq
@@ -365,15 +360,15 @@ export function Hero({
 
                 <a
                   href="#informasi"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-card/80 px-6 text-sm font-semibold text-foreground backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
+                  className="hero-action inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-card/80 px-6 text-foreground backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:scale-[0.99] min-[420px]:w-auto"
                 >
                   <CalendarBlank className="h-4 w-4 text-primary" aria-hidden="true" />
                   Agenda & Informasi
                 </a>
               </div>
 
-              {/* Info Tambahan Bawah — ringkas (tanggal Hijriah menyatu di kartu sholat) */}
-              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+              {/* Info Tambahan Bawah — peran meta, paling redup di kolom ini */}
+              <div className="hero-meta mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-muted-foreground lg:justify-start">
                 {mosqueProfile.phone && (
                   <a
                     href={`tel:${mosqueProfile.phone.replace(/[^+\d]/g, "")}`}
@@ -398,66 +393,82 @@ export function Hero({
                 {/* Lapisan kaca: sheen halus + aksen kilau di pojok kanan atas */}
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 via-white/10 to-transparent dark:from-white/10 dark:via-transparent dark:to-transparent"
+                  className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/50 via-white/10 to-transparent dark:from-white/10 dark:via-transparent dark:to-transparent"
                 />
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/20 blur-2xl"
                 />
 
-                {/* Header Kartu: Highlight Sholat Berikutnya */}
-                <div className="relative border-b border-white/40 pb-5 dark:border-white/10">
-                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
-                    <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <Clock className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                      Waktu Sholat Berikutnya
+                {/* ── Zona 1 · HEADER: label status + hitung mundur ── */}
+                <div className="relative flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+                  <span className="hero-label inline-flex min-w-0 items-center gap-1.5 uppercase tracking-wider text-muted-foreground">
+                    <Clock className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Waktu Sholat Berikutnya
+                  </span>
+                  {today && timeCountdown && (
+                    <span className="hero-label inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-primary">
+                      {timeCountdown}
                     </span>
-                    {today && timeCountdown && (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                        {timeCountdown}
-                      </span>
-                    )}
-                  </div>
-
-                  {nextPrayerToShow ? (
-                    <div className="mt-3.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                            {nextPrayerToShow.name}
-                          </h3>
-                          <span
-                            lang="ar"
-                            dir="rtl"
-                            className="font-arabic text-lg text-muted-foreground"
-                          >
-                            {nextPrayerToShow.arabic}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {today ? formatMosqueDate(today.date, tz) : null}
-                          {today?.hijriDate ? ` • ${today.hijriDate}` : null}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="text-3xl font-extrabold tabular-nums tracking-tight text-primary sm:text-4xl">
-                          {nextPrayerToShow.time}
-                        </span>
-                        <span className="ml-1 text-xs font-medium text-muted-foreground">
-                          {zone}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-3.5 text-sm text-muted-foreground">
-                      Jadwal sholat belum tersedia. Pengurus cukup melengkapi lokasi masjid di halaman admin.
-                    </p>
                   )}
                 </div>
 
-                {/* 5 Waktu Sholat Hari Ini (Compact Grid) */}
+                {/* Pembeda 1 — batas header → isi. Garis aksen yang memudar, nadanya
+                    disetel untuk permukaan kaca (bukan warna --border biasa). */}
+                <div
+                  aria-hidden="true"
+                  className="relative mt-4 h-px bg-linear-to-r from-primary/45 via-white/60 to-transparent dark:via-white/15"
+                />
+
+                {/* ── Zona 2 · DESKRIPSI + ISI: sholat berikutnya dan waktunya ── */}
+                {nextPrayerToShow ? (
+                  <div className="relative mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                          {nextPrayerToShow.name}
+                        </h3>
+                        <span
+                          lang="ar"
+                          dir="rtl"
+                          className="font-arabic text-lg text-muted-foreground"
+                        >
+                          {nextPrayerToShow.arabic}
+                        </span>
+                      </div>
+                      {/* Tanggal masehi + Hijriah: satu tingkat di atas label header,
+                          tapi jauh di bawah angka waktunya. */}
+                      <p className="hero-meta mt-1 text-muted-foreground tabular-nums">
+                        {today ? formatMosqueDate(today.date, tz) : null}
+                        {today?.hijriDate ? ` • ${today.hijriDate}` : null}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-3xl font-extrabold tabular-nums tracking-tight text-primary sm:text-4xl">
+                        {nextPrayerToShow.time}
+                      </span>
+                      <span className="hero-meta ml-1 text-muted-foreground">
+                        {zone}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="hero-meta mt-4 text-muted-foreground">
+                    Jadwal sholat belum tersedia. Pengurus cukup melengkapi lokasi masjid di halaman admin.
+                  </p>
+                )}
+
+                {/* Pembeda 2 — batas isi → jadwal harian */}
                 {today ? (
-                  <div className="relative py-4">
+                  <div
+                    aria-hidden="true"
+                    className="relative mt-4 h-px bg-linear-to-r from-primary/45 via-white/60 to-transparent dark:via-white/15"
+                  />
+                ) : null}
+
+                {/* ── Zona 3 · ISI: 5 Waktu Sholat Hari Ini (Compact Grid) ── */}
+                {today ? (
+                  <div className="relative pt-4">
                     <div className="grid grid-cols-5 gap-1 min-[380px]:gap-1.5 sm:gap-1.5">
                       {today.prayers.map((p) => {
                         const isCurrentActive =
@@ -485,7 +496,7 @@ export function Hero({
                             />
                             <span
                               className={cn(
-                                "mt-1 w-full truncate px-0.5 text-[10px] font-semibold leading-none sm:text-[11px]",
+                                "mt-1 w-full truncate px-0.5 text-[11px] font-semibold leading-none",
                                 isCurrentActive ? "text-foreground" : "text-muted-foreground",
                               )}
                             >
@@ -493,7 +504,7 @@ export function Hero({
                             </span>
                             <span
                               className={cn(
-                                "mt-1 text-[11px] font-bold tabular-nums min-[380px]:text-xs",
+                                "mt-1 text-xs font-bold tabular-nums",
                                 isCurrentActive ? "text-primary" : "text-foreground",
                               )}
                             >
@@ -560,61 +571,38 @@ export function Hero({
             </div>
           ) : null}
 
-          {/* Kontrol Carousel: prev + dots + next + jeda */}
+          {/* Penanda slide — panah dilepas; navigasi sepenuhnya lewat titik,
+              jadi area kontrol tidak lagi berebut perhatian dengan konten.
+              Titik dibungkus tombol ber-padding: tanda terlihat 8px, namun
+              target klik 24px agar tetap nyaman ditekan (WCAG 2.5.8). */}
           {isSlider && (
             <div
-              className="mt-6 flex min-w-0 flex-wrap items-center justify-center gap-2 lg:justify-start"
+              className="mt-6 flex w-full min-w-0 flex-wrap items-center justify-center gap-1"
               onMouseEnter={() => setHoverPaused(true)}
               onMouseLeave={() => setHoverPaused(false)}
+              role="tablist"
+              aria-label="Pilih foto latar"
             >
-              <button
-                type="button"
-                onClick={goToPrev}
-                aria-label="Foto sebelumnya"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/80 text-foreground backdrop-blur-sm transition-colors hover:bg-accent active:scale-95"
-              >
-                <CaretLeft className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <div className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-2 px-1" role="tablist" aria-label="Pilih foto latar">
-                {images.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    role="tab"
-                    aria-selected={idx === currentIdx}
-                    aria-label={`Lihat foto ${idx + 1} dari ${images.length}`}
-                    onClick={() => setCurrentIdx(idx)}
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  role="tab"
+                  aria-selected={idx === currentIdx}
+                  aria-label={`Lihat foto ${idx + 1} dari ${images.length}`}
+                  onClick={() => setCurrentIdx(idx)}
+                  className="group/dot flex h-6 cursor-pointer items-center justify-center rounded-full px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <span
                     className={cn(
-                      "h-2 cursor-pointer rounded-full transition-all duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                      "h-2 rounded-full transition-all duration-300",
                       idx === currentIdx
                         ? "w-8 bg-primary shadow-xs"
-                        : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                        : "w-2 bg-muted-foreground/30 group-hover/dot:bg-muted-foreground/60",
                     )}
                   />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={goToNext}
-                aria-label="Foto berikutnya"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/80 text-foreground backdrop-blur-sm transition-colors hover:bg-accent active:scale-95"
-              >
-                <CaretRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setAutoPaused((v) => !v)}
-                aria-label={effectivePaused ? "Putar otomatis foto" : "Jeda otomatis foto"}
-                aria-pressed={effectivePaused}
-                title={effectivePaused ? "Putar otomatis" : "Jeda otomatis"}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground active:scale-95"
-              >
-                {effectivePaused ? (
-                  <Play className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Pause className="h-4 w-4" aria-hidden="true" />
-                )}
-              </button>
+                </button>
+              ))}
             </div>
           )}
         </div>

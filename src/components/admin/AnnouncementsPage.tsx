@@ -450,7 +450,7 @@ export function AnnouncementsPage() {
       {/* Modal: Create & Edit Announcement */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent className="sm:max-w-140">
-          <DialogHeader className="sticky top-[-1rem] z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
+          <DialogHeader className="sticky -top-4 z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
                 <Megaphone className="h-4 w-4" aria-hidden="true" />

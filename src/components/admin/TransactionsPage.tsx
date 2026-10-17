@@ -282,7 +282,7 @@ function DetailItem({
       <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
         {label}
       </p>
-      <p className="text-sm font-medium text-foreground break-words">{value}</p>
+      <p className="text-sm font-medium text-foreground wrap-break-word">{value}</p>
     </div>
   );
 }

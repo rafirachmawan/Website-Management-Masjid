@@ -40,7 +40,7 @@ function CoverPlaceholder({ title, className }: { title: string; className?: str
     <div
       aria-hidden="true"
       className={cn(
-        "flex w-full items-center justify-center bg-gradient-to-br from-primary/[0.12] via-muted to-muted",
+        "flex w-full items-center justify-center bg-linear-to-br from-primary/12 via-muted to-muted",
         className,
       )}
     >
@@ -83,10 +83,10 @@ function FeaturedCard({ announcement }: { announcement: Announcement }) {
             src={coverFor(announcement)!}
             alt={announcement.title}
             loading="eager"
-            className="aspect-[16/9] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
+            className="aspect-video w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
           />
         ) : (
-          <CoverPlaceholder title={announcement.title} className="aspect-[16/9]" />
+          <CoverPlaceholder title={announcement.title} className="aspect-video" />
         )}
       </div>
       <div className="flex flex-1 flex-col p-5 md:p-6">
@@ -207,7 +207,7 @@ export function AnnouncementsSection({
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:mb-12">
           <div className="min-w-0">
-            <p className="eyebrow-friendly mb-3 bg-primary/[0.08] text-primary ring-1 ring-primary/20 ring-inset">
+            <p className="eyebrow-friendly mb-3 bg-primary/8 text-primary ring-1 ring-primary/20 ring-inset">
               Kabar Masjid
             </p>
             <h2
@@ -216,7 +216,13 @@ export function AnnouncementsSection({
             >
               Berita Terbaru
             </h2>
-            <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-muted-foreground md:text-base">
+            {/* Pembeda header ↔ deskripsi: hairline beraksen primary lalu memudar.
+                Aksen di ujung kiri menyambung ke judul, ujung kanan melebur ke latar. */}
+            <div
+              aria-hidden="true"
+              className="mt-4 h-px w-full max-w-[52ch] bg-linear-to-r from-primary/60 via-border to-transparent"
+            />
+            <p className="mt-3.5 max-w-[52ch] text-sm leading-relaxed text-muted-foreground md:text-base">
               Kabar kegiatan, kajian, dan info penting masjid. Dikelola pengurus.
             </p>
           </div>

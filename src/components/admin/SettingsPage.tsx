@@ -740,7 +740,7 @@ export function SettingsPage() {
                   </p>
                 )}
 
-                <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/[0.05] p-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     Selesai mengisi? Klik <strong className="text-foreground">Simpan Profil</strong> agar
                     logo, nama, dan foto tampil di website & sidebar.

@@ -302,14 +302,14 @@ export function ActivitiesPage() {
               >
                 {/* Foto sampul kegiatan */}
                 {act.imageUrl ? (
-                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                  <div className="relative aspect-video w-full overflow-hidden bg-muted">
                     <img
                       src={act.imageUrl}
                       alt={`Foto ${act.title}`}
                       loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/45 to-transparent" aria-hidden="true" />
+                    <div className="absolute inset-x-0 bottom-0 h-12 bg-linear-to-t from-black/45 to-transparent" aria-hidden="true" />
                     <div className="absolute left-3 top-3">
                       {isUpcoming ? (
                         <Badge className="gap-1 border-primary/25 bg-primary font-medium text-primary-foreground shadow-sm">
@@ -489,7 +489,7 @@ export function ActivitiesPage() {
       {/* Modal: Create & Edit Activity */}
       <Dialog open={isFormModalOpen} onOpenChange={setIsFormModalOpen}>
         <DialogContent className="sm:max-w-140">
-          <DialogHeader className="sticky top-[-1rem] z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
+          <DialogHeader className="sticky -top-4 z-10 -mx-4 -mt-4 rounded-t-2xl border-b border-border/60 bg-muted py-3 pr-10 pl-4">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
                 <CalendarBlank className="h-4 w-4" aria-hidden="true" />

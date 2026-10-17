@@ -429,7 +429,7 @@ function CategorySummaryTable({
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-primary/[0.08] border-t-2 border-primary/30 hover:bg-primary/[0.12] divide-x divide-border/60">
+          <TableRow className="bg-primary/8 border-t-2 border-primary/30 hover:bg-primary/12 divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total</TableCell>
             <TableCell className="py-3 text-center text-sm font-semibold text-foreground tabular-nums">
               {filtered.length}
@@ -503,7 +503,7 @@ function MonthlySummaryTable({ data, year }: { data: ChartDataPoint[]; year: str
             );
           })}
           {/* Total Row */}
-          <TableRow className="bg-primary/[0.08] border-t-2 border-primary/30 hover:bg-primary/[0.12] divide-x divide-border/60">
+          <TableRow className="bg-primary/8 border-t-2 border-primary/30 hover:bg-primary/12 divide-x divide-border/60">
             <TableCell className="py-3 text-sm font-bold text-foreground">Total Tahun {year}</TableCell>
             <TableCell className="py-3 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
               {formatCurrency(totalIncome)}

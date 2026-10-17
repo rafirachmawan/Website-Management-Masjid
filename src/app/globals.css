@@ -227,4 +227,25 @@
   .group:hover .title-hover {
     letter-spacing: -0.01em;
   }
+
+  /* ── Tangga teks hero: bernama peran, bukan ukuran ───────────────────
+     Sebelumnya nilai hero tersebar sebagai 11/12/13/14/15/16px — selisih
+     1px sehingga mata tidak bisa menempelkan peran ke ukuran. Sekarang tiga
+     peran berjarak sengaja (12 → 14 → 17px) supaya tiap tingkat terbaca
+     bedanya terhadap h1 (36/48/54px). Peran yang ukurannya sama dibedakan
+     lewat bobot (meta 500 vs aksi 600), bukan menambah ukuran baru.
+     Nada warna tidak diatur di sini agar tiap peran bebas memilih nada dan
+     tidak saling menimpa lewat utility varian (mis. `sm:text-foreground`). */
+  .hero-label {
+    @apply text-xs font-semibold leading-tight;
+  }
+  .hero-meta {
+    @apply text-sm font-medium leading-[1.6];
+  }
+  .hero-lead {
+    @apply text-[17px] leading-[1.65];
+  }
+  .hero-action {
+    @apply text-sm font-semibold;
+  }
 }

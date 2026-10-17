@@ -54,7 +54,7 @@ function FeaturedCard({ activity }: { activity: Activity }) {
   const diff = daysUntil(activity.date);
 
   return (
-    <article className="group grid grid-cols-1 overflow-hidden rounded-[24px] border border-border bg-card shadow-[0_24px_50px_-28px_rgba(4,47,34,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_64px_-28px_rgba(4,47,34,0.55)] lg:grid-cols-[1.08fr_1fr]">
+    <article className="group grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_50px_-28px_rgba(4,47,34,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_64px_-28px_rgba(4,47,34,0.55)] lg:grid-cols-[1.08fr_1fr]">
       <div className="relative min-h-60 overflow-hidden bg-muted sm:min-h-72 lg:min-h-full">
         {coverFor(activity) ? (
           <img
@@ -66,7 +66,7 @@ function FeaturedCard({ activity }: { activity: Activity }) {
         ) : (
           <div
             aria-hidden="true"
-            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/[0.12] via-muted to-muted"
+            className="absolute inset-0 flex items-center justify-center bg-linear-to-br from-primary/12 via-muted to-muted"
           >
             <span className="font-display text-6xl font-bold text-primary/30">
               {activity.title.trim().charAt(0).toUpperCase() || "•"}
@@ -74,7 +74,7 @@ function FeaturedCard({ activity }: { activity: Activity }) {
           </div>
         )}
         <div
-          className="absolute inset-0 bg-gradient-to-t from-emerald-950/60 via-transparent to-transparent"
+          className="absolute inset-0 bg-linear-to-t from-emerald-950/60 via-transparent to-transparent"
           aria-hidden="true"
         />
         <div className="absolute top-4 left-4 flex flex-wrap items-center gap-2">
@@ -162,9 +162,9 @@ function AgendaRow({ activity }: { activity: Activity }) {
       <Link
         href={`/kegiatan/${activity.id}`}
         aria-label={`Detail kegiatan: ${activity.title}`}
-        className="flex items-center gap-4 rounded-2xl border border-transparent p-3 transition-all duration-200 hover:-translate-y-px hover:border-primary/25 hover:bg-primary/[0.04] hover:shadow-[0_12px_28px_-18px_rgba(4,47,34,0.5)] focus-visible:border-primary/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.99] sm:gap-5 sm:p-4"
+        className="flex items-center gap-4 rounded-2xl border border-transparent p-3 transition-all duration-200 hover:-translate-y-px hover:border-primary/25 hover:bg-primary/4 hover:shadow-[0_12px_28px_-18px_rgba(4,47,34,0.5)] focus-visible:border-primary/40 focus-visible:outline-none active:translate-y-0 active:scale-[0.99] sm:gap-5 sm:p-4"
       >
-        <div className="flex h-[72px] w-[68px] shrink-0 flex-col items-center justify-center rounded-2xl bg-primary/[0.07] tabular-nums ring-1 ring-primary/15 ring-inset transition-colors group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary sm:h-20 sm:w-20">
+        <div className="flex h-18 w-17 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary/[0.07] tabular-nums ring-1 ring-primary/15 ring-inset transition-colors group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary sm:h-20 sm:w-20">
           <span className="text-[11px] font-bold tracking-widest uppercase opacity-70">
             {shortMonth(activity.date)}
           </span>
@@ -236,14 +236,14 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
     >
       {/* Ambient — selaras dengan Ringkasan Keuangan */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
-        <div className="absolute top-[-6rem] right-[-6rem] h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute inset-0 bg-linear-to-b from-background via-muted/40 to-background" />
+        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
       <div className="container relative mx-auto px-4 md:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:mb-10">
           <div className="min-w-0">
-            <p className="eyebrow-friendly mb-3 bg-primary/[0.08] text-primary ring-1 ring-primary/20 ring-inset">
+            <p className="eyebrow-friendly mb-3 bg-primary/8 text-primary ring-1 ring-primary/20 ring-inset">
               Agenda Masjid
             </p>
             <h2
@@ -252,7 +252,12 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
             >
               Kegiatan Masjid
             </h2>
-            <p className="mt-2 max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
+            {/* Pembeda header ↔ deskripsi — pola sama dengan section Kabar Masjid */}
+            <div
+              aria-hidden="true"
+              className="mt-4 h-px w-full max-w-[58ch] bg-linear-to-r from-primary/60 via-border to-transparent"
+            />
+            <p className="mt-3.5 max-w-[58ch] text-pretty text-sm leading-relaxed text-muted-foreground md:text-[15px]">
               Pengajian, khataman, baksos, dan kajian khusus. Pilih agenda untuk
               melihat waktu, lokasi, dan penyelenggara.
             </p>
@@ -278,7 +283,7 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
             {featured && <FeaturedCard activity={featured} />}
 
             {rest.length > 0 && (
-              <div className="mt-4 divide-y divide-border/60 rounded-[24px] border border-border bg-card px-2 py-2 shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] sm:px-3 md:mt-5">
+              <div className="mt-4 divide-y divide-border/60 rounded-3xl border border-border bg-card px-2 py-2 shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] sm:px-3 md:mt-5">
                 {rest.map((a) => (
                   <AgendaRow key={a.id} activity={a} />
                 ))}
