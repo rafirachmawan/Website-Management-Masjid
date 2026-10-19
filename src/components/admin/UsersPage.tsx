@@ -3,16 +3,14 @@
 import { useState, useMemo } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import { formatDate } from "@/lib/utils";
+import { todayISO, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { POSITIONS, normalizePosition, TIER_NAME } from "@/lib/positions";
-import type { Official } from "@/types";
+import type { Official, MosqueProfile } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +34,7 @@ import {
 import {
   Users,
   UserPlus,
+  UserMinus,
   ShieldCheck,
   Phone,
   EnvelopeSimple,
@@ -44,11 +43,29 @@ import {
   CheckCircle,
   MagnifyingGlass,
   Funnel,
-  IdentificationBadge,
 } from "@phosphor-icons/react";
+
+// ── Catatan penting soal "peran" ────────────────────────────────────────────
+// Panel admin memakai SATU kata sandi untuk semua pengurus: tidak ada
+// pembatasan menu/halaman per peran. Karena itu UI tidak lagi menawarkan
+// "Admin Sistem"/"Bendahara" seolah-olah mengatur hak akses — pilihan itu tidak
+// berefek apa pun dan hanya menyesatkan.
+//
+// Satu-satunya nilai yang benar-benar berfungsi adalah `superadmin`:
+// akun penanggung jawab teknis yang dilindungi dari penghapusan/penonaktifan
+// saat ia satu-satunya yang tersisa (lihat server/services/officials.ts).
+// Nilai lama ("admin"/"bendahara") ditampilkan & disimpan sebagai pengurus biasa.
+type AssignableRole = "superadmin" | "pengurus";
+
+function toAssignableRole(role: Official["systemRole"]): AssignableRole {
+  return role === "superadmin" ? "superadmin" : "pengurus";
+}
 
 export function UsersPage() {
   const { data: officials, refresh } = useApi<Official[]>("/api/officials");
+  // Zona masjid untuk tanggal bergabung (bukan asumsi WIB).
+  const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
   const [search, setSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,14 +80,16 @@ export function UsersPage() {
   const [formData, setFormData] = useState({
     name: "",
     role: "Anggota Takmir",
-    systemRole: "pengurus" as "superadmin" | "admin" | "bendahara" | "pengurus",
+    systemRole: "pengurus" as AssignableRole,
     phone: "",
     email: "",
     status: "active" as "active" | "inactive",
     avatar: "",
   });
 
-  const data = officials ?? [];
+  // Di-`useMemo`: array baru tiap render akan membuat `filteredOfficials`
+  // (dan statistik di bawahnya) dihitung ulang terus-menerus.
+  const data = useMemo(() => officials ?? [], [officials]);
 
   const filteredOfficials = useMemo(() => {
     return data.filter((item) => {
@@ -81,14 +100,14 @@ export function UsersPage() {
         item.phone.toLowerCase().includes(search.toLowerCase());
 
       const matchRole =
-        roleFilter === "all" || item.systemRole === roleFilter;
+        roleFilter === "all" || toAssignableRole(item.systemRole) === roleFilter;
 
       return matchSearch && matchRole;
     });
   }, [data, search, roleFilter]);
 
   const superAdminCount = data.filter((u) => u.systemRole === "superadmin").length;
-  const adminCount = data.filter((u) => u.systemRole === "admin" || u.systemRole === "bendahara").length;
+  const inactiveCount = data.filter((u) => u.status !== "active").length;
   const activeCount = data.filter((u) => u.status === "active").length;
 
   const handleOpenAdd = () => {
@@ -113,7 +132,7 @@ export function UsersPage() {
       // Jabatan lama (mis. "Bendahara") dipetakan ke nilai kanonik supaya
       // nilainya tidak hilang saat form disimpan ulang.
       role: normalizePosition(item.role),
-      systemRole: item.systemRole,
+      systemRole: toAssignableRole(item.systemRole),
       phone: item.phone,
       email: item.email,
       status: item.status,
@@ -130,16 +149,11 @@ export function UsersPage() {
       if (isEditMode && selectedOfficial) {
         await apiSend(`/api/officials/${selectedOfficial.id}`, "PUT", formData);
       } else {
-        // Tanggal gabung zona masjid (WIB), bukan UTC — cegah off-by-one jam 00:30.
-        const jakartaToday = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "Asia/Jakarta",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(new Date());
         await apiSend("/api/officials", "POST", {
           ...formData,
-          joinedDate: jakartaToday,
+          // Tanggal bergabung zona masjid, bukan UTC — cegah off-by-one
+          // bagi pengurus yang menyimpan form lewat tengah malam.
+          joinedDate: todayISO(timeZone),
         });
       }
       refresh();
@@ -167,35 +181,6 @@ export function UsersPage() {
     }
   };
 
-  const getRoleBadge = (systemRole: string) => {
-    switch (systemRole) {
-      case "superadmin":
-        return (
-          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
-            Super Admin
-          </Badge>
-        );
-      case "admin":
-        return (
-          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
-            Admin Sistem
-          </Badge>
-        );
-      case "bendahara":
-        return (
-          <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
-            Bendahara
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary" className="font-medium text-muted-foreground">
-            Pengurus DKM
-          </Badge>
-        );
-    }
-  };
-
   if (!officials) {
     return (
       <div className="space-y-6" aria-label="Memuat pengurus">
@@ -210,7 +195,7 @@ export function UsersPage() {
       {/* Header */}
       <PageHeader
         title="Struktur Pengurus & Pengguna"
-        description="Kelola data Dewan Kemakmuran Masjid (DKM), takmir, dan hak akses sistem informasi"
+        description="Kelola data Dewan Kemakmuran Masjid (DKM) dan takmir yang tampil di halaman publik"
         actions={
           <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
             <UserPlus className="w-4 h-4" />
@@ -259,15 +244,15 @@ export function UsersPage() {
           <CardContent className="p-5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Pengelola Kas & Web
+                Pengurus Nonaktif
               </p>
               <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
-                {adminCount}
+                {inactiveCount}
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">Akses bendahara & admin</p>
+              <p className="text-xs text-muted-foreground mt-1">Tidak lagi bertugas</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <ShieldCheck className="w-6 h-6" />
+              <UserMinus className="w-6 h-6" />
             </div>
           </CardContent>
         </Card>
@@ -281,10 +266,10 @@ export function UsersPage() {
               <h3 className="text-2xl font-bold mt-1 tabular-nums text-foreground">
                 {superAdminCount}
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">Ketua DKM (Superadmin)</p>
+              <p className="text-xs text-muted-foreground mt-1">Akun teknis yang dilindungi</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <IdentificationBadge className="w-6 h-6" />
+              <ShieldCheck className="w-6 h-6" />
             </div>
           </CardContent>
         </Card>
@@ -308,24 +293,18 @@ export function UsersPage() {
               <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || "all")}>
                 <SelectTrigger className="w-fit max-w-full shrink-0 justify-start">
                   <Funnel className="w-4 h-4 shrink-0 text-muted-foreground" />
-                  <SelectValue placeholder="Hak Akses">
+                  <SelectValue placeholder="Peran">
                     {roleFilter === "all"
-                      ? "Semua Hak Akses"
+                      ? "Semua pengurus"
                       : roleFilter === "superadmin"
-                        ? "Super Admin"
-                        : roleFilter === "admin"
-                          ? "Admin Sistem"
-                          : roleFilter === "bendahara"
-                            ? "Bendahara"
-                            : "Pengurus DKM"}
+                        ? "Penanggung jawab teknis"
+                        : "Pengurus biasa"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent align="end" alignItemWithTrigger={false}>
-                  <SelectItem value="all">Semua Hak Akses</SelectItem>
-                  <SelectItem value="superadmin">Super Admin</SelectItem>
-                  <SelectItem value="admin">Admin Sistem</SelectItem>
-                  <SelectItem value="bendahara">Bendahara</SelectItem>
-                  <SelectItem value="pengurus">Pengurus DKM</SelectItem>
+                  <SelectItem value="all">Semua pengurus</SelectItem>
+                  <SelectItem value="superadmin">Penanggung jawab teknis</SelectItem>
+                  <SelectItem value="pengurus">Pengurus biasa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -386,7 +365,14 @@ export function UsersPage() {
                   </p>
                 </div>
 
-                <div>{getRoleBadge(item.systemRole)}</div>
+                {/* Hanya penanggung jawab teknis yang diberi label — peran lain
+                    tidak punya efek apa pun, jadi tidak perlu ditampilkan
+                    (jabatan aslinya sudah tampil di atas). */}
+                {item.systemRole === "superadmin" && (
+                  <Badge className="bg-primary/10 text-primary border-primary/25 font-medium">
+                    Penanggung jawab
+                  </Badge>
+                )}
 
                 {/* Contacts */}
                 <div className="w-full pt-3 border-t border-border/60 text-xs text-muted-foreground space-y-1.5">
@@ -437,7 +423,8 @@ export function UsersPage() {
               {isEditMode ? "Edit Data Pengurus" : "Tambah Pengurus DKM"}
             </DialogTitle>
             <DialogDescription>
-              Isi informasi biodata pengurus serta hak akses akun di aplikasi masjid.
+              Isi biodata pengurus. Jabatan menentukan posisinya di struktur yang
+              tampil di halaman publik.
             </DialogDescription>
           </DialogHeader>
 
@@ -489,63 +476,60 @@ export function UsersPage() {
                 </SelectContent>
               </Select>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Jabatan menentukan posisi di struktur pengurus. Peran &amp; hak
-                akses di bawah tidak memengaruhi urutan tampil.
+                Jabatan menentukan urutan &amp; posisi di struktur pengurus.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground">
-                  Peran & Hak Akses Sistem
-                </label>
-                <Select
-                  value={formData.systemRole}
-                  onValueChange={(val) => {
-                    if (val) setFormData({ ...formData, systemRole: val as "superadmin" | "admin" | "bendahara" | "pengurus" });
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {formData.systemRole === "superadmin"
-                        ? "Super Admin"
-                        : formData.systemRole === "admin"
-                          ? "Admin Sistem"
-                          : formData.systemRole === "bendahara"
-                            ? "Bendahara"
-                            : "Pengurus DKM"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    <SelectItem value="superadmin">Super Admin</SelectItem>
-                    <SelectItem value="admin">Admin Sistem</SelectItem>
-                    <SelectItem value="bendahara">Bendahara</SelectItem>
-                    <SelectItem value="pengurus">Pengurus DKM</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1 rounded-xl border border-border/70 bg-muted/30 p-3.5">
+              <label className="text-xs font-semibold text-foreground">
+                Penanggung jawab teknis
+              </label>
+              <Select
+                value={formData.systemRole}
+                onValueChange={(val) => {
+                  if (val) setFormData({ ...formData, systemRole: val as AssignableRole });
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {formData.systemRole === "superadmin"
+                      ? "Ya — penanggung jawab teknis"
+                      : "Tidak — pengurus biasa"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start" alignItemWithTrigger={false}>
+                  <SelectItem value="pengurus">Tidak — pengurus biasa</SelectItem>
+                  <SelectItem value="superadmin">Ya — penanggung jawab teknis</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Panel admin memakai satu kata sandi untuk semua pengurus, jadi pilihan
+                ini <strong className="font-semibold text-foreground">tidak</strong>{" "}
+                membatasi menu atau halaman. Satu-satunya efeknya: akun penanggung jawab
+                teknis tidak bisa dihapus/dinonaktifkan selama belum ada penggantinya.
+              </p>
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground">
-                  Status Keaktifan
-                </label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) => {
-                    if (val) setFormData({ ...formData, status: val as "active" | "inactive" });
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {formData.status === "active" ? "Aktif Bertugas" : "Nonaktif"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent align="start" alignItemWithTrigger={false}>
-                    <SelectItem value="active">Aktif Bertugas</SelectItem>
-                    <SelectItem value="inactive">Nonaktif</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">
+                Status Keaktifan
+              </label>
+              <Select
+                value={formData.status}
+                onValueChange={(val) => {
+                  if (val) setFormData({ ...formData, status: val as "active" | "inactive" });
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {formData.status === "active" ? "Aktif Bertugas" : "Nonaktif"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start" alignItemWithTrigger={false}>
+                  <SelectItem value="active">Aktif Bertugas</SelectItem>
+                  <SelectItem value="inactive">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

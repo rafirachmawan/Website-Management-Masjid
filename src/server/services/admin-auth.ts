@@ -6,15 +6,19 @@
 // - Hash: scrypt (node:crypto bawaan) — tidak ada bcrypt/argon2.
 // - Sesi: cookie httpOnly berisi `expiry.signature` (HMAC-SHA256 dengan secret
 //   acak yang juga tersimpan di Config). Stateless — tidak ada tabel sesi.
-// - Password bawaan "admin123" dibuat otomatis saat pertama kali dibutuhkan;
-//   flag `admin_password_is_default` memicu spanduk "segera ganti" di admin.
+// - Password bawaan dibuat otomatis saat pertama kali dibutuhkan; flag
+//   `admin_password_is_default` memicu spanduk + gerbang "wajib ganti" di admin.
+//   Nilainya bisa diganti lewat env `DEFAULT_ADMIN_PASSWORD` sebelum instalasi.
 
 import { scrypt, randomBytes, timingSafeEqual, createHmac } from "crypto";
 import { db } from "../db";
+import { BadRequestError } from "../api-helpers";
 
 export const ADMIN_SESSION_COOKIE = "masjid_admin_session";
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 jam
-export const DEFAULT_ADMIN_PASSWORD = "admin123";
+// Jangan pernah menampilkan nilai ini di UI (dulu diiklankan di /admin/login).
+// Sejak P0.2, panel terkunci sampai kata sandi bawaan diganti.
+export const DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD?.trim() || "admin123";
 export const MIN_PASSWORD_LENGTH = 8;
 
 const HASH_KEY = "admin_password_hash";
@@ -82,19 +86,45 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
 
 export async function changeAdminPassword(currentPassword: string, newPassword: string): Promise<void> {
   if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(`Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter.`);
+    throw new BadRequestError(`Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter.`);
   }
   if (newPassword === currentPassword) {
-    throw new Error("Kata sandi baru harus berbeda dari kata sandi saat ini.");
+    throw new BadRequestError("Kata sandi baru harus berbeda dari kata sandi saat ini.");
   }
   const ok = await verifyAdminPassword(currentPassword);
-  if (!ok) throw new Error("Kata sandi saat ini salah.");
+  if (!ok) throw new BadRequestError("Kata sandi saat ini salah.");
+  // Tolak kembali ke kata sandi bawaan: kalau tidak, spanduk "ganti kata sandi"
+  // bisa hilang sementara panel terbuka dengan kredensial publik.
+  if (newPassword === DEFAULT_ADMIN_PASSWORD) {
+    throw new BadRequestError("Kata sandi bawaan tidak boleh dipakai lagi. Pilih kata sandi lain.");
+  }
   await configSet(HASH_KEY, await hashPassword(newPassword));
   await configSet(DEFAULT_FLAG_KEY, "0");
   // Cabut semua sesi lama agar perangkat lain yang masih login ikut keluar.
-  // Nilai password-nya sendiri tidak diubah di sini selain oleh input pengguna —
-  // password awal "admin123" tetap berlaku sampai diganti lewat UI.
+  // Catatan: pemanggil WAJIB menerbitkan sesi baru setelah ini, sebab sesi
+  // yang sedang dipakai juga ikut terputus (secret berubah).
   await configSet(SECRET_KEY, randomBytes(32).toString("hex"));
+}
+
+// Cabut SEMUA sesi (semua perangkat) dengan merotasi secret.
+// Dipakai tombol "Keluar dari semua perangkat".
+export async function revokeAllSessions(): Promise<void> {
+  await configSet(SECRET_KEY, randomBytes(32).toString("hex"));
+}
+
+// Atribut cookie sesi admin — satu sumber kebenaran agar `session` dan
+// `password` route tidak pernah berbeda (dulu duplikat & rawan drift).
+export function adminSessionCookie(value: string, expiresAt: Date) {
+  return {
+    name: ADMIN_SESSION_COOKIE,
+    value,
+    httpOnly: true,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: Math.floor(SESSION_TTL_MS / 1000),
+    expires: expiresAt,
+    secure: process.env.NODE_ENV === "production",
+  };
 }
 
 async function getSessionSecret(): Promise<string> {

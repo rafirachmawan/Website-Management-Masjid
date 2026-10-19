@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import type { DailyPrayerSchedule, MosqueProfile } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import {
@@ -228,7 +228,7 @@ function PrayerBoard({
         >
           Waktu
         </div>
-        {week.map((s, ci) => {
+        {week.map((s) => {
           const isToday = s.date === todayISO;
           return (
             <div
@@ -572,10 +572,16 @@ export function PrayerScheduleSection({
   profile: MosqueProfile | null;
   prayer: { today: DailyPrayerSchedule | null; week: DailyPrayerSchedule[] };
 }) {
-  const [mounted, setMounted] = useState(false);
+  // "Sudah di klien?" dibaca lewat snapshot, bukan lewat effect: render server
+  // & hidrasi tetap sama, lalu langsung bertukar ke waktu asli di klien tanpa
+  // render perantara yang ditulis dari dalam effect.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [now, setNow] = useState(() => new Date());
 
-  useEffect(() => setMounted(true), []);
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
@@ -593,12 +599,13 @@ export function PrayerScheduleSection({
     todayIndex !== -1 ? weeklyPrayerSchedule[todayIndex] : undefined;
 
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
-  useEffect(() => {
-    if (weeklyPrayerSchedule.length === 0) return;
-    if (expandedDate !== null) return;
-    if (todayIndex !== -1) setExpandedDate(weeklyPrayerSchedule[todayIndex].date);
-    else setExpandedDate(weeklyPrayerSchedule[0].date);
-  }, [weeklyPrayerSchedule, todayIndex, expandedDate]);
+  // Tanggal yang sedang dibuka: pilihan pengurus, atau default (hari ini bila
+  // terjadwal, jika tidak hari pertama) — dihitung saat render, bukan lewat
+  // effect yang menulis state.
+  const openDate =
+    expandedDate ??
+    (todayIndex !== -1 ? weeklyPrayerSchedule[todayIndex]?.date : weeklyPrayerSchedule[0]?.date) ??
+    null;
 
   // ── Status live hari ini (zona waktu masjid) ──
   let live: LiveInfo | null = null;
@@ -621,7 +628,6 @@ export function PrayerScheduleSection({
     let progress: number;
 
     if (nextIdx === -1) {
-      const subuh = prayerOf("Subuh");
       name = "Subuh";
       besok = true;
       currentName = "Isya";
@@ -786,8 +792,8 @@ export function PrayerScheduleSection({
               nowMin={nowMinLive}
               live={live}
               zone={zone}
-              expandedDate={expandedDate}
-              onToggle={(d) => setExpandedDate((prev) => (prev === d ? d : d))}
+              expandedDate={openDate}
+              onToggle={(d) => setExpandedDate(d)}
             />
             <p className="mt-4 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />

@@ -2,7 +2,9 @@ import { cookies } from "next/headers";
 import {
   ADMIN_SESSION_COOKIE,
   MIN_PASSWORD_LENGTH,
+  adminSessionCookie,
   changeAdminPassword,
+  createSessionValue,
   verifySessionValue,
 } from "@/server/services/admin-auth";
 import { ok, fail } from "@/server/api-helpers";
@@ -26,12 +28,18 @@ export async function PUT(req: Request) {
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return ok({ error: `Kata sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter.` }, 400);
     }
+    // Galat validasi (salah saat ini / sama dengan sebelumnya / terlalu pendek)
+    // dilempar sebagai BadRequestError → fail() memetakan ke 400, bukan 500.
     await changeAdminPassword(currentPassword, newPassword);
+
+    // Mengganti kata sandi merotasi secret sesi → semua sesi lama (termasuk
+    // sesi yang sedang dipakai) ikut terputus. Terbitkan sesi baru di sini
+    // supaya pengguna tetap masuk dan tidak terlempar ke halaman login.
+    const { value, expiresAt } = await createSessionValue();
+    jar.set(adminSessionCookie(value, expiresAt));
+
     return ok({ success: true });
   } catch (e) {
-    if (e instanceof Error && e.message === "Kata sandi saat ini salah.") {
-      return ok({ error: e.message }, 400);
-    }
     return fail(e);
   }
 }

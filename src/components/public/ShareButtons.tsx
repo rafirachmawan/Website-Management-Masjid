@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   Envelope,
   FacebookLogo,
@@ -10,11 +10,13 @@ import {
 } from "@phosphor-icons/react";
 
 export function ShareButtons({ title }: { title: string }) {
-  const [url, setUrl] = useState("");
-
-  useEffect(() => {
-    setUrl(window.location.href);
-  }, []);
+  // URL cukup dibaca saat tombol dipakai; dibaca lewat snapshot (bukan effect
+  // yang menulis state) supaya render pertama tetap identik dengan HTML server.
+  const url = useSyncExternalStore(
+    () => () => {},
+    () => window.location.href,
+    () => "",
+  );
 
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(title);

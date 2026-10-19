@@ -2,6 +2,7 @@
 // Delete dipakai hard-delete: data masjid kecil, dan "dihapus" harus berarti hilang
 // supaya angka keuangan & laporan tidak pernah berbeda dengan isi tabel.
 
+import { cache } from "react";
 import { db } from "../db";
 import { BadRequestError } from "../api-helpers";
 import type { Announcement, Activity } from "@/types";
@@ -117,10 +118,15 @@ export async function getAnnouncementsPaged(params: ContentListParams): Promise<
   };
 }
 
-export async function getAnnouncementById(id: string): Promise<Announcement | null> {
+// `cache()` React: `generateMetadata` dan komponen halaman sama-sama memanggil
+// fungsi ini untuk satu artikel yang sama — cukup satu query per request.
+// (Di luar render React, `cache()` = pemanggilan biasa.)
+export const getAnnouncementById = cache(async function getAnnouncementById(
+  id: string,
+): Promise<Announcement | null> {
   const row = await db.announcement.findUnique({ where: { id } });
   return row ? toAnnouncement(row) : null;
-}
+});
 
 export async function createAnnouncement(input: AnnouncementInput): Promise<Announcement> {
   if (input.priority === "important") await assertImportantSlotFree();
@@ -220,10 +226,13 @@ export async function getActivitiesPaged(params: ContentListParams): Promise<{
   };
 }
 
-export async function getActivityById(id: string): Promise<Activity | null> {
+// Sama seperti `getAnnouncementById`: dipakai `generateMetadata` + halaman.
+export const getActivityById = cache(async function getActivityById(
+  id: string,
+): Promise<Activity | null> {
   const row = await db.activity.findUnique({ where: { id } });
   return row ? toActivity(row) : null;
-}
+});
 
 export async function createActivity(input: ActivityInput): Promise<Activity> {
   const row = await db.activity.create({

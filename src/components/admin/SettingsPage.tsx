@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useApi, apiSend } from "@/lib/api";
 import { downloadTextFile } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
@@ -33,6 +34,7 @@ const EMPTY_CONFIG: AppConfig = {
   minBalanceAlert: 0,
   publicTransparency: true,
   showDonationQRIS: true,
+  qrisImageUrl: "",
 };
 import {
   Card,
@@ -45,22 +47,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Gear,
   Mosque,
   Bank,
   SlidersHorizontal,
   ShieldCheck,
   CheckCircle,
   FloppyDisk,
-  QrCode,
   DownloadSimple,
   UploadSimple,
   LockKey,
-  Info,
-  Image,
+  Image as ImageIcon,
   Trash,
   Plus,
   Sparkle,
+  SignOut,
 } from "@phosphor-icons/react";
 
 export function SettingsPage() {
@@ -69,36 +69,48 @@ export function SettingsPage() {
     "/api/mosque-profile",
   );
   const { data: fetchedConfig, refresh: refreshConfig } = useApi<AppConfig>("/api/config");
-  const [profile, setProfile] = useState<MosqueProfile | null>(null);
-  const [blankTried, setBlankTried] = useState(false);
+  // Pola "draft atau data server": sebelum pengurus mengubah apa pun, form
+  // memakai data terbaru dari server; begitu ada perubahan, draft mengambil
+  // alih. Tidak ada effect yang menyalin data ke state → tidak ada render ganda
+  // dan tidak ada nilai basi saat server mengirim versi baru.
+  const [profileDraft, setProfileDraft] = useState<MosqueProfile | null>(null);
+  // Bila profil belum pernah diisi (404), form tampil kosong supaya pengurus
+  // bisa langsung mengisi data pertama.
+  const blankProfile = profileLoadError !== null && fetchedProfile === null;
+  const profile = profileDraft ?? fetchedProfile ?? (blankProfile ? { ...EMPTY_PROFILE } : null);
+  const setProfile = setProfileDraft;
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-
-  // Profil diambil dari server; bila belum ada (404) tampilkan form kosong
-  // agar pengurus langsung bisa mengisi profil pertama.
-  useEffect(() => {
-    if (fetchedProfile && !profile) setProfile(fetchedProfile);
-  }, [fetchedProfile, profile]);
-  useEffect(() => {
-    if (profileLoadError && !profile && !blankTried) {
-      setProfile({ ...EMPTY_PROFILE });
-      setBlankTried(true);
-    }
-  }, [profileLoadError, profile, blankTried]);
   const [isSaved, setIsSaved] = useState(false);
 
   // Konfigurasi rekening & preferensi — tersimpan di database (/api/config).
-  const [financeConfig, setFinanceConfig] = useState<AppConfig>({ ...EMPTY_CONFIG });
-  const [configLoaded, setConfigLoaded] = useState(false);
+  const [configDraft, setConfigDraft] = useState<AppConfig | null>(null);
+  const financeConfig = configDraft ?? fetchedConfig ?? { ...EMPTY_CONFIG };
+  const setFinanceConfig = setConfigDraft;
   const [isSavingFinance, setIsSavingFinance] = useState(false);
   const [financeError, setFinanceError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (fetchedConfig && !configLoaded) {
-      setFinanceConfig({ ...fetchedConfig });
-      setConfigLoaded(true);
-    }
-  }, [fetchedConfig, configLoaded]);
+  // Draft teks untuk kolom angka. Dulu kolom ini menulis langsung ke state
+  // `number` lewat `parseFloat(...) || 0`, sehingga (a) mengosongkan kolom
+  // diam-diam menjadi 0 dan (b) mengetik "0" ikut terhapus karena nilai
+  // tersimpan dinilai kosong (`0 || ""`). Sekarang teks mentahnya ditahan di
+  // sini dan baru dikonversi saat disimpan (atau saat tombol Simpan ditekan).
+  const [numDrafts, setNumDrafts] = useState<Record<string, string>>({});
+
+  /** Teks yang ditampilkan di kolom angka: draft mentah, atau nilai tersimpan. */
+  const numText = (key: string, stored: number) =>
+    numDrafts[key] ?? (Number.isFinite(stored) ? String(stored) : "");
+
+  /** Draft → angka. Kosong/bukan angka → null (tidak diam-diam menjadi 0). */
+  const numValue = (key: string, stored: number): number | null => {
+    const raw = numDrafts[key];
+    if (raw === undefined) return stored;
+    const parsed = Number.parseFloat(raw.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const draftNumber = (key: string, raw: string) =>
+    setNumDrafts((drafts) => ({ ...drafts, [key]: raw }));
 
   // Security Form State
   const [securityForm, setSecurityForm] = useState({
@@ -108,6 +120,18 @@ export function SettingsPage() {
   });
   const [isSavingSecurity, setIsSavingSecurity] = useState(false);
   const [securityError, setSecurityError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Spanduk peringatan kata sandi bawaan (lihat `AdminLayout`) menautkan ke
+  // ?tab=security → langsung buka tab Keamanan agar pengurus tidak mencari-cari.
+  // Dibaca setelah mount dan dijadwalkan (bukan di badan effect) supaya HTML
+  // server dan klien tetap identik.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") !== "security") return;
+    const id = setTimeout(() => setActiveTab("security"), 0);
+    return () => clearTimeout(id);
+  }, []);
 
   // Backup: unduh seluruh data (transaksi, berita, kegiatan, pengurus,
   // profil, konfigurasi) sebagai satu file JSON untuk kebutuhan audit.
@@ -201,16 +225,35 @@ export function SettingsPage() {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
+    // Angka diambil dari draft teks (bukan dari `|| 0` di input): kosong =
+    // ditolak dengan pesan jelas, jadi tidak pernah tersimpan sebagai 0
+    // yang membuat "belum diisi" tak terbedakan dari titik 0.
+    const latitude = numValue("latitude", profile.latitude);
+    const longitude = numValue("longitude", profile.longitude);
+    const establishedYear = numValue("establishedYear", profile.establishedYear);
+    if (latitude === null || longitude === null) {
+      setProfileError("Garis lintang dan garis bujur wajib diisi berupa angka (mis. -6.2 dan 106.8).");
+      return;
+    }
+    if (establishedYear === null) {
+      setProfileError("Tahun berdiri wajib diisi berupa angka (mis. 2019).");
+      return;
+    }
     setIsSavingProfile(true);
     setProfileError(null);
     try {
       const saved = await apiSend<MosqueProfile>("/api/mosque-profile", "PUT", {
         ...profile,
+        latitude,
+        longitude,
+        establishedYear,
         logoUrl: profile.logoUrl ?? "",
         coverImageUrl: profile.coverImageUrl ?? "",
         heroImages: profile.heroImages ?? [],
       });
       setProfile(saved);
+      // Draft dibuang supaya kolom menampilkan nilai yang benar-benar tersimpan.
+      setNumDrafts({});
       refreshProfile();
       // Beri tahu Sidebar agar logo baru langsung tampil tanpa reload.
       window.dispatchEvent(new CustomEvent("mosque-profile-updated"));
@@ -225,14 +268,22 @@ export function SettingsPage() {
 
   const handleSaveFinance = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Kosong = tanpa peringatan (0), tetapi angka yang tidak sah ditolak —
+    // dulu `Number(...) || 0` mengubah salah ketik apa pun menjadi 0 diam-diam.
+    const minBalanceAlert = numValue("minBalanceAlert", financeConfig.minBalanceAlert);
+    if (minBalanceAlert === null || minBalanceAlert < 0) {
+      setFinanceError("Batas saldo minimal harus berupa angka 0 atau lebih.");
+      return;
+    }
     setIsSavingFinance(true);
     setFinanceError(null);
     try {
       const saved = await apiSend<AppConfig>("/api/config", "PUT", {
         ...financeConfig,
-        minBalanceAlert: Number(financeConfig.minBalanceAlert) || 0,
+        minBalanceAlert,
       });
       setFinanceConfig(saved);
+      setNumDrafts({});
       refreshConfig();
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
@@ -268,6 +319,25 @@ export function SettingsPage() {
       setSecurityError(err instanceof Error ? err.message : "Gagal memperbarui kata sandi.");
     } finally {
       setIsSavingSecurity(false);
+    }
+  };
+
+  // Cabut sesi di SEMUA perangkat. Logout biasa hanya menghapus cookie di
+  // peramban ini; endpoint `?all=1` merotasi secret sesi sehingga token yang
+  // terlanjur tersalin (backup, komputer lain, HP hilang) langsung mati.
+  const [isRevokingSessions, setIsRevokingSessions] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+
+  const handleRevokeSessions = async () => {
+    setIsRevokingSessions(true);
+    setRevokeError(null);
+    try {
+      await apiSend("/api/admin/session?all=1", "DELETE");
+      router.replace("/admin/login");
+      router.refresh();
+    } catch (err) {
+      setRevokeError(err instanceof Error ? err.message : "Gagal mencabut sesi.");
+      setIsRevokingSessions(false);
     }
   };
 
@@ -335,7 +405,7 @@ export function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {blankTried && (
+              {blankProfile && (
                 <p className="mb-4 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[13px] font-medium text-amber-800 dark:text-amber-200">
                   Profil masjid belum pernah diisi. Lengkapi seluruh kolom lalu simpan —
                   data tampil di halaman publik.
@@ -446,13 +516,14 @@ export function SettingsPage() {
                       min={1900}
                       max={2100}
                       placeholder="Contoh: 2019"
-                      value={profile.establishedYear || ""}
+                      value={numText("establishedYear", profile.establishedYear)}
                       onChange={(e) => {
+                        draftNumber("establishedYear", e.target.value);
                         const v = parseInt(e.target.value, 10);
+                        // Kosong → 0 agar validasi simpan menolak dengan pesan
+                        // jelas, bukan diam-diam jadi tahun berjalan.
                         setProfile({
                           ...profile,
-                          // Kosong → 0 agar validasi backend menolak dengan pesan jelas,
-                          // bukan diam-diam jadi 1985.
                           establishedYear: Number.isFinite(v) ? v : 0,
                         });
                       }}
@@ -568,13 +639,15 @@ export function SettingsPage() {
                         </label>
                         <input
                           id="profil-lat"
-                          type="number"
-                          step="any"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="-8,09"
-                          value={profile.latitude || ""}
-                          onChange={(e) =>
-                            setProfile({ ...profile, latitude: parseFloat(e.target.value) || 0 })
-                          }
+                          value={numText("latitude", profile.latitude)}
+                          onChange={(e) => {
+                            draftNumber("latitude", e.target.value);
+                            const v = parseFloat(e.target.value.replace(",", "."));
+                            if (Number.isFinite(v)) setProfile({ ...profile, latitude: v });
+                          }}
                           className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                         />
                       </div>
@@ -584,13 +657,15 @@ export function SettingsPage() {
                         </label>
                         <input
                           id="profil-lng"
-                          type="number"
-                          step="any"
+                          type="text"
+                          inputMode="decimal"
                           placeholder="112,16"
-                          value={profile.longitude || ""}
-                          onChange={(e) =>
-                            setProfile({ ...profile, longitude: parseFloat(e.target.value) || 0 })
-                          }
+                          value={numText("longitude", profile.longitude)}
+                          onChange={(e) => {
+                            draftNumber("longitude", e.target.value);
+                            const v = parseFloat(e.target.value.replace(",", "."));
+                            if (Number.isFinite(v)) setProfile({ ...profile, longitude: v });
+                          }}
                           className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                         />
                       </div>
@@ -623,7 +698,7 @@ export function SettingsPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
                         <h3 id="profil-foto-heading" className="flex items-center gap-1.5 text-sm font-bold text-foreground">
-                          <Image className="h-4 w-4 text-primary" aria-hidden="true" />
+                          <ImageIcon className="h-4 w-4 text-primary" aria-hidden="true" />
                           5. Foto Halaman Depan
                         </h3>
                         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -724,6 +799,18 @@ export function SettingsPage() {
                       </p>
                     </div>
 
+                    {/* Foto sampul — dulu hanya bisa diisi lewat API sehingga
+                        selalu kosong (Hero memakainya sebagai fallback foto). */}
+                    <div className="rounded-xl border border-border bg-card p-3">
+                      <ImageUploadField
+                        label="Foto sampul (opsional)"
+                        description="Gambar utama yang dipakai sebagai cadangan bila foto banner belum ada."
+                        value={profile.coverImageUrl ?? ""}
+                        onChange={(url) => setProfile({ ...profile, coverImageUrl: url })}
+                        variant="banner"
+                      />
+                    </div>
+
                     <div className="rounded-lg border border-border bg-muted/40 p-3 text-[11px] leading-relaxed text-muted-foreground">
                       💡 <strong>Cara kerja:</strong> <strong>1 foto</strong> = tampil diam.
                       <strong> Lebih dari 1 foto</strong> = otomatis jadi slide yang bergeser sendiri
@@ -755,13 +842,13 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* TAB 2: REKENING BANK */}
+        {/* TAB 2: REKENING BANK & QRIS */}
         <TabsContent value="finance" className="space-y-6">
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Rekening Bank Donasi</CardTitle>
+              <CardTitle className="text-lg">Rekening Bank & QRIS Donasi</CardTitle>
               <CardDescription>
-                Nomor rekening resmi untuk penerimaan infak, sedekah, dan wakaf jamaah secara transfer.
+                Nomor rekening resmi dan kode QRIS untuk penerimaan infak, sedekah, dan wakaf jamaah.
                 Kelola jenis kas masuk & keluar lewat menu Kategori Kas.
               </CardDescription>
             </CardHeader>
@@ -769,10 +856,11 @@ export function SettingsPage() {
               <form onSubmit={handleSaveFinance} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="finance-bank-name" className="text-xs font-semibold text-foreground">
                       Nama Bank
                     </label>
                     <input
+                      id="finance-bank-name"
                       type="text"
                       value={financeConfig.bankName}
                       onChange={(e) =>
@@ -783,10 +871,11 @@ export function SettingsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="finance-account-number" className="text-xs font-semibold text-foreground">
                       Nomor Rekening
                     </label>
                     <input
+                      id="finance-account-number"
                       type="text"
                       value={financeConfig.accountNumber}
                       onChange={(e) =>
@@ -800,10 +889,11 @@ export function SettingsPage() {
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="finance-account-holder" className="text-xs font-semibold text-foreground">
                       Atas Nama Rekening
                     </label>
                     <input
+                      id="finance-account-holder"
                       type="text"
                       value={financeConfig.accountHolder}
                       onChange={(e) =>
@@ -817,23 +907,37 @@ export function SettingsPage() {
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-semibold text-foreground">
+                    <label htmlFor="finance-min-balance" className="text-xs font-semibold text-foreground">
                       Batas Saldo Kas Minimal untuk Peringatan (IDR)
                     </label>
                     <input
+                      id="finance-min-balance"
                       type="number"
-                      value={financeConfig.minBalanceAlert}
-                      onChange={(e) =>
-                        setFinanceConfig({
-                          ...financeConfig,
-                          minBalanceAlert: parseInt(e.target.value) || 0,
-                        })
-                      }
+                      min={0}
+                      inputMode="numeric"
+                      value={numText("minBalanceAlert", financeConfig.minBalanceAlert)}
+                      onChange={(e) => {
+                        draftNumber("minBalanceAlert", e.target.value);
+                        const v = parseInt(e.target.value, 10);
+                        if (Number.isFinite(v)) {
+                          setFinanceConfig({ ...financeConfig, minBalanceAlert: v });
+                        }
+                      }}
                       className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                     />
                     <span className="text-[11px] text-muted-foreground">
                       Sistem akan memberikan notifikasi peringatan jika saldo kas masjid berada di bawah nilai ini.
                     </span>
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2 pt-3 border-t border-border">
+                    <ImageUploadField
+                      label="Foto / Gambar Kode QRIS Donasi (opsional)"
+                      description="Unggah foto kode QRIS resmi masjid (JPG, PNG, WebP). Akan ditampilkan di blok donasi jamaah."
+                      value={financeConfig.qrisImageUrl ?? ""}
+                      onChange={(url) => setFinanceConfig({ ...financeConfig, qrisImageUrl: url })}
+                      variant="logo"
+                    />
                   </div>
                 </div>
 
@@ -870,7 +974,7 @@ export function SettingsPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground">
+                    <h4 id="pref-transparency-label" className="text-sm font-semibold text-foreground">
                       Publikasi Saldo Kas Real-time
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -879,6 +983,7 @@ export function SettingsPage() {
                   </div>
                   <input
                     type="checkbox"
+                    aria-labelledby="pref-transparency-label"
                     checked={financeConfig.publicTransparency}
                     onChange={(e) =>
                       setFinanceConfig({
@@ -892,15 +997,16 @@ export function SettingsPage() {
 
                 <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border">
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      Tampilkan Kode QRIS Infaq Digital
+                    <h4 id="pref-qris-label" className="text-sm font-semibold text-foreground">
+                      Tampilkan Kanal Donasi (Rekening & QRIS)
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Izinkan jamaah memindai kode QRIS masjid untuk transfer sedekah cepat
+                      Izinkan jamaah melihat rekening donasi dan memindai kode QRIS masjid di halaman publik
                     </p>
                   </div>
                   <input
                     type="checkbox"
+                    aria-labelledby="pref-qris-label"
                     checked={financeConfig.showDonationQRIS}
                     onChange={(e) =>
                       setFinanceConfig({
@@ -981,11 +1087,13 @@ export function SettingsPage() {
                   </p>
                 )}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">
+                  <label htmlFor="security-current" className="text-xs font-semibold text-foreground">
                     Kata Sandi Saat Ini
                   </label>
                   <input
+                    id="security-current"
                     type="password"
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     value={securityForm.currentPassword}
                     onChange={(e) =>
@@ -999,11 +1107,13 @@ export function SettingsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">
+                  <label htmlFor="security-new" className="text-xs font-semibold text-foreground">
                     Kata Sandi Baru
                   </label>
                   <input
+                    id="security-new"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="Minimal 8 karakter..."
                     value={securityForm.newPassword}
                     onChange={(e) =>
@@ -1017,11 +1127,13 @@ export function SettingsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">
+                  <label htmlFor="security-confirm" className="text-xs font-semibold text-foreground">
                     Konfirmasi Kata Sandi Baru
                   </label>
                   <input
+                    id="security-confirm"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="Ulangi kata sandi baru..."
                     value={securityForm.confirmPassword}
                     onChange={(e) =>
@@ -1050,6 +1162,31 @@ export function SettingsPage() {
                   </Button>
                 </div>
               </form>
+
+              {/* Pencabutan sesi lintas perangkat — pelengkap tombol Keluar. */}
+              <div className="mt-6 border-t border-border pt-5">
+                <h4 className="text-sm font-semibold text-foreground">Keluar dari semua perangkat</h4>
+                <p className="mt-0.5 max-w-[70ch] text-xs leading-relaxed text-muted-foreground">
+                  Pakai bila kata sandi pernah terlihat orang lain, atau Anda lupa di
+                  perangkat mana saja masih masuk. Semua sesi — termasuk perangkat ini —
+                  akan dicabut dan Anda perlu masuk ulang.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 gap-2"
+                  disabled={isRevokingSessions}
+                  onClick={handleRevokeSessions}
+                >
+                  <SignOut className="h-4 w-4" aria-hidden="true" />
+                  <span>{isRevokingSessions ? "Mencabut…" : "Cabut semua sesi"}</span>
+                </Button>
+                {revokeError && (
+                  <p role="alert" className="mt-2 text-sm font-medium text-destructive">
+                    {revokeError}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

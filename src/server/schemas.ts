@@ -237,6 +237,14 @@ export const appConfigInputSchema = z.object({
   minBalanceAlert: z.number().int().min(0).max(100_000_000_000).optional(),
   publicTransparency: z.boolean().optional(),
   showDonationQRIS: z.boolean().optional(),
+  qrisImageUrl: z
+    .string()
+    .max(500, "Tautan gambar QRIS terlalu panjang.")
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => v === undefined || isSafeUrl(v), {
+      message: "Tautan gambar QRIS harus berupa URL http(s):// atau path / yang valid.",
+    }),
 });
 
 export type AppConfigInput = z.infer<typeof appConfigInputSchema>;

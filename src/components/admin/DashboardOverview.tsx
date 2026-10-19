@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { useApi } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import type {
@@ -56,7 +56,16 @@ const COLORS = {
   expense: "oklch(0.58 0.2 25)",
 };
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+// Bentuk minimal entri tooltip yang kita pakai (bukan `any`), agar lint tetap
+// bersih tanpa kehilangan data: recharts menyerahkan payload yang lebih kaya.
+type TooltipEntry = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+  fill?: string;
+};
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string | number }) {
   if (!active || !payload) return null;
   return (
     <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-45">
@@ -67,7 +76,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
             {entry.name}:
           </span>
-          <span className="font-bold tabular-nums">{formatCurrency(entry.value)}</span>
+          <span className="font-bold tabular-nums">{formatCurrency(Number(entry.value ?? 0))}</span>
         </p>
       ))}
     </div>
@@ -408,13 +417,41 @@ function pctChange(current: number, prev: number): number | undefined {
 }
 
 export function DashboardOverview() {
-  const { data: mosqueProfile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const { data: mosqueProfile, error: profileError } = useApi<MosqueProfile>("/api/mosque-profile");
   const { data: financialSummary } = useApi<FinancialSummary>("/api/financial-summary");
   const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
   const { data: chartData } = useApi<ChartDataPoint[]>("/api/chart");
   const { data: announcements } = useApi<Announcement[]>("/api/announcements");
   const { data: activities } = useApi<Activity[]>("/api/activities");
   const { data: appConfig } = useApi<AppConfig>("/api/config");
+
+  // `GET /api/mosque-profile` sengaja membalas 404 saat profil belum diisi.
+  // Tanpa cabang ini, dashboard terjebak di skeleton selamanya pada instalasi
+  // baru. Tampilkan arahan, bukan loading tanpa akhir.
+  if (profileError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Dashboard" description="Profil masjid belum lengkap" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Profil masjid belum diisi</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="max-w-[65ch] text-sm leading-relaxed text-muted-foreground">
+              Dashboard, jadwal salat, dan halaman publik dihitung dari profil
+              masjid. Lengkapi nama, alamat, koordinat, dan zona waktu lebih dulu.
+            </p>
+            <Link
+              href="/admin/settings"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Buka Pengaturan → Profil Masjid
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Header butuh profil; sisanya progresif agar satu API lambat tidak blokir semua.
   if (!mosqueProfile) {
@@ -437,9 +474,10 @@ export function DashboardOverview() {
     lastUpdated: new Date().toISOString(),
   };
 
-  // Tren MoM dari prefix yyyy-MM zona Jakarta (tanpa new Date agar imun TZ).
+  // Tren MoM dari prefix yyyy-MM zona masjid (tanpa new Date agar imun TZ).
+  const tz = mosqueProfile.timezone?.trim() || DEFAULT_TIME_ZONE;
   const jakartaMonth = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
+    timeZone: tz,
     year: "numeric",
     month: "2-digit",
   }).format(new Date());
@@ -459,7 +497,7 @@ export function DashboardOverview() {
   const minAlert = appConfig?.minBalanceAlert ?? 0;
   const lowBalance = financialSummary != null && minAlert > 0 && currentBalance < minAlert;
   const monthLabel = new Intl.DateTimeFormat("id-ID", {
-    timeZone: "Asia/Jakarta",
+    timeZone: tz,
     month: "long",
     year: "numeric",
   }).format(new Date());

@@ -187,18 +187,18 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
                     >
                       {item.children.map((child) => (
                         <li key={child.name}>
-                          <a
+                          <Link
                             href={child.href}
                             className="block whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium normal-case tracking-normal text-foreground transition-colors hover:bg-muted hover:text-primary"
                           >
                             {child.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
                   </>
                 ) : (
-                  <a
+                  <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
@@ -208,7 +208,7 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
                   >
                     {item.name}
                     {renderDot(active)}
-                  </a>
+                  </Link>
                 )}
               </li>
             );
@@ -217,13 +217,13 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
 
         {/* Kanan: CTA pill outline ala referensi + toggle mobile */}
         <div className="flex shrink-0 items-center gap-2">
-          <a
+          <Link
             href="/keuangan#donasi"
             className="hidden h-10 items-center gap-2 rounded-full border border-primary/50 px-5 text-sm font-semibold whitespace-nowrap text-primary transition-all duration-200 hover:bg-primary hover:text-primary-foreground active:scale-[0.98] lg:inline-flex"
           >
             <Heart className="h-4 w-4" weight="bold" aria-hidden="true" />
             Salurkan Infaq
-          </a>
+          </Link>
           <button
             type="button"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted active:scale-95 lg:hidden"
@@ -270,49 +270,49 @@ export function Navbar({ profile }: { profile?: MosqueProfile | null }) {
                         {openDrop === item.name && (
                           <ul className="ml-2 space-y-0.5 border-l border-border/60 py-1 pl-3">
                             <li>
-                              <a
+                              <Link
                                 href={item.href}
                                 onClick={closeMenu}
                                 className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-primary"
                               >
                                 Semua {item.name}
-                              </a>
+                              </Link>
                             </li>
                             {item.children.map((child) => (
                               <li key={child.name}>
-                                <a
+                                <Link
                                   href={child.href}
                                   onClick={closeMenu}
                                   className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted hover:text-primary"
                                 >
                                   {child.name}
-                                </a>
+                                </Link>
                               </li>
                             ))}
                           </ul>
                         )}
                       </>
                     ) : (
-                      <a
+                      <Link
                         href={item.href}
                         onClick={closeMenu}
                         className="block rounded-xl px-3 py-2.5 text-sm font-semibold tracking-normal text-foreground transition-colors hover:bg-muted hover:text-primary active:bg-muted"
                       >
                         {item.name}
-                      </a>
+                      </Link>
                     )}
                   </li>
                 ))}
               </ul>
               <div className="border-t border-border/60 px-1 pt-3 pb-1">
-                <a
+                <Link
                   href="/keuangan#donasi"
                   onClick={closeMenu}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-[0.99]"
                 >
                   <Heart className="h-4 w-4" weight="fill" aria-hidden="true" />
                   Salurkan Infaq
-                </a>
+                </Link>
               </div>
             </div>
           </div>

@@ -3,14 +3,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import { formatCurrency, formatDate, formatShortDate, cn, toCsvRow, downloadTextFile } from "@/lib/utils";
+import { formatCurrency, formatDate, cn, toCsvRow, downloadTextFile } from "@/lib/utils";
 import { TransactionFormDialog } from "@/components/admin/TransactionFormDialog";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -58,7 +57,6 @@ import {
   PencilSimple,
   Trash,
   DotsThreeVertical,
-  Calendar,
   ArrowUpRight,
   ArrowDownRight,
   Receipt,
@@ -143,19 +141,15 @@ function TransactionStats({ transactions }: { transactions: Transaction[] }) {
 
 function TransactionDetailDialog({
   transaction,
-  categories,
   open,
   onOpenChange,
   onEdit,
 }: {
   transaction: Transaction;
-  categories: Category[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit?: (txn: Transaction) => void;
 }) {
-  const category = categories.find((c) => c.id === transaction.categoryId);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-130">
@@ -229,7 +223,7 @@ function TransactionDetailDialog({
           </div>
 
           {/* Bukti transaksi — tautan terverifikasi, bisa dibuka */}
-          {transaction.proofUrl && (
+          {transaction.proofUrl ? (
             <div className="rounded-xl border border-border/40 p-4">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Bukti Transaksi</p>
               <a
@@ -245,6 +239,13 @@ function TransactionDetailDialog({
               </a>
               <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{transaction.proofUrl}</p>
             </div>
+          ) : (
+            // Eksplisit, bukan sekadar tidak ada kartu: petugas audit perlu tahu
+            // transaksi ini memang belum dilampiri bukti.
+            <p className="rounded-xl border border-dashed border-border bg-muted/30 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">Tanpa bukti.</span> Transaksi ini
+              dicatat tanpa lampiran foto/berkas.
+            </p>
           )}
         </div>
 
@@ -368,12 +369,10 @@ function DeleteConfirmDialog({
 
 function RowActions({
   transaction,
-  categories,
   onDeleted,
   onEdit,
 }: {
   transaction: Transaction;
-  categories: Category[];
   onDeleted: () => void;
   onEdit: (txn: Transaction) => void;
 }) {
@@ -413,7 +412,6 @@ function RowActions({
 
       <TransactionDetailDialog
         transaction={transaction}
-        categories={categories}
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onEdit={onEdit}
@@ -539,13 +537,20 @@ type SortDirection = "asc" | "desc";
 export function TransactionsPage() {
   const { data: fetchedTransactions, refresh } = useApi<Transaction[]>("/api/transactions");
   const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
-  const transactions = fetchedTransactions ?? [];
-  const categories = fetchedCategories ?? [];
+  // Di-`useMemo` supaya identitas array-nya stabil antar-render: tanpa ini,
+  // semua `useMemo` di bawahnya ikut dihitung ulang setiap render
+  // (peringatan react-hooks/exhaustive-deps).
+  const transactions = useMemo(() => fetchedTransactions ?? [], [fetchedTransactions]);
+  const categories = useMemo(() => fetchedCategories ?? [], [fetchedCategories]);
   const [searchQuery, setSearchQuery] = useState("");
   // Form tambah/ubah transaksi (modal)
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [newType, setNewType] = useState<"income" | "expense">("income");
+  // Nomor urut pembukaan form — dipakai sebagai `key` dialog. Dengan begitu
+  // isian selalu mulai bersih tiap dibuka (pola React: reset state lewat key,
+  // bukan lewat effect yang menulis state saat dialog dibuka).
+  const [formSeq, setFormSeq] = useState(0);
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("date");
@@ -594,17 +599,15 @@ export function TransactionsPage() {
     return result;
   }, [transactions, searchQuery, typeFilter, categoryFilter, sortField, sortDirection]);
 
-  // Pagination (dijepit agar filter/data menyusut tidak tampil kosong)
+  // Pagination (dijepit agar filter/data menyusut tidak tampil kosong).
+  // `safePage` dihitung langsung — tidak perlu effect yang menulis ulang
+  // `currentPage` setelah render pertama.
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const paginatedTransactions = filteredTransactions.slice(
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
 
   // Reset page when filters change
   const handleFilterChange = () => {
@@ -658,23 +661,32 @@ export function TransactionsPage() {
   // Pintasan dari dashboard: /admin/transactions?type=income|expense
   // langsung membuka form dengan tipe yang sesuai. Dibaca dari URL saat mount
   // (bukan useSearchParams) supaya tidak perlu Suspense boundary.
+  //
+  // Pembaruan state dijadwalkan satu putaran (bukan dipanggil langsung di badan
+  // effect) agar render pertama sama dengan HTML server — dialog memang baru
+  // boleh terbuka di sisi klien.
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("type");
-    if (t === "income" || t === "expense") {
-      setNewType(t);
+    if (t !== "income" && t !== "expense") return;
+    const id = setTimeout(() => {
       setEditing(null);
+      setNewType(t);
+      setFormSeq((n) => n + 1);
       setFormOpen(true);
-    }
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   const openCreate = (type: "income" | "expense") => {
     setEditing(null);
     setNewType(type);
+    setFormSeq((n) => n + 1);
     setFormOpen(true);
   };
 
   const openEdit = (txn: Transaction) => {
     setEditing(txn);
+    setFormSeq((n) => n + 1);
     setFormOpen(true);
   };
 
@@ -985,7 +997,6 @@ export function TransactionsPage() {
                           <TableCell className="py-3.5 pr-5 text-center">
                             <RowActions
                               transaction={txn}
-                              categories={categories}
                               onDeleted={refresh}
                               onEdit={openEdit}
                             />
@@ -1011,6 +1022,7 @@ export function TransactionsPage() {
       </Card>
 
       <TransactionFormDialog
+        key={`${editing?.id ?? "baru"}-${newType}-${formSeq}`}
         open={formOpen}
         onOpenChange={setFormOpen}
         categories={categories}

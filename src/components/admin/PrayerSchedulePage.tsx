@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useApi } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { formatDate } from "@/lib/utils";
 import type { DailyPrayerSchedule, MosqueProfile } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -30,11 +31,31 @@ import { Clock, MapPin, CheckCircle, Gear } from "@phosphor-icons/react";
 // Isya 18°). Pengurus tidak mengatur jam manual — cukup pastikan
 // koordinat di Pengaturan benar.
 export function PrayerSchedulePage() {
-  const { data: prayerData } = useApi<{
+  const { data: prayerData, error: loadError } = useApi<{
     today: DailyPrayerSchedule | null;
     week: DailyPrayerSchedule[];
   }>("/api/prayer-schedule");
   const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+
+  // Kegagalan hitung (mis. zona waktu tidak dikenal) tidak boleh tampak sebagai
+  // skeleton tanpa akhir.
+  if (loadError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Jadwal Sholat"
+          description="Dihitung otomatis setiap hari dari lokasi masjid — tanpa pengaturan jam manual"
+        />
+        <AdminErrorState
+          title="Gagal menghitung jadwal sholat"
+          message="Pastikan koordinat dan zona waktu masjid di Pengaturan sudah benar, lalu muat ulang halaman."
+          actionHref="/admin/settings"
+          actionLabel="Periksa Pengaturan"
+          code={loadError}
+        />
+      </div>
+    );
+  }
 
   if (!prayerData) {
     return (

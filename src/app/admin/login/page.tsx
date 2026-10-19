@@ -15,7 +15,6 @@ import {
   Phone,
   ShieldCheck,
   Sparkle,
-  WarningCircle,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { MosqueProfile } from "@/types";
@@ -32,8 +31,11 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Selalu tampilkan dulu peringatan kata sandi bawaan (sesuai permintaan).
-  const [showDefaultHint, setShowDefaultHint] = useState(true);
+  // Catatan keamanan: halaman login TIDAK pernah menyebut kata sandi bawaan.
+  // Dulu banner di sini menampilkan `admin123` + tombol isi-otomatis ke semua
+  // pengunjung anonim, sehingga panel admin bisa dibuka siapa pun. Informasi
+  // "ganti kata sandi bawaan" sekarang hanya muncul di dalam panel (setelah
+  // login) lewat AdminLayout + gerbang di `src/proxy.ts`.
   const [profile, setProfile] = useState<MosqueProfile | null>(null);
 
   useEffect(() => {
@@ -41,7 +43,6 @@ function LoginForm() {
       .then((r) => r.json())
       .then((d) => {
         if (d?.authenticated) router.replace(next);
-        else if (d?.isDefaultPassword) setShowDefaultHint(true);
       })
       .catch(() => null);
     // Profil untuk branding (logo, nama, foto) — sama seperti web publik.
@@ -76,8 +77,6 @@ function LoginForm() {
       setIsLoading(false);
     }
   };
-
-  const fillDefault = () => setPassword("admin123");
 
   // ── Branding dinamis dari portal admin (sama seperti Navbar/Footer web) ──
   const brandName = profile?.name?.trim() || "Takmir Masjid";
@@ -350,37 +349,6 @@ function LoginForm() {
                       </button>
                     </div>
                   </div>
-
-                  {showDefaultHint && (
-                    <div
-                      role="note"
-                      aria-label="Peringatan kata sandi bawaan"
-                      className="flex gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-3 text-[13px] leading-relaxed text-amber-900 backdrop-blur-sm dark:text-amber-100"
-                    >
-                      <WarningCircle
-                        className="mt-0.5 h-4.5 w-4.5 shrink-0 text-amber-600 dark:text-amber-300"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <p className="font-semibold">Mode awal — kata sandi bawaan</p>
-                        <p className="mt-0.5 text-amber-800 dark:text-amber-200/90">
-                          Belum pernah diganti? Kata sandi bawaan adalah{" "}
-                          <code className="rounded-md bg-amber-500/15 px-1.5 py-0.5 font-mono font-bold text-amber-900 dark:text-amber-100">
-                            admin123
-                          </code>{" "}
-                          — segera ganti di Pengaturan → Keamanan setelah masuk.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={fillDefault}
-                          className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-500/30 transition hover:bg-amber-500/25 dark:text-amber-100"
-                        >
-                          <LockKey className="h-3.5 w-3.5" aria-hidden="true" />
-                          Isi otomatis admin123
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {error && (
                     <p

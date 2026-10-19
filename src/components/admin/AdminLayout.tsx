@@ -77,12 +77,16 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex-1 min-w-0 flex flex-col" style={{ marginLeft: isMobile ? 0 : sidebarWidth }}>
           <AdminHeader />
           {showDefaultPwBanner && (
-            <p role="status" className="flex flex-wrap items-center gap-2 border-b border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-[13px] font-medium text-amber-800 md:px-6 dark:text-amber-200">
+            <p role="alert" className="flex flex-wrap items-center gap-2 border-b border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-[13px] font-medium text-amber-800 md:px-6 dark:text-amber-200">
               <WarningCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
-                Anda masih memakai kata sandi bawaan.{" "}
-                <Link href="/admin/settings" className="font-bold underline underline-offset-2">
-                  Segera ganti di Pengaturan → Keamanan
+                Kata sandi panel masih memakai nilai bawaan — panel jadi mudah ditebak
+                orang lain.{" "}
+                <Link
+                  href="/admin/settings?tab=security"
+                  className="font-bold underline underline-offset-2"
+                >
+                  Ganti sekarang di Pengaturan → Keamanan
                 </Link>
                 .
               </span>

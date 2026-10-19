@@ -5,7 +5,7 @@
 // React Context internal.
 import type { Activity } from "@/types";
 import Link from "next/link";
-import { formatDate, cn } from "@/lib/utils";
+import { formatDate, shortZone, todayISO, DEFAULT_TIME_ZONE, cn } from "@/lib/utils";
 import {
   CaretRight,
   Clock,
@@ -23,7 +23,11 @@ function coverFor(a: Activity): string | null {
 }
 
 function dayNumber(dateStr: string): string {
-  return String(new Date(dateStr).getDate()).padStart(2, "0");
+  // Tanggal-saja (yyyy-mm-dd) = tanggal kalender, bukan instan waktu. Dibaca
+  // sebagai tengah malam UTC lalu diambil dengan getUTCDate() agar angka hari
+  // tidak bergeser tergantung zona mesin render.
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  return String(Number.isNaN(d.getTime()) ? 1 : d.getUTCDate()).padStart(2, "0");
 }
 
 function shortMonth(dateStr: string): string {
@@ -34,12 +38,13 @@ function weekdayShort(dateStr: string): string {
   return formatDate(dateStr, { weekday: "short" });
 }
 
-function daysUntil(dateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86400000);
+function daysUntil(dateStr: string, timeZone: string): number {
+  // Dibandingkan sebagai tanggal kalender UTC agar "Hari ini" mengikuti zona
+  // masjid (bukan zona mesin), tanpa risiko geser satu hari.
+  const today = Date.parse(`${todayISO(timeZone)}T00:00:00Z`);
+  const target = Date.parse(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(today) || Number.isNaN(target)) return 0;
+  return Math.round((target - today) / 86400000);
 }
 
 function statusLabel(diff: number): string {
@@ -50,8 +55,8 @@ function statusLabel(diff: number): string {
   return "Akan datang";
 }
 
-function FeaturedCard({ activity }: { activity: Activity }) {
-  const diff = daysUntil(activity.date);
+function FeaturedCard({ activity, timeZone }: { activity: Activity; timeZone: string }) {
+  const diff = daysUntil(activity.date, timeZone);
 
   return (
     <article className="group grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_50px_-28px_rgba(4,47,34,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_32px_64px_-28px_rgba(4,47,34,0.55)] lg:grid-cols-[1.08fr_1fr]">
@@ -121,7 +126,7 @@ function FeaturedCard({ activity }: { activity: Activity }) {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-card text-primary ring-1 ring-border">
               <Clock className="h-4 w-4" aria-hidden="true" />
             </span>
-            <span className="tabular-nums">{activity.time} WIB</span>
+            <span className="tabular-nums">{activity.time} {shortZone(timeZone)}</span>
           </p>
           <p className="inline-flex items-center gap-2.5 rounded-xl bg-muted/70 px-3 py-2.5 text-[13px] font-medium text-foreground">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-card text-primary ring-1 ring-border">
@@ -154,8 +159,8 @@ function FeaturedCard({ activity }: { activity: Activity }) {
   );
 }
 
-function AgendaRow({ activity }: { activity: Activity }) {
-  const diff = daysUntil(activity.date);
+function AgendaRow({ activity, timeZone }: { activity: Activity; timeZone: string }) {
+  const diff = daysUntil(activity.date, timeZone);
 
   return (
     <article className="group">
@@ -194,7 +199,7 @@ function AgendaRow({ activity }: { activity: Activity }) {
           </div>
           <p className="mt-1.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground sm:text-[13px]">
             <Clock className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-            <span className="tabular-nums">{activity.time} WIB</span>
+            <span className="tabular-nums">{activity.time} {shortZone(timeZone)}</span>
             <span aria-hidden="true" className="text-border">•</span>
             <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
             <span className="truncate">{activity.location}</span>
@@ -212,19 +217,22 @@ function AgendaRow({ activity }: { activity: Activity }) {
   );
 }
 
-export function ActivitiesSection({ activities }: { activities: Activity[] }) {
-  const sorted = [...activities].sort((a, b) => +new Date(a.date) - +new Date(b.date));
+export function ActivitiesSection({
+  activities,
+  timeZone = DEFAULT_TIME_ZONE,
+}: {
+  activities: Activity[];
+  timeZone?: string;
+}) {
+  // Perbandingan tanggal sebagai string kalender (yyyy-mm-dd) — imun zona dan
+  // tidak butuh objek Date sama sekali.
+  const sorted = [...activities].sort((a, b) => a.date.localeCompare(b.date));
 
   // Sorotan = kegiatan yang paling mendekati hari ini (hari ini / akan datang
   // yang paling awal). Kegiatan yang sudah lewat tidak boleh jadi sorotan.
   // Kalau semuanya sudah lewat, pakai yang terakhir lewat sebagai fallback.
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const upcoming = sorted.filter((a) => {
-    const d = new Date(a.date);
-    d.setHours(0, 0, 0, 0);
-    return d.getTime() >= todayStart.getTime();
-  });
+  const today = todayISO(timeZone);
+  const upcoming = sorted.filter((a) => a.date >= today);
   const featured = upcoming[0] ?? sorted[sorted.length - 1];
   const rest = featured ? sorted.filter((a) => a.id !== featured.id) : [];
 
@@ -243,16 +251,14 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
       <div className="container relative mx-auto px-4 md:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:mb-10">
           <div className="min-w-0">
-            <p className="eyebrow-friendly mb-3 bg-primary/8 text-primary ring-1 ring-primary/20 ring-inset">
-              Agenda Masjid
-            </p>
             <h2
               id="activities-heading"
               className="font-display text-h2-fluid font-semibold text-foreground"
             >
               Kegiatan Masjid
             </h2>
-            {/* Pembeda header ↔ deskripsi — pola sama dengan section Kabar Masjid */}
+            {/* Pembeda header ↔ deskripsi: hairline beraksen primary lalu memudar.
+                Pola sama dengan section Berita Terbaru. */}
             <div
               aria-hidden="true"
               className="mt-4 h-px w-full max-w-[58ch] bg-linear-to-r from-primary/60 via-border to-transparent"
@@ -280,12 +286,12 @@ export function ActivitiesSection({ activities }: { activities: Activity[] }) {
           </p>
         ) : (
           <>
-            {featured && <FeaturedCard activity={featured} />}
+            {featured && <FeaturedCard activity={featured} timeZone={timeZone} />}
 
             {rest.length > 0 && (
               <div className="mt-4 divide-y divide-border/60 rounded-3xl border border-border bg-card px-2 py-2 shadow-[0_18px_40px_-28px_rgba(4,47,34,0.4)] sm:px-3 md:mt-5">
                 {rest.map((a) => (
-                  <AgendaRow key={a.id} activity={a} />
+                  <AgendaRow key={a.id} activity={a} timeZone={timeZone} />
                 ))}
               </div>
             )}

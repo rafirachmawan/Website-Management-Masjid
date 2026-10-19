@@ -93,26 +93,9 @@ model Official {
   avatar     String?
 }
 
-model PrayerDay {
-  date      String       @id // yyyy-mm-dd
-  hijriDate String
-  sunrise   String // HH:MM
-  prayers   PrayerTime[]
-}
-
-model PrayerTime {
-  id        Int       @id @default(autoincrement())
-  dayDate   String
-  day       PrayerDay @relation(fields: [dayDate], references: [date], onDelete: Cascade)
-  order     Int
-  name      String
-  arabic    String
-  time      String // HH:MM
-  isCurrent Boolean   @default(false)
-  isNext    Boolean   @default(false)
-
-  @@index([dayDate])
-}
+// Catatan: tabel PrayerDay/PrayerTime (jadwal sholat manual) sudah tidak
+// dipakai — jadwal kini dihitung sendiri dari koordinat masjid (adhan) di
+// server/services/prayer.ts. Modelnya dihapus agar tidak ada skema mati.
 
 // Pengaturan aplikasi (rekening donasi, preferensi tampilan publik).
 // Key-value agar penambahan pengaturan tak perlu migrasi baru.

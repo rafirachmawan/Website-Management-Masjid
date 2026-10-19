@@ -9,6 +9,11 @@ import { ZodError } from "zod";
 // Dipakai service agar backend menolak dengan 400 + pesan jelas, bukan 500.
 export class BadRequestError extends Error {}
 
+// Sumber daya yang diminta tidak ada (id tidak dikenal / sudah dihapus).
+// Dipakai service agar backend membalas 404, bukan 400 — klien bisa membedakan
+// "permintaannya salah" dari "datanya memang tidak ada".
+export class NotFoundError extends Error {}
+
 export function unauthorized(message = "Sesi admin berakhir. Silakan masuk kembali lewat /admin/login.") {
   return NextResponse.json({ error: message }, { status: 401 });
 }
@@ -58,6 +63,9 @@ export function fail(error: unknown): NextResponse {
   if (error instanceof BadRequestError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+  if (error instanceof NotFoundError) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
   if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") {
     return NextResponse.json({ error: "Data tidak ditemukan." }, { status: 404 });
   }
@@ -73,10 +81,14 @@ export function fail(error: unknown): NextResponse {
       { status: 400 },
     );
   }
-  // Jangan bocorkan pesan driver/Prisma mentah ke klien.
-  if (error instanceof Error && /prisma|Unique constraint|Foreign key/i.test(error.message)) {
-    return NextResponse.json({ error: "Operasi database gagal. Periksa kembali data yang dikirim." }, { status: 500 });
+  // Semua galat tak terduga → 500 generik. Pesan mentah (driver, Prisma, fs)
+  // hanya dicatat di log server, tidak pernah dikirim ke klien agar tidak
+  // membocorkan detail internal.
+  if (error instanceof Error) {
+    console.error("[api] galat tak tertangani:", error.message);
   }
-  const message = error instanceof Error ? error.message : "Terjadi kesalahan server.";
-  return NextResponse.json({ error: message }, { status: 500 });
+  return NextResponse.json(
+    { error: "Terjadi kesalahan server. Coba beberapa saat lagi." },
+    { status: 500 },
+  );
 }

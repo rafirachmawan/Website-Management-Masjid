@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { Transaction, PeriodFilter } from "@/types";
-import { formatCurrency, formatShortDate } from "@/lib/utils";
+import { formatCurrency, formatShortDate, DEFAULT_TIME_ZONE, cn } from "@/lib/utils";
 import {
   Table,
   TableHeader,
@@ -15,7 +15,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CaretUp, CaretDown, CaretUpDown, CaretLeft, CaretRight, MagnifyingGlass, FunnelSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
   { value: "daily", label: "Harian" },
@@ -35,9 +34,12 @@ const ITEMS_PER_PAGE = 10;
 
 // Tanggal transaksi disimpan yyyy-MM-dd zona masjid — bandingkan sebagai string
 // agar tidak geser sehari karena `new Date("2026-10-01")` = midnight UTC.
-function jakartaParts(now = new Date()): { y: number; m: number; d: number; weekday: number } {
+function zoneParts(
+  now = new Date(),
+  timeZone = DEFAULT_TIME_ZONE,
+): { y: number; m: number; d: number; weekday: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -57,7 +59,13 @@ function toKey(y: number, m: number, d: number): string {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-export function TransactionTable({ transactions }: { transactions: Transaction[] }) {
+export function TransactionTable({
+  transactions,
+  timeZone = DEFAULT_TIME_ZONE,
+}: {
+  transactions: Transaction[];
+  timeZone?: string;
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("monthly");
   const [sortState, setSortState] = useState<SortState>({ key: "date", direction: "desc" });
@@ -68,17 +76,22 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      // Nominal dicari sebagai angka murni: "50000" maupun "Rp 50.000" harus
+      // cocok. Sebelumnya dibandingkan dengan formatCurrency() sehingga angka
+      // polos tak pernah menemukan transaksi.
+      const digits = query.replace(/\D/g, "");
       result = result.filter(
         (t) =>
           t.description.toLowerCase().includes(query) ||
           t.category.toLowerCase().includes(query) ||
-          t.recordedBy.toLowerCase().includes(query)
+          t.recordedBy.toLowerCase().includes(query) ||
+          (digits.length > 0 && String(t.amount).includes(digits))
       );
     }
 
-    // Batas periode dihitung dari tanggal Jakarta (string), deterministik 00:00.
+    // Batas periode dihitung dari tanggal zona masjid (string), deterministik.
     const now = new Date();
-    const { y, m, d, weekday } = jakartaParts(now);
+    const { y, m, d, weekday } = zoneParts(now, timeZone);
     const todayStr = toKey(y, m, d);
     const monthPrefix = `${y}-${String(m).padStart(2, "0")}`;
     const yearPrefix = `${y}`;
@@ -117,19 +130,17 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
     }
 
     return result;
-  }, [transactions, searchQuery, periodFilter, sortState]);
+  }, [transactions, searchQuery, periodFilter, sortState, timeZone]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
   // Jepit halaman saat filter/data menyusut agar tidak tampil kosong (hal 5 → 1 hal).
+  // Dihitung, bukan diperbaiki lewat effect, supaya tidak ada render perantara
+  // yang menampilkan tabel kosong.
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
   const paginatedTransactions = filteredTransactions.slice(
     (safePage - 1) * ITEMS_PER_PAGE,
     safePage * ITEMS_PER_PAGE
   );
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
 
   const handleSort = (key: keyof Transaction) => {
     setSortState((prev) => ({
@@ -360,7 +371,7 @@ export function TransactionTable({ transactions }: { transactions: Transaction[]
         </div>
 
         <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
-          Data read-only. Input oleh Bendahara atau Superadmin yang login.
+          Data read-only untuk jamaah. Angka dicatat pengurus melalui panel admin.
         </p>
         </div>
       </div>

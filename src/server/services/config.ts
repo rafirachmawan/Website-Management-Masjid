@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   minBalanceAlert: 0,
   publicTransparency: true,
   showDonationQRIS: true,
+  qrisImageUrl: "",
 };
 
 export async function getAppConfig(): Promise<AppConfig> {
@@ -36,6 +37,7 @@ export async function getAppConfig(): Promise<AppConfig> {
     minBalanceAlert: num("minBalanceAlert", DEFAULT_CONFIG.minBalanceAlert),
     publicTransparency: bool("publicTransparency", DEFAULT_CONFIG.publicTransparency),
     showDonationQRIS: bool("showDonationQRIS", DEFAULT_CONFIG.showDonationQRIS),
+    qrisImageUrl: map.get("qrisImageUrl") ?? DEFAULT_CONFIG.qrisImageUrl,
   };
 }
 
@@ -49,6 +51,7 @@ export async function updateAppConfig(input: AppConfigInput): Promise<AppConfig>
     entries.push(["publicTransparency", String(input.publicTransparency)]);
   if (input.showDonationQRIS !== undefined)
     entries.push(["showDonationQRIS", String(input.showDonationQRIS)]);
+  if (input.qrisImageUrl !== undefined) entries.push(["qrisImageUrl", input.qrisImageUrl]);
 
   // Tulis atomik agar gagal tengah tidak meninggalkan config parsial.
   await db.$transaction(

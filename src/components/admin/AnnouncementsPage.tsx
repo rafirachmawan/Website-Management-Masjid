@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -10,8 +11,6 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,15 +28,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Megaphone,
   Plus,
@@ -46,16 +37,14 @@ import {
   Eye,
   PencilSimple,
   Trash,
-  DotsThreeVertical,
   Calendar,
   User,
-  CheckCircle,
   BellSimpleRinging,
   Broadcast,
 } from "@phosphor-icons/react";
 
 export function AnnouncementsPage() {
-  const { data: announcements, refresh } = useApi<Announcement[]>("/api/announcements");
+  const { data: announcements, error: loadError, refresh } = useApi<Announcement[]>("/api/announcements");
   const [search, setSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,7 +65,9 @@ export function AnnouncementsPage() {
     imageUrl: "",
   });
 
-  const data = announcements ?? [];
+  // Di-`useMemo`: tanpa ini array baru tiap render membuat `filteredAnnouncements`
+  // (dan semua turunannya) dihitung ulang terus-menerus.
+  const data = useMemo(() => announcements ?? [], [announcements]);
 
   const filteredAnnouncements = useMemo(() => {
     return data
@@ -98,6 +89,21 @@ export function AnnouncementsPage() {
         return a.priority === "important" ? -1 : 1;
       });
   }, [data, search, priorityFilter]);
+
+  // Gagal memuat ≠ "belum ada berita": tanpa cabang ini pengurus melihat
+  // daftar kosong dan mengira datanya hilang.
+  if (loadError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Berita" description="Kelola berita dan informasi untuk jamaah" />
+        <AdminErrorState
+          title="Gagal memuat berita"
+          message="Daftar berita tidak dapat dimuat dari server."
+          code={loadError}
+        />
+      </div>
+    );
+  }
 
   const importantCount = data.filter((a) => a.priority === "important").length;
   const normalCount = data.filter((a) => a.priority === "normal").length;

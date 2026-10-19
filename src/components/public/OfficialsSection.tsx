@@ -15,14 +15,11 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 
-/** "Superadmin"/"Admin" adalah istilah internal aplikasi, jadi di halaman publik
- *  diganti label yang dipahami jamaah. */
-const TIER_LABEL: Record<Official["systemRole"], string> = {
-  superadmin: "Ketua Takmir",
-  admin: "Admin Masjid",
-  bendahara: "Bendahara",
-  pengurus: "Pengurus",
-};
+// Catatan: `systemRole` (peran internal aplikasi) SENGAJA tidak pernah
+// ditampilkan di halaman publik. Dulu ia dipetakan menjadi lencana seperti
+// "Ketua Takmir"/"Bendahara" — padahal itu hak akses aplikasi, bukan jabatan,
+// sehingga bisa bertentangan dengan jabatan asli pengurus. Jabatan publik
+// selalu berasal dari `role` (lihat `normalizePosition`).
 
 const LINE = "bg-border";
 
@@ -49,9 +46,6 @@ function prettyPhone(phone: string): string {
     ? `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8, 12)}`
     : phone;
 }
-
-/** Label peran & hak akses sistem (diatur admin) selalu tampil di kartu agar
- *  konsisten antar pengurus — jabatan struktural tampil terpisah di bawah nama. */
 
 function Avatar({ official, size }: { official: Official; size: "md" | "sm" }) {
   const url = avatarUrl(official);
@@ -171,14 +165,9 @@ function OfficialCard({
         )}
       </div>
 
-      {/* Badge peran & hak akses sistem selalu tampil agar konsisten di semua kartu. */}
-      <p className="mt-2.5 inline-flex w-fit items-center self-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-        {TIER_LABEL[official.systemRole]}
-      </p>
-
       <h3
         className={cn(
-          "font-display mt-1.5 flex w-full items-center justify-center text-balance font-semibold leading-snug text-foreground",
+          "font-display mt-3 flex w-full items-center justify-center text-balance font-semibold leading-snug text-foreground",
           lead ? "min-h-[3.25rem] text-lg" : "min-h-[2.75rem] text-[15px]",
         )}
       >

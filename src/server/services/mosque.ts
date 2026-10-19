@@ -1,6 +1,7 @@
 // Service: profil masjid (singleton id "main").
 // Upsert id "main" dipakai supaya form Pengaturan aman walau baris belum ada.
 
+import { cache } from "react";
 import { db } from "../db";
 import type { MosqueProfile } from "@/types";
 import type { MosqueProfileInput, MosqueProfileUpdate } from "../schemas";
@@ -37,10 +38,15 @@ function toProfile(row: {
   };
 }
 
-export async function getMosqueProfile(): Promise<MosqueProfile | null> {
+// Dibungkus `cache()` milik React: dalam satu request fungsi ini dipanggil
+// beberapa kali (halaman + generateMetadata + service keuangan yang butuh zona
+// waktu), tapi database hanya disentuh sekali. Di luar render (mis. Route
+// Handler) `cache()` otomatis menjadi pemanggilan biasa, jadi tidak ada risiko
+// menyajikan data basi antar-request.
+export const getMosqueProfile = cache(async function getMosqueProfile(): Promise<MosqueProfile | null> {
   const row = await db.mosqueProfile.findUnique({ where: { id: "main" } });
   return row ? toProfile(row) : null;
-}
+});
 
 export async function updateMosqueProfile(input: MosqueProfileInput): Promise<MosqueProfile> {
   const data = {

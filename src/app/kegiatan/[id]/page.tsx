@@ -6,7 +6,7 @@ import { Footer } from "@/components/public/Footer";
 import { ShareButtons } from "@/components/public/ShareButtons";
 import { getActivityById, getActivities } from "@/server/services/content";
 import { getMosqueProfile } from "@/server/services/mosque";
-import { formatDate } from "@/lib/utils";
+import { formatDate, shortZone } from "@/lib/utils";
 
 // Selalu baca dari database — begitu pengurus menyimpan di /admin,
 // kunjungan berikutnya langsung melihat data terbaru.
@@ -91,6 +91,8 @@ export default async function KegiatanDetailPage({ params }: Props) {
 
   if (!item) notFound();
 
+  // Label zona mengikuti profil masjid (bukan hardcode "WIB").
+  const zone = shortZone(profile?.timezone ?? "");
   const latest = all.filter((a) => a.id !== item.id).slice(0, 5);
   const fullDate = formatDate(item.date, {
     weekday: "long",
@@ -101,7 +103,7 @@ export default async function KegiatanDetailPage({ params }: Props) {
 
   const info = [
     { label: "Hari & Tanggal", value: fullDate },
-    { label: "Waktu", value: `${item.time} WIB` },
+    { label: "Waktu", value: `${item.time} ${zone}` },
     { label: "Lokasi", value: item.location },
     { label: "Penyelenggara", value: item.organizer },
   ];
@@ -133,7 +135,7 @@ export default async function KegiatanDetailPage({ params }: Props) {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <ClockIcon />
-                    <span className="tabular-nums">{item.time} WIB</span>
+                    <span className="tabular-nums">{item.time} {zone}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <PinIcon />

@@ -5,8 +5,9 @@
 // schema struktur. Jabatan yang tidak ada di daftar ini tidak bisa dipilih lagi
 // — pakai `LEGACY_ROLE_MAP` untuk memetakannya.
 //
-// Catatan: `systemRole` (Peran & Hak Akses Sistem) TIDAK menentukan urutan.
-// Itu murni soal hak akses aplikasi, terpisah dari posisi di kepengurusan.
+// Catatan: `systemRole` (peran internal aplikasi) TIDAK menentukan urutan —
+// itu soal hak akses/penanda akun teknis, terpisah dari posisi di kepengurusan.
+// Sejak P0.9 peran itu juga tidak lagi ditampilkan di halaman publik.
 
 export type PositionLevel = 0 | 1 | 2;
 

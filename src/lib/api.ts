@@ -28,21 +28,40 @@ export async function apiSend<T>(path: string, method: "POST" | "PUT" | "DELETE"
   return res.json() as Promise<T>;
 }
 
+/** Nilai beserta path asalnya. */
+interface Sourced<T> {
+  path: string;
+  value: T;
+}
+
+/** Galat beserta "sumbernya" (path + nomor refresh). */
+interface SourcedFailure {
+  source: string;
+  message: string;
+}
+
 export function useApi<T>(path: string | null) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Nilai disimpan bersama path asalnya, galat bersama path + nomor refresh.
+  // Efeknya: `refresh()` tidak perlu `setState` sinkron untuk mereset galat —
+  // galat lama otomatis basi karena nomor refresh berubah (pola yang dulu
+  // memicu render ganda dan error lint set-state-in-effect), sedangkan data
+  // yang sudah tiba tetap tampil sampai data baru menyusul.
+  const [result, setResult] = useState<Sourced<T> | null>(null);
+  const [failure, setFailure] = useState<SourcedFailure | null>(null);
   const [version, setVersion] = useState(0);
+
+  const source = `${path ?? ""}#${version}`;
 
   useEffect(() => {
     if (!path) return;
+    const key = `${path}#${version}`;
     let live = true;
-    setError(null);
     apiGet<T>(path)
       .then((d) => {
-        if (live) setData(d);
+        if (live) setResult({ path, value: d });
       })
       .catch((e: Error) => {
-        if (live) setError(e.message);
+        if (live) setFailure({ source: key, message: e.message });
       });
     return () => {
       live = false;
@@ -50,6 +69,9 @@ export function useApi<T>(path: string | null) {
   }, [path, version]);
 
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
+
+  const data = result && result.path === path ? result.value : null;
+  const error = failure?.source === source ? failure.message : null;
 
   return { data, error, isLoading: data === null && error === null, refresh };
 }

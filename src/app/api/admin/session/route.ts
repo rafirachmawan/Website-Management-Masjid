@@ -1,68 +1,77 @@
 import { cookies } from "next/headers";
 import {
   ADMIN_SESSION_COOKIE,
-  SESSION_TTL_MS,
   DEFAULT_ADMIN_PASSWORD,
+  adminSessionCookie,
   createSessionValue,
   ensureAdminSeeded,
   isDefaultPassword,
+  revokeAllSessions,
   verifyAdminPassword,
   verifySessionValue,
 } from "@/server/services/admin-auth";
 import { ok, fail } from "@/server/api-helpers";
 
-function sessionCookie(value: string, expiresAt: Date) {
-  return {
-    name: ADMIN_SESSION_COOKIE,
-    value,
-    httpOnly: true,
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: Math.floor(SESSION_TTL_MS / 1000),
-    expires: expiresAt,
-    secure: process.env.NODE_ENV === "production",
-  };
-}
-
-// Rate-limit login sederhana (in-memory): 5x gagal / 10 menit per IP → 429.
-// Cukup untuk template lokal tanpa Redis; reset saat sukses.
+// Rate-limit login (in-memory): 5x gagal / 10 menit per IP **dan** 30x gagal /
+// 10 menit secara global. Batas global wajib ada karena identitas IP bisa
+// dipalsukan lewat header `x-forwarded-for`; tanpa itu penyerang cukup
+// merotasi header untuk melewati lockout. Cukup untuk template lokal tanpa Redis.
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_MAX_FAIL = 5;
-const loginFails = new Map<string, { count: number; firstAt: number; lockedUntil?: number }>();
+const LOGIN_MAX_FAIL_GLOBAL = 30;
+const GLOBAL_BUCKET = "__global__";
 
+type FailEntry = { count: number; firstAt: number; lockedUntil?: number };
+const loginFails = new Map<string, FailEntry>();
+
+// Header proxy hanya dipercaya bila memang ada reverse-proxy tepercaya
+// (set `TRUST_PROXY=1`). Selain itu semua klien dianggap satu bucket "local".
 function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "local";
+  if (process.env.TRUST_PROXY === "1") {
+    const fwd = req.headers.get("x-forwarded-for");
+    if (fwd) return fwd.split(",")[0].trim() || "local";
+    return req.headers.get("x-real-ip") ?? "local";
+  }
+  return "local";
+}
+
+// Buang entri basi agar Map tidak tumbuh tanpa batas.
+function pruneFails(now: number) {
+  for (const [key, e] of loginFails) {
+    const windowPassed = now - e.firstAt > LOGIN_WINDOW_MS;
+    const lockOver = !e.lockedUntil || now >= e.lockedUntil;
+    if (windowPassed && lockOver) loginFails.delete(key);
+  }
 }
 
 function isLocked(ip: string): boolean {
-  const e = loginFails.get(ip);
-  if (!e) return false;
-  if (e.lockedUntil && Date.now() < e.lockedUntil) return true;
-  if (Date.now() - e.firstAt > LOGIN_WINDOW_MS) {
-    loginFails.delete(ip);
-    return false;
+  const now = Date.now();
+  for (const key of [ip, GLOBAL_BUCKET]) {
+    const e = loginFails.get(key);
+    if (!e) continue;
+    if (e.lockedUntil && now < e.lockedUntil) return true;
+    if (now - e.firstAt > LOGIN_WINDOW_MS) loginFails.delete(key);
   }
   return false;
 }
 
 function recordFail(ip: string) {
   const now = Date.now();
-  const e = loginFails.get(ip);
-  if (!e || now - e.firstAt > LOGIN_WINDOW_MS) {
-    loginFails.set(ip, { count: 1, firstAt: now });
-    return;
-  }
-  e.count += 1;
-  if (e.count >= LOGIN_MAX_FAIL) {
-    e.lockedUntil = now + LOGIN_WINDOW_MS;
+  pruneFails(now);
+  for (const [key, max] of [[ip, LOGIN_MAX_FAIL], [GLOBAL_BUCKET, LOGIN_MAX_FAIL_GLOBAL]] as const) {
+    const e = loginFails.get(key);
+    if (!e || now - e.firstAt > LOGIN_WINDOW_MS) {
+      loginFails.set(key, { count: 1, firstAt: now });
+      continue;
+    }
+    e.count += 1;
+    if (e.count >= max) e.lockedUntil = now + LOGIN_WINDOW_MS;
   }
 }
 
-// Status sesi — dipakai banner "ganti password bawaan" dan halaman login.
-// `isDefaultPassword` hanya diungkap ke sesi login agar anonim tidak bisa
-// memastikan password bawaan masih berlaku (hint visual tetap ada default).
+// Status sesi — dipakai spanduk "ganti kata sandi bawaan" di panel admin.
+// `isDefaultPassword` HANYA diungkap bila permintaan sudah memakai sesi valid,
+// supaya anonim tidak bisa memastikan kata sandi bawaan masih berlaku.
 export async function GET() {
   try {
     await ensureAdminSeeded();
@@ -95,9 +104,10 @@ export async function POST(req: Request) {
       return ok({ error: "Kata sandi salah. Silakan coba lagi." }, 401);
     }
     loginFails.delete(ip);
+    loginFails.delete(GLOBAL_BUCKET);
     const { value, expiresAt } = await createSessionValue();
     const jar = await cookies();
-    jar.set(sessionCookie(value, expiresAt));
+    jar.set(adminSessionCookie(value, expiresAt));
     const firstRun = password === DEFAULT_ADMIN_PASSWORD && (await isDefaultPassword());
     return ok({ success: true, shouldChangePassword: firstRun });
   } catch (e) {
@@ -106,10 +116,17 @@ export async function POST(req: Request) {
 }
 
 // Keluar — selalu berhasil (idempotent) walau tanpa sesi.
-export async function DELETE() {
+// `?all=1` mencabut sesi di SEMUA perangkat (secret sesi dirotasi),
+// dipakai tombol "Keluar dari semua perangkat" di Pengaturan → Keamanan.
+export async function DELETE(req: Request) {
   try {
     const jar = await cookies();
     jar.delete(ADMIN_SESSION_COOKIE);
+    const url = new URL(req.url);
+    if (url.searchParams.get("all") === "1") {
+      await revokeAllSessions();
+      return ok({ success: true, revoked: "all" });
+    }
     return ok({ success: true });
   } catch (e) {
     return fail(e);

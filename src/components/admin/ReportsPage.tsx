@@ -46,7 +46,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChartBar,
-  ChartPie,
   Receipt,
   Printer,
   FileText,
@@ -65,7 +64,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -90,7 +88,20 @@ const MONTHS = [
 
 // ─── Tooltips ────────────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
+// Bentuk minimal entri tooltip yang kita pakai (bukan `any`) — recharts tetap
+// mengirim payload yang lebih kaya saat runtime.
+type TooltipEntry = {
+  name?: string;
+  value?: number | string;
+  color?: string;
+  fill?: string;
+};
+
+type PieTooltipEntry = TooltipEntry & {
+  payload?: { fill?: string; percentage?: number };
+};
+
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string | number }) {
   if (!active || !payload) return null;
   return (
     <div className="bg-card border border-border rounded-xl shadow-lg p-3 min-w-50">
@@ -101,14 +112,14 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
             {entry.name}
           </span>
-          <span className="font-bold tabular-nums">{formatCurrency(entry.value)}</span>
+          <span className="font-bold tabular-nums">{formatCurrency(Number(entry.value ?? 0))}</span>
         </p>
       ))}
     </div>
   );
 }
 
-function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+function PieTooltip({ active, payload }: { active?: boolean; payload?: PieTooltipEntry[] }) {
   if (!active || !payload || !payload[0]) return null;
   const data = payload[0];
   return (
@@ -117,7 +128,7 @@ function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.payload?.fill }} />
         {data.name}
       </p>
-      <p className="text-sm font-bold tabular-nums text-foreground">{formatCurrency(data.value)}</p>
+      <p className="text-sm font-bold tabular-nums text-foreground">{formatCurrency(Number(data.value ?? 0))}</p>
       <p className="text-[11px] text-muted-foreground">{data.payload?.percentage}% dari total</p>
     </div>
   );
@@ -346,9 +357,13 @@ function CategorySummaryTable({
   const filtered = filteredTxns.filter((t) => t.type === type);
   const total = filtered.reduce((s, t) => s + t.amount, 0);
 
+  // Penyaringan ikut di dalam useMemo (bukan array baru di luar) supaya
+  // dependensinya stabil dan memo benar-benar dipertahankan compiler React.
   const grouped = useMemo(() => {
     const map = new Map<string, { category: string; categoryId: string; total: number; count: number }>();
-    filtered.forEach((t) => {
+    filteredTxns
+      .filter((t) => t.type === type)
+      .forEach((t) => {
       const existing = map.get(t.categoryId);
       if (existing) {
         existing.total += t.amount;
@@ -363,7 +378,7 @@ function CategorySummaryTable({
       }
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [filtered]);
+  }, [filteredTxns, type]);
 
   return (
     <div className="overflow-x-auto border border-border/60 rounded-lg">
@@ -537,13 +552,11 @@ type ChartType = "area" | "bar";
 export function ReportsPage() {
   const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
   const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
-  const { data: fetchedChart } = useApi<ChartDataPoint[]>("/api/chart");
   const { data: fetchedSummary } = useApi<FinancialSummary>("/api/financial-summary");
   const { data: fetchedProfile } = useApi<MosqueProfile>("/api/mosque-profile");
 
-  const transactions = fetchedTransactions ?? [];
-  const categories = fetchedCategories ?? [];
-  const chartData = fetchedChart ?? [];
+  const transactions = useMemo(() => fetchedTransactions ?? [], [fetchedTransactions]);
+  const categories = useMemo(() => fetchedCategories ?? [], [fetchedCategories]);
   const financialSummary = fetchedSummary;
   const mosqueProfile = fetchedProfile;
 
@@ -563,6 +576,12 @@ export function ReportsPage() {
   }, [transactions, currentYear]);
 
   const activeYear = availableYears.includes(selectedYear) ? selectedYear : availableYears[0];
+
+  // Grafik khusus tahun terpilih: 12 bulan penuh (Jan–Des). Wajib memakai
+  // `?year=`, sebab `/api/chart` tanpa parameter hanya memuat 12 bulan
+  // terakhir → memilih tahun lama dulu tampil kosong/0.
+  const { data: fetchedChart } = useApi<ChartDataPoint[]>(`/api/chart?year=${activeYear}`);
+  const chartData = useMemo(() => fetchedChart ?? [], [fetchedChart]);
 
   // Filter transactions by period — string prefix (zona-masjid), bukan new Date().
   const filteredTxns = useMemo(() => {
@@ -910,7 +929,7 @@ export function ReportsPage() {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold text-foreground">Ringkasan Bulanan</CardTitle>
-                <p className="text-xs text-muted-foreground">Rekap arus kas per bulan, tahun {selectedYear}</p>
+                <p className="text-xs text-muted-foreground">Rekap arus kas per bulan, tahun {activeYear}</p>
               </div>
             </div>
           </CardHeader>

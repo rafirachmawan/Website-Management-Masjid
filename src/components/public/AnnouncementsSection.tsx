@@ -207,9 +207,6 @@ export function AnnouncementsSection({
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:mb-12">
           <div className="min-w-0">
-            <p className="eyebrow-friendly mb-3 bg-primary/8 text-primary ring-1 ring-primary/20 ring-inset">
-              Kabar Masjid
-            </p>
             <h2
               id="announcements-heading"
               className="font-display text-h2-fluid font-semibold text-foreground"

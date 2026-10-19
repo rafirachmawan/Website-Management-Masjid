@@ -7,7 +7,9 @@
 
 import { db } from "../db";
 import { randomUUID } from "crypto";
-import { BadRequestError } from "../api-helpers";
+import { BadRequestError, NotFoundError } from "../api-helpers";
+import { getMosqueProfile } from "./mosque";
+import { DEFAULT_TIME_ZONE } from "@/lib/utils";
 import type {
   Category,
   Transaction,
@@ -21,12 +23,27 @@ const ID_MONTHS = [
   "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
 ];
 
-function jakartaMonthKey(d: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-  }).format(d); // yyyy-MM
+// Zona masjid dari profil — bukan hardcode WIB — supaya bucket bulan/tahun
+// ikut benar untuk masjid di WITA/WIT.
+async function mosqueTimeZone(): Promise<string> {
+  const profile = await getMosqueProfile().catch(() => null);
+  return profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
+}
+
+function monthKeyIn(d: Date, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+    }).format(d); // yyyy-MM
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: DEFAULT_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+    }).format(d);
+  }
 }
 
 function toTransaction(t: {
@@ -100,7 +117,7 @@ export async function createCategory(input: CategoryInput): Promise<Category> {
 
 export async function updateCategory(id: string, input: Partial<CategoryInput>): Promise<Category> {
   const existing = await db.category.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Kategori yang akan diubah tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Kategori yang akan diubah tidak ditemukan.");
 
   const name = input.name?.trim() || existing.name;
   const type = input.type ?? (existing.type as Category["type"]);
@@ -150,7 +167,7 @@ export async function updateCategory(id: string, input: Partial<CategoryInput>):
 
 export async function deleteCategory(id: string): Promise<void> {
   const existing = await db.category.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Kategori yang akan dihapus tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Kategori yang akan dihapus tidak ditemukan.");
   const used = await db.transaction.count({ where: { categoryId: id } });
   if (used > 0) {
     throw new BadRequestError(
@@ -173,6 +190,17 @@ export interface TransactionListParams {
 export async function getTransactions(): Promise<Transaction[]> {
   const rows = await db.transaction.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
   return rows.map(toTransaction);
+}
+
+// Nama pencatat transaksi terakhir (waktu input paling baru) untuk kartu
+// ringkasan publik. Satu kolom saja — dipakai bila tabel transaksi tidak perlu
+// dimuat penuh (mis. transparansi publik sedang dimatikan).
+export async function getLatestRecorder(): Promise<string | undefined> {
+  const row = await db.transaction.findFirst({
+    orderBy: { createdAt: "desc" },
+    select: { recordedBy: true },
+  });
+  return row?.recordedBy;
 }
 
 // Server-side pagination + filter agar tabel besar tidak mengunduh full-table.
@@ -198,11 +226,16 @@ export async function getTransactionsPaged(params: TransactionListParams): Promi
   if (params.q) {
     const q = params.q.trim();
     if (q) {
-      where.OR = [
+      const or: Record<string, unknown>[] = [
         { description: { contains: q } },
         { category: { contains: q } },
         { recordedBy: { contains: q } },
       ];
+      // Nominal dicari sebagai angka murni: "50000" maupun "Rp 50.000"
+      // sama-sama menemukan transaksi bernominal 50.000.
+      const digits = q.replace(/\D/g, "");
+      if (digits) or.push({ amount: Number(digits) });
+      where.OR = or;
     }
   }
   const [total, rows] = await Promise.all([
@@ -259,7 +292,7 @@ export async function updateTransaction(id: string, input: TransactionUpdate): P
     throw new BadRequestError("Tidak ada perubahan — kirim minimal satu field yang diubah.");
   }
   const existing = await db.transaction.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Transaksi yang akan diubah tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Transaksi yang akan diubah tidak ditemukan.");
 
   // Tentukan tipe & kategori akhir, lalu validasi silang SELALU
   // (menutup celah PUT {type} tanpa categoryId yang dulu desinkron).
@@ -300,11 +333,12 @@ export async function deleteTransaction(id: string): Promise<void> {
 }
 
 export async function getFinancialSummary(now = new Date()): Promise<FinancialSummary> {
+  const tz = await mosqueTimeZone();
   const [rows, latest] = await Promise.all([
     db.transaction.findMany({ select: { date: true, type: true, amount: true } }),
     db.transaction.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
   ]);
-  const monthKey = jakartaMonthKey(now);
+  const monthKey = monthKeyIn(now, tz);
   const yearKey = monthKey.slice(0, 4);
 
   let balance = 0;
@@ -344,7 +378,7 @@ function isValidMonthKey(key: string): boolean {
   return month >= 1 && month <= 12;
 }
 
-function lastNMonthKeys(n: number, now = new Date(), timeZone = "Asia/Jakarta"): string[] {
+function lastNMonthKeys(n: number, now = new Date(), timeZone = DEFAULT_TIME_ZONE): string[] {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -364,13 +398,12 @@ function lastNMonthKeys(n: number, now = new Date(), timeZone = "Asia/Jakarta"):
   return keys.reverse();
 }
 
-export async function getChartData(months = 12, now = new Date()): Promise<ChartDataPoint[]> {
-  const rows = await db.transaction.findMany({
-    orderBy: { date: "asc" },
-    select: { date: true, type: true, amount: true },
-  });
+type MonthBucket = { income: number; expense: number };
 
-  const byMonth = new Map<string, { income: number; expense: number }>();
+function groupByMonth(
+  rows: Array<{ date: string; type: string; amount: number }>,
+): Map<string, MonthBucket> {
+  const byMonth = new Map<string, MonthBucket>();
   for (const t of rows) {
     const key = t.date.slice(0, 7); // yyyy-MM
     if (!isValidMonthKey(key)) continue; // lewati data kotor warisan, jangan crash
@@ -379,9 +412,14 @@ export async function getChartData(months = 12, now = new Date()): Promise<Chart
     else bucket.expense += t.amount;
     byMonth.set(key, bucket);
   }
+  return byMonth;
+}
 
-  // Zero-fill 12 bulan terakhir agar garis tidak menyesatkan (sparse → penuh).
-  return lastNMonthKeys(months, now).map((key) => {
+function buildChartPoints(
+  keys: string[],
+  byMonth: Map<string, MonthBucket>,
+): ChartDataPoint[] {
+  return keys.map((key) => {
     const v = byMonth.get(key) ?? { income: 0, expense: 0 };
     const [y, m] = key.split("-").map(Number);
     return {
@@ -391,4 +429,42 @@ export async function getChartData(months = 12, now = new Date()): Promise<Chart
       balance: v.income - v.expense,
     };
   });
+}
+
+// Bangun grafik dari transaksi yang SUDAH dimuat di memori.
+//
+// Dipakai beranda publik: daftar transaksi sudah diambil untuk tabel, jadi
+// grafiknya tidak perlu menembak query ketiga ke tabel yang sama.
+export function buildChartFromTransactions(
+  rows: Array<{ date: string; type: string; amount: number }>,
+  months = 12,
+  now = new Date(),
+  timeZone = DEFAULT_TIME_ZONE,
+): ChartDataPoint[] {
+  // Zero-fill N bulan terakhir agar garis tidak menyesatkan (sparse → penuh).
+  return buildChartPoints(lastNMonthKeys(months, now, timeZone), groupByMonth(rows));
+}
+
+export async function getChartData(months = 12, now = new Date()): Promise<ChartDataPoint[]> {
+  const [rows, tz] = await Promise.all([
+    db.transaction.findMany({
+      orderBy: { date: "asc" },
+      select: { date: true, type: true, amount: true },
+    }),
+    mosqueTimeZone(),
+  ]);
+  return buildChartFromTransactions(rows, months, now, tz);
+}
+
+// Grafik satu tahun kalender penuh (Jan–Des) untuk tahun apa pun.
+// Dipakai halaman Laporan: `/api/chart` tanpa parameter hanya memuat 12 bulan
+// terakhir, sehingga memilih tahun lama dulu tampil kosong/0.
+export async function getChartDataByYear(year: number): Promise<ChartDataPoint[]> {
+  const rows = await db.transaction.findMany({
+    where: { date: { startsWith: `${year}-` } },
+    select: { date: true, type: true, amount: true },
+  });
+  const keys: string[] = [];
+  for (let m = 1; m <= 12; m++) keys.push(`${year}-${String(m).padStart(2, "0")}`);
+  return buildChartPoints(keys, groupByMonth(rows));
 }

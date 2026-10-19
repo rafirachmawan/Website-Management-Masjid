@@ -4,7 +4,7 @@ import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { getActivities } from "@/server/services/content";
 import { getMosqueProfile } from "@/server/services/mosque";
-import { formatDate } from "@/lib/utils";
+import { formatDate, shortZone } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,9 @@ export default async function KegiatanListPage() {
     getMosqueProfile(),
   ]);
 
-  const sorted = [...activities].sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  const sorted = [...activities].sort((a, b) => a.date.localeCompare(b.date));
+  // Label zona mengikuti profil masjid (bukan hardcode "WIB").
+  const zone = shortZone(profile?.timezone ?? "");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -75,7 +77,7 @@ export default async function KegiatanListPage() {
                     )}
                     <span className="flex flex-1 flex-col p-5">
                       <span className="text-[11px] font-semibold text-primary tabular-nums">
-                        {formatDate(a.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} • {a.time} WIB
+                        {formatDate(a.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} • {a.time} {zone}
                       </span>
                       <span className="font-display mt-1.5 line-clamp-2 text-lg font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
                         {a.title}

@@ -96,7 +96,11 @@ export interface AppConfig {
   accountHolder: string;
   minBalanceAlert: number;
   publicTransparency: boolean;
+  // Saklar "kanal donasi" publik. Namanya masih menyebut QRIS karena sudah
+  // dipakai di database, tetapi artinya: tampilkan blok rekening donasi +
+  // gambar QRIS (qrisImageUrl) di halaman publik.
   showDonationQRIS: boolean;
+  qrisImageUrl: string;
 }
 
 export interface Official {

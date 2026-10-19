@@ -3,15 +3,14 @@
 import { useState, useMemo } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import { formatDate } from "@/lib/utils";
-import type { Activity } from "@/types";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
+import { formatDate, todayISO, shortZone, DEFAULT_TIME_ZONE } from "@/lib/utils";
+import type { Activity, MosqueProfile } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,8 +45,21 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 
+// Status kegiatan relatif terhadap "hari ini" menurut zona masjid. Ditaruh di
+// lingkup modul supaya bisa dipakai di dalam `useMemo` tanpa ikut dibuat ulang
+// setiap render (sebelumnya didefinisikan di dalam komponen, sehingga memo-nya
+// selalu dianggap kedaluwarsa oleh react-hooks/exhaustive-deps).
+function activityStatus(dateStr: string, todayStr: string) {
+  if (dateStr < todayStr) return "completed";
+  if (dateStr === todayStr) return "today";
+  return "upcoming";
+}
+
 export function ActivitiesPage() {
-  const { data: activities, refresh } = useApi<Activity[]>("/api/activities");
+  const { data: activities, error: loadError, refresh } = useApi<Activity[]>("/api/activities");
+  // Zona masjid untuk label jam & penentuan "hari ini" (bukan asumsi WIB).
+  const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
   const [search, setSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,22 +75,18 @@ export function ActivitiesPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    date: new Date().toISOString().split("T")[0],
+    date: todayISO(),
     time: "",
     location: "",
     organizer: "",
     imageUrl: "",
   });
 
-  const data = activities ?? [];
+  // Di-`useMemo`: array baru tiap render membuat `filteredActivities` ikut
+  // dihitung ulang terus-menerus.
+  const data = useMemo(() => activities ?? [], [activities]);
 
-  const todayStr = new Date().toISOString().split("T")[0];
-
-  const getActivityStatus = (dateStr: string) => {
-    if (dateStr < todayStr) return "completed";
-    if (dateStr === todayStr) return "today";
-    return "upcoming";
-  };
+  const todayStr = todayISO(timeZone);
 
   const filteredActivities = useMemo(() => {
     return data.filter((item) => {
@@ -88,7 +96,7 @@ export function ActivitiesPage() {
         item.organizer.toLowerCase().includes(search.toLowerCase()) ||
         item.location.toLowerCase().includes(search.toLowerCase());
 
-      const status = getActivityStatus(item.date);
+      const status = activityStatus(item.date, todayStr);
       const matchStatus =
         statusFilter === "all" ||
         (statusFilter === "upcoming" && (status === "upcoming" || status === "today")) ||
@@ -96,7 +104,24 @@ export function ActivitiesPage() {
 
       return matchSearch && matchStatus;
     });
-  }, [data, search, statusFilter]);
+  }, [data, search, statusFilter, todayStr]);
+
+  // Gagal memuat ≠ "belum ada agenda" — beri penjelasan, bukan daftar kosong.
+  if (loadError) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Agenda Kegiatan"
+          description="Kelola jadwal kajian, kegiatan hari besar Islam, dan aktivitas sosial masjid"
+        />
+        <AdminErrorState
+          title="Gagal memuat agenda"
+          message="Daftar kegiatan tidak dapat dimuat dari server."
+          code={loadError}
+        />
+      </div>
+    );
+  }
 
   const upcomingCount = data.filter((a) => a.date >= todayStr).length;
   const completedCount = data.filter((a) => a.date < todayStr).length;
@@ -106,7 +131,7 @@ export function ActivitiesPage() {
     setFormData({
       title: "",
       description: "",
-      date: new Date().toISOString().split("T")[0],
+      date: todayISO(timeZone),
       time: "",
       location: "",
       organizer: "",
@@ -292,7 +317,7 @@ export function ActivitiesPage() {
           </div>
         ) : (
           filteredActivities.map((act) => {
-            const status = getActivityStatus(act.date);
+            const status = activityStatus(act.date, todayStr);
             const isUpcoming = status === "upcoming" || status === "today";
 
             return (
@@ -364,7 +389,7 @@ export function ActivitiesPage() {
                   <div className="space-y-2 pt-2 border-t border-border/60 text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>{act.time} WIB</span>
+                      <span>{act.time} {shortZone(timeZone)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -448,7 +473,7 @@ export function ActivitiesPage() {
               <div>
                 <span className="text-muted-foreground block">Waktu</span>
                 <span className="font-semibold text-foreground mt-0.5 block">
-                  {selectedActivity?.time} WIB
+                  {selectedActivity?.time} {shortZone(timeZone)}
                 </span>
               </div>
               <div className="col-span-2">

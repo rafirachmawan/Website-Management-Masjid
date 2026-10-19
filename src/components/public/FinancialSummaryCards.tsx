@@ -4,7 +4,7 @@
 // fetch di browser. Tetap Client Component karena @phosphor-icons/react memakai
 // React Context internal.
 import type { FinancialSummary } from "@/types";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, DEFAULT_TIME_ZONE, cn } from "@/lib/utils";
 import {
   ShieldCheck,
   ArrowUpRight,
@@ -90,9 +90,11 @@ function FlowRow({
 export function FinancialSummaryCards({
   financialSummary,
   latestRecorder,
+  timeZone = DEFAULT_TIME_ZONE,
 }: {
   financialSummary: FinancialSummary;
   latestRecorder?: string;
+  timeZone?: string;
 }) {
   const { currentBalance, monthlyIncome, monthlyExpense, yearlyIncome, yearlyExpense } =
     financialSummary;
@@ -101,13 +103,14 @@ export function FinancialSummaryCards({
   const hasFlow = totalFlow > 0;
   const incomeShare = hasFlow ? Math.round((monthlyIncome / totalFlow) * 100) : 0;
   const yearlySurplus = yearlyIncome - yearlyExpense;
-  // Label bulan zona masjid agar sinkron dengan backend (jakartaMonthKey).
+  // Label bulan/tahun zona masjid agar sinkron dengan bucket di backend
+  // (finance.ts `monthKeyIn`) — bukan asumsi WIB.
   const monthLabel = new Intl.DateTimeFormat("id-ID", {
-    timeZone: "Asia/Jakarta",
+    timeZone,
     month: "long",
   }).format(new Date());
   const currentYear = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
+    timeZone,
     year: "numeric",
   }).format(new Date());
   const isSurplus = surplus >= 0;

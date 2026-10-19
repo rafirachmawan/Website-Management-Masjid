@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import { apiSend } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,21 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, todayISO } from "@/lib/utils";
 import { TrendUp, TrendDown, PencilSimple, Warning } from "@phosphor-icons/react";
 import type { Category, Transaction } from "@/types";
 
 type TxnType = "income" | "expense";
-
-function todayISO(): string {
-  // Tanggal zona masjid (WIB), bukan UTC — cegah off-by-one jam 00:00–07:00.
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Jakarta",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
 
 // Nominal diketik sebagai angka polos, ditampilkan dengan pemisah ribuan
 // supaya bendahara tidak salah baca jumlah rupiah.
@@ -66,49 +57,28 @@ export function TransactionFormDialog({
   editing?: Transaction | null;
   defaultType?: TxnType;
 }) {
-  const [type, setType] = useState<TxnType>(defaultType);
-  const [date, setDate] = useState(todayISO());
-  const [categoryId, setCategoryId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [recordedBy, setRecordedBy] = useState("");
-  const [proofUrl, setProofUrl] = useState("");
+  // Isian awal diambil dari props saat komponen dipasang. Parent memberi `key`
+  // yang berubah tiap dialog dibuka, jadi form selalu mulai bersih (atau
+  // terisi data lama saat mengubah) tanpa effect sinkronisasi.
+  const [type, setType] = useState<TxnType>(editing ? (editing.type as TxnType) : defaultType);
+  const [date, setDate] = useState(editing ? editing.date : todayISO());
+  const [categoryId, setCategoryId] = useState(editing ? editing.categoryId : "");
+  const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
+  const [description, setDescription] = useState(editing ? editing.description : "");
+  const [recordedBy, setRecordedBy] = useState(editing ? editing.recordedBy : "");
+  const [proofUrl, setProofUrl] = useState(editing ? (editing.proofUrl ?? "") : "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Isi ulang form setiap kali dialog dibuka (mode tambah atau edit).
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    if (editing) {
-      setType(editing.type as TxnType);
-      setDate(editing.date);
-      setCategoryId(editing.categoryId);
-      setAmount(String(editing.amount));
-      setDescription(editing.description);
-      setRecordedBy(editing.recordedBy);
-      setProofUrl(editing.proofUrl ?? "");
-    } else {
-      setType(defaultType);
-      setDate(todayISO());
-      setCategoryId("");
-      setAmount("");
-      setDescription("");
-      setRecordedBy("");
-      setProofUrl("");
-    }
-  }, [open, editing, defaultType]);
 
   // Kategori hanya boleh sesuai dengan tipe (dicek backend juga, tapi
   // lebih baik tabelnya langsung menyaring biar takmir tidak salah pilih).
   const availableCategories = categories.filter((c) => c.type === type);
 
-  // Kalau kategori terpilih tidak sesuai tipe baru, bersihkan.
-  useEffect(() => {
-    if (categoryId && !availableCategories.some((c) => c.id === categoryId)) {
-      setCategoryId("");
-    }
-  }, [availableCategories, categoryId]);
+  // Pilihan kategori yang tidak cocok dengan tipe terbaru dianggap kosong —
+  // dihitung saat render, jadi tak perlu effect yang "membersihkan" state.
+  const selectedCategoryId = availableCategories.some((c) => c.id === categoryId)
+    ? categoryId
+    : "";
 
   const handleSubmit = async () => {
     setError(null);
@@ -117,7 +87,7 @@ export function TransactionFormDialog({
       const payload = {
         date,
         type,
-        categoryId,
+        categoryId: selectedCategoryId,
         amount: parseAmount(amount),
         description: description.trim(),
         recordedBy: recordedBy.trim(),
@@ -138,7 +108,7 @@ export function TransactionFormDialog({
   };
 
   const nominal = parseAmount(amount);
-  const canSubmit = date && categoryId && nominal > 0 && description.trim().length >= 3 && recordedBy.trim();
+  const canSubmit = date && selectedCategoryId && nominal > 0 && description.trim().length >= 3 && recordedBy.trim();
 
   // Ikon pita header mengikuti mode: ubah = kuning, kas masuk = hijau, kas keluar = merah.
   const HeaderIcon = editing ? PencilSimple : type === "income" ? TrendUp : TrendDown;
@@ -216,10 +186,10 @@ export function TransactionFormDialog({
               <label htmlFor="txn-category" className={labelClass}>
                 Kategori
               </label>
-              <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
+              <Select value={selectedCategoryId} onValueChange={(v) => setCategoryId(v ?? "")}>
                 <SelectTrigger id="txn-category" className="h-10 w-full text-sm">
                   <SelectValue placeholder="Pilih kategori">
-                    {availableCategories.find((c) => c.id === categoryId)?.name ?? "Pilih kategori"}
+                    {availableCategories.find((c) => c.id === selectedCategoryId)?.name ?? "Pilih kategori"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -233,9 +203,9 @@ export function TransactionFormDialog({
               {availableCategories.length === 0 && (
                 <p className="mt-1.5 text-xs text-muted-foreground">
                   Belum ada kategori {type === "income" ? "kas masuk" : "kas keluar"}.{" "}
-                  <a href="/admin/settings" className="font-semibold text-primary hover:underline">
-                    Buat dulu di Pengaturan
-                  </a>
+                  <Link href="/admin/categories" className="font-semibold text-primary hover:underline">
+                    Buat dulu di Kategori Kas
+                  </Link>
                   .
                 </p>
               )}

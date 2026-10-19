@@ -6,9 +6,17 @@
 // - `POST/PUT/DELETE/PATCH /api/*` wajib sesi valid → kalau tidak, 401 JSON.
 //   (Login/logout baca status sesi dikecualikan agar selalu bisa diakses.)
 // - `GET /api/*` tetap terbuka: data baca itu juga tampil di halaman publik.
+//
+// Catatan penting: gerbang "wajib ganti kata sandi bawaan" (yang dulu mengunci
+// seluruh menu admin ke halaman Pengaturan) **dibatalkan** atas keputusan
+// pengurus pada 2026-10-19. Pengurus kini hanya **diperingatkan** lewat spanduk
+// di panel (`AdminLayout`) dengan tautan langsung ke Pengaturan → Keamanan.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_SESSION_COOKIE, verifySessionValue } from "@/server/services/admin-auth";
+import {
+  ADMIN_SESSION_COOKIE,
+  verifySessionValue,
+} from "@/server/services/admin-auth";
 
 const PUBLIC_API_PATHS = new Set([
   "/api/admin/session", // login (POST), logout (DELETE), status (GET)
@@ -39,6 +47,7 @@ export async function proxy(req: NextRequest) {
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
+
   return NextResponse.next();
 }
 
