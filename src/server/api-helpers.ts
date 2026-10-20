@@ -18,6 +18,12 @@ export function unauthorized(message = "Sesi admin berakhir. Silakan masuk kemba
   return NextResponse.json({ error: message }, { status: 401 });
 }
 
+// Sumber daya ada, tetapi tidak boleh diakses publik (mis. rincian transaksi
+// saat pengurus mematikan `publicTransparency`).
+export function forbidden(message = "Akses ke data ini dibatasi oleh pengurus.") {
+  return NextResponse.json({ error: message }, { status: 403 });
+}
+
 // Defense-in-depth: setiap route tulis + route sensitif (officials, uploads)
 // wajib panggil ini, jangan hanya mengandalkan `proxy.ts` di edge.
 // Cek Origin/Referer bila ada agar CSRF lintas-situs ditolak

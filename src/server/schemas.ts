@@ -2,7 +2,7 @@
 // Route handlers tidak percaya body mentah — selalu lewat parse di sini.
 
 import { z } from "zod";
-import { POSITIONS, normalizePosition } from "@/lib/positions";
+import { POSITIONS, isKnownPosition, normalizePosition } from "@/lib/positions";
 
 // ── Helper validasi bersama ────────────────────────────────────────────────
 // Tanggal string YYYY-MM-DD harus kalender nyata (menolak 2026-02-30, 2026-13-40).
@@ -160,11 +160,14 @@ export type ActivityInput = z.infer<typeof activityInputSchema>;
 export const officialInputSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter.").max(120),
   // Jabatan dipetakan ke nilai kanonik supaya data lama ("Bendahara")
-  // otomatis menjadi "Bendahara DKM" dan teks bebas tidak bisa masuk lagi.
+  // otomatis menjadi "Bendahara DKM". Teks yang tidak dikenal DITOLAK — dulu
+  // typo seperti "Ketuaa" diam-diam tersimpan sebagai "Anggota Takmir".
   role: z
     .string()
-    .transform((v) => normalizePosition(v))
-    .pipe(z.enum(POSITIONS.map((p) => p.value), { error: "Jabatan tidak dikenal." })),
+    .refine(isKnownPosition, {
+      message: `Jabatan tidak dikenal. Pilih salah satu: ${POSITIONS.map((p) => p.value).join(", ")}.`,
+    })
+    .transform((v) => normalizePosition(v)),
   systemRole: z.enum(["superadmin", "admin", "bendahara", "pengurus"], {
     error: "Peran sistem tidak dikenal.",
   }),
@@ -255,7 +258,11 @@ export const mosqueProfileInputSchema = z.object({
   name: z.string().min(3, "Nama masjid minimal 3 karakter.").max(120),
   shortName: z.string().min(2, "Nama singkat minimal 2 karakter.").max(40),
   address: z.string().min(10, "Alamat minimal 10 karakter.").max(400),
-  phone: z.string().min(8, "Nomor telepon minimal 8 digit.").max(25),
+  phone: z
+    .string()
+    .min(8, "Nomor telepon minimal 8 digit.")
+    .max(25)
+    .regex(/^[+0-9][0-9\s\-().]*$/, "Nomor telepon hanya boleh berisi angka, spasi, dan + - ( ) ."),
   email: z.email("Format email tidak valid.").max(120),
   latitude: z.number().min(-90, "Lintang harus antara -90 dan 90.").max(90),
   longitude: z.number().min(-180, "Bujur harus antara -180 dan 180.").max(180),

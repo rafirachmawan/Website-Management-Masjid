@@ -31,7 +31,7 @@ import { Clock, MapPin, CheckCircle, Gear } from "@phosphor-icons/react";
 // Isya 18°). Pengurus tidak mengatur jam manual — cukup pastikan
 // koordinat di Pengaturan benar.
 export function PrayerSchedulePage() {
-  const { data: prayerData, error: loadError } = useApi<{
+  const { data: prayerData, error: loadError, errorStatus: loadErrorStatus } = useApi<{
     today: DailyPrayerSchedule | null;
     week: DailyPrayerSchedule[];
   }>("/api/prayer-schedule");
@@ -40,6 +40,7 @@ export function PrayerSchedulePage() {
   // Kegagalan hitung (mis. zona waktu tidak dikenal) tidak boleh tampak sebagai
   // skeleton tanpa akhir.
   if (loadError) {
+    const needsLogin = loadErrorStatus === 401 || loadErrorStatus === 403;
     return (
       <div className="space-y-6">
         <PageHeader
@@ -47,10 +48,14 @@ export function PrayerSchedulePage() {
           description="Dihitung otomatis setiap hari dari lokasi masjid — tanpa pengaturan jam manual"
         />
         <AdminErrorState
-          title="Gagal menghitung jadwal sholat"
-          message="Pastikan koordinat dan zona waktu masjid di Pengaturan sudah benar, lalu muat ulang halaman."
-          actionHref="/admin/settings"
-          actionLabel="Periksa Pengaturan"
+          title={needsLogin ? "Sesi admin berakhir" : "Gagal menghitung jadwal sholat"}
+          message={
+            needsLogin
+              ? loadError
+              : "Pastikan koordinat dan zona waktu masjid di Pengaturan sudah benar, lalu muat ulang halaman."
+          }
+          actionHref={needsLogin ? "/admin/login?next=/admin/prayer-schedule" : "/admin/settings"}
+          actionLabel={needsLogin ? "Masuk kembali" : "Periksa Pengaturan"}
           code={loadError}
         />
       </div>

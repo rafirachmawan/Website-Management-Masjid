@@ -4,7 +4,8 @@
 
 import { cache } from "react";
 import { db } from "../db";
-import { BadRequestError } from "../api-helpers";
+import { BadRequestError, NotFoundError } from "../api-helpers";
+import { deleteUploadIfUnused } from "./uploads";
 import type { Announcement, Activity } from "@/types";
 import type { AnnouncementInput, ActivityInput } from "../schemas";
 
@@ -152,7 +153,7 @@ export async function updateAnnouncement(
   input: Partial<AnnouncementInput>,
 ): Promise<Announcement> {
   const existing = await db.announcement.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Pengumuman yang akan diubah tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Pengumuman yang akan diubah tidak ditemukan.");
 
   if (input.priority === "important") await assertImportantSlotFree(id);
 
@@ -175,11 +176,19 @@ export async function updateAnnouncement(
       ...(publishedAt !== undefined && { publishedAt }),
     },
   });
+  // Gambar lama yang diganti/dikosongkan boleh dibersihkan bila tidak dipakai
+  // record lain. Kegagalan hapus file tidak menggagalkan penyimpanan.
+  if (existing.imageUrl && existing.imageUrl !== row.imageUrl) {
+    await deleteUploadIfUnused(existing.imageUrl);
+  }
   return toAnnouncement(row);
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
+  const existing = await db.announcement.findUnique({ where: { id } });
+  if (!existing) throw new NotFoundError("Pengumuman yang akan dihapus tidak ditemukan.");
   await db.announcement.delete({ where: { id } });
+  await deleteUploadIfUnused(existing.imageUrl);
 }
 
 // ── Kegiatan ─────────────────────────────────────────────────────────────────
@@ -251,7 +260,7 @@ export async function createActivity(input: ActivityInput): Promise<Activity> {
 
 export async function updateActivity(id: string, input: Partial<ActivityInput>): Promise<Activity> {
   const existing = await db.activity.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Kegiatan yang akan diubah tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Kegiatan yang akan diubah tidak ditemukan.");
 
   const row = await db.activity.update({
     where: { id },
@@ -265,9 +274,15 @@ export async function updateActivity(id: string, input: Partial<ActivityInput>):
       ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl?.trim() ? input.imageUrl.trim() : null }),
     },
   });
+  if (existing.imageUrl && existing.imageUrl !== row.imageUrl) {
+    await deleteUploadIfUnused(existing.imageUrl);
+  }
   return toActivity(row);
 }
 
 export async function deleteActivity(id: string): Promise<void> {
+  const existing = await db.activity.findUnique({ where: { id } });
+  if (!existing) throw new NotFoundError("Kegiatan yang akan dihapus tidak ditemukan.");
   await db.activity.delete({ where: { id } });
+  await deleteUploadIfUnused(existing.imageUrl);
 }

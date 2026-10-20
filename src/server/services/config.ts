@@ -3,6 +3,7 @@
 // tanpa nilai contoh milik masjid tertentu.
 
 import { db } from "../db";
+import { deleteUploadIfUnused } from "./uploads";
 import type { AppConfigInput } from "../schemas";
 import type { AppConfig } from "@/types";
 
@@ -42,6 +43,7 @@ export async function getAppConfig(): Promise<AppConfig> {
 }
 
 export async function updateAppConfig(input: AppConfigInput): Promise<AppConfig> {
+  const before = await getAppConfig();
   const entries: Array<[string, string]> = [];
   if (input.bankName !== undefined) entries.push(["bankName", input.bankName]);
   if (input.accountNumber !== undefined) entries.push(["accountNumber", input.accountNumber]);
@@ -59,5 +61,9 @@ export async function updateAppConfig(input: AppConfigInput): Promise<AppConfig>
       db.config.upsert({ where: { key }, create: { key, value }, update: { value } }),
     ),
   );
-  return getAppConfig();
+  const updated = await getAppConfig();
+  if (before.qrisImageUrl && before.qrisImageUrl !== updated.qrisImageUrl) {
+    await deleteUploadIfUnused(before.qrisImageUrl);
+  }
+  return updated;
 }

@@ -19,13 +19,25 @@ import {
 import { cn } from "@/lib/utils";
 import type { MosqueProfile } from "@/types";
 
+// Validasi tujuan setelah login. Jangan hanya memeriksa prefix "//": browser
+// memperlakukan backslash seperti slash, sehingga "/\evil.com" bisa lolos.
+// `new URL` menormalkan semua bentuk itu; origin yang berbeda langsung ditolak.
+function safeNext(raw: string | null): string {
+  if (!raw) return "/admin";
+  try {
+    const base = "http://internal.invalid";
+    const url = new URL(raw, base);
+    if (url.origin !== base) return "/admin";
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return "/admin";
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawNext = searchParams.get("next") || "/admin";
-  // Tolak open-redirect: hanya path internal absolut, bukan //evil atau https:.
-  const next =
-    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/admin";
+  const next = safeNext(searchParams.get("next"));
 
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

@@ -43,7 +43,13 @@ export function DonationTransfer({ config }: { config: AppConfig }) {
     <div className="container mx-auto -mt-6 px-4 pb-2 md:-mt-8 md:px-6 lg:px-8">
       <div
         className={`grid grid-cols-1 overflow-hidden rounded-2xl border border-border bg-card ${
-          qris && number ? "lg:grid-cols-[1fr_auto_240px]" : qris ? "lg:grid-cols-[1fr_auto]" : "lg:grid-cols-[1fr_280px]"
+          qris && number
+            ? "lg:grid-cols-[1fr_auto_240px]"
+            : qris
+              ? "lg:grid-cols-[1fr_auto]"
+              : number
+                ? "lg:grid-cols-[1fr_280px]"
+                : ""
         }`}
       >
         {/* Kiri: identitas rekening ala baris buku kas */}
@@ -88,8 +94,10 @@ export function DonationTransfer({ config }: { config: AppConfig }) {
 
           <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-muted-foreground">
             Transfer infak, sedekah, atau wakaf ke nomor di atas {qris ? "atau scan kode QRIS" : ""}. Setiap
-            dana yang masuk dicatat bendahara dan bisa ditelusuri di
-            Rincian Transaksi di bawah.
+            dana yang masuk dicatat bendahara
+            {config.publicTransparency
+              ? " dan bisa ditelusuri di Rincian Transaksi di bawah."
+              : "."}
           </p>
         </div>
 

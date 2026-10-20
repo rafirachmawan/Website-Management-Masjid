@@ -1,7 +1,8 @@
 // Service: pengurus / pengguna (read + tulis).
 
 import { db } from "../db";
-import { BadRequestError } from "../api-helpers";
+import { BadRequestError, NotFoundError } from "../api-helpers";
+import { deleteUploadIfUnused } from "./uploads";
 import type { Official } from "@/types";
 import type { OfficialInput } from "../schemas";
 
@@ -68,7 +69,7 @@ export async function createOfficial(input: OfficialInput): Promise<Official> {
 
 export async function updateOfficial(id: string, input: Partial<OfficialInput>): Promise<Official> {
   const existing = await db.official.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Pengurus yang akan diubah tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Pengurus yang akan diubah tidak ditemukan.");
   if (input.email) await ensureEmailFree(input.email, id);
 
   // Guard sole-superadmin juga untuk PUT (dulu hanya DELETE):
@@ -101,12 +102,15 @@ export async function updateOfficial(id: string, input: Partial<OfficialInput>):
       ...(input.avatar !== undefined && { avatar: input.avatar || null }),
     },
   });
+  if (existing.avatar && existing.avatar !== row.avatar) {
+    await deleteUploadIfUnused(existing.avatar);
+  }
   return toOfficial(row);
 }
 
 export async function deleteOfficial(id: string): Promise<void> {
   const existing = await db.official.findUnique({ where: { id } });
-  if (!existing) throw new BadRequestError("Pengurus yang akan dihapus tidak ditemukan.");
+  if (!existing) throw new NotFoundError("Pengurus yang akan dihapus tidak ditemukan.");
 
   // Jangan sampai takmir mengunci dirinya sendiri keluar dari sistem.
   if (existing.systemRole === "superadmin") {
@@ -120,4 +124,5 @@ export async function deleteOfficial(id: string): Promise<void> {
     }
   }
   await db.official.delete({ where: { id } });
+  await deleteUploadIfUnused(existing.avatar);
 }

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { todayISO, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { POSITIONS, normalizePosition, TIER_NAME } from "@/lib/positions";
 import type { Official, MosqueProfile } from "@/types";
@@ -62,7 +63,12 @@ function toAssignableRole(role: Official["systemRole"]): AssignableRole {
 }
 
 export function UsersPage() {
-  const { data: officials, refresh } = useApi<Official[]>("/api/officials");
+  const {
+    data: officials,
+    error: officialsError,
+    errorStatus: officialsErrorStatus,
+    refresh,
+  } = useApi<Official[]>("/api/officials");
   // Zona masjid untuk tanggal bergabung (bukan asumsi WIB).
   const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
   const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
@@ -181,6 +187,24 @@ export function UsersPage() {
     }
   };
 
+  if (officialsError) {
+    const needsLogin = officialsErrorStatus === 401 || officialsErrorStatus === 403;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Struktur Pengurus"
+          description="Kelola data Dewan Kemakmuran Masjid (DKM) dan takmir"
+        />
+        <AdminErrorState
+          title="Gagal memuat pengurus"
+          message={officialsError}
+          actionHref={needsLogin ? "/admin/login?next=/admin/users" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
+        />
+      </div>
+    );
+  }
+
   if (!officials) {
     return (
       <div className="space-y-6" aria-label="Memuat pengurus">
@@ -194,7 +218,7 @@ export function UsersPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Struktur Pengurus & Pengguna"
+        title="Struktur Pengurus"
         description="Kelola data Dewan Kemakmuran Masjid (DKM) dan takmir yang tampil di halaman publik"
         actions={
           <Button onClick={handleOpenAdd} className="gap-2 shadow-sm">
@@ -611,7 +635,7 @@ export function UsersPage() {
               <strong className="text-foreground">
                 {selectedOfficial?.name}
               </strong>
-              &quot;? Akses akun yang bersangkutan akan dinonaktifkan.
+              &quot;? Data pengurus akan dihapus dari struktur dan halaman publik.
             </DialogDescription>
           </DialogHeader>
 

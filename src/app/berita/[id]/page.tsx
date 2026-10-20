@@ -19,11 +19,12 @@ const priorityConfig = {
   important: { label: "Penting" },
 } as const;
 
-function toShortDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+function toShortDate(dateStr: string, timeZone?: string): string {
+  return formatDate(dateStr, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: timeZone?.trim() || undefined,
   });
 }
 
@@ -118,7 +119,7 @@ export default async function BeritaDetailPage({ params }: Props) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+      <header className="sticky top-0 z-40">
         <Navbar profile={profile} />
       </header>
 
@@ -230,7 +231,7 @@ export default async function BeritaDetailPage({ params }: Props) {
                               {a.title}
                             </span>
                             <span className="mt-1 block text-xs text-muted-foreground tabular-nums">
-                              {toShortDate(a.publishedAt)}
+                              {toShortDate(a.publishedAt, profile?.timezone)}
                             </span>
                           </span>
                         </Link>

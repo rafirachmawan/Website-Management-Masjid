@@ -43,8 +43,23 @@ import {
   Broadcast,
 } from "@phosphor-icons/react";
 
+/** ISO timestamp → nilai untuk <input type="datetime-local"> (waktu lokal). */
+function toLocalDateTimeInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
 export function AnnouncementsPage() {
-  const { data: announcements, error: loadError, refresh } = useApi<Announcement[]>("/api/announcements");
+  const {
+    data: announcements,
+    error: loadError,
+    errorStatus: loadErrorStatus,
+    refresh,
+  } = useApi<Announcement[]>("/api/announcements");
   const [search, setSearch] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,6 +78,10 @@ export function AnnouncementsPage() {
     priority: "normal" as "normal" | "important",
     author: "Pengurus Masjid",
     imageUrl: "",
+    // Format yang diminta <input type="datetime-local">: YYYY-MM-DDTHH:mm.
+    // Kosong = biarkan server memakai waktu sekarang (berita baru) atau
+    // mempertahankan tanggal lama (saat mengubah).
+    publishedAt: "",
   });
 
   // Di-`useMemo`: tanpa ini array baru tiap render membuat `filteredAnnouncements`
@@ -93,12 +112,15 @@ export function AnnouncementsPage() {
   // Gagal memuat ≠ "belum ada berita": tanpa cabang ini pengurus melihat
   // daftar kosong dan mengira datanya hilang.
   if (loadError) {
+    const needsLogin = loadErrorStatus === 401 || loadErrorStatus === 403;
     return (
       <div className="space-y-6">
         <PageHeader title="Berita" description="Kelola berita dan informasi untuk jamaah" />
         <AdminErrorState
           title="Gagal memuat berita"
-          message="Daftar berita tidak dapat dimuat dari server."
+          message={needsLogin ? loadError : "Daftar berita tidak dapat dimuat dari server."}
+          actionHref={needsLogin ? "/admin/login?next=/admin/announcements" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
           code={loadError}
         />
       </div>
@@ -116,6 +138,7 @@ export function AnnouncementsPage() {
       priority: "normal",
       author: "Pengurus Masjid",
       imageUrl: "",
+      publishedAt: "",
     });
     setIsFormModalOpen(true);
   };
@@ -129,6 +152,9 @@ export function AnnouncementsPage() {
       priority: ann.priority,
       author: ann.author,
       imageUrl: ann.imageUrl || "",
+      // `toISOString` selalu UTC; ubah ke waktu lokal peramban agar isi input
+      // datetime-local sama dengan yang dilihat pengurus.
+      publishedAt: toLocalDateTimeInput(ann.publishedAt),
     });
     setIsFormModalOpen(true);
   };
@@ -153,10 +179,16 @@ export function AnnouncementsPage() {
     setIsSaving(true);
     setFormError(null);
     try {
+      const payload = {
+        ...formData,
+        publishedAt: formData.publishedAt
+          ? new Date(formData.publishedAt).toISOString()
+          : undefined,
+      };
       if (isEditMode && selectedAnnouncement) {
-        await apiSend(`/api/announcements/${selectedAnnouncement.id}`, "PUT", formData);
+        await apiSend(`/api/announcements/${selectedAnnouncement.id}`, "PUT", payload);
       } else {
-        await apiSend("/api/announcements", "POST", formData);
+        await apiSend("/api/announcements", "POST", payload);
       }
       refresh();
       setIsFormModalOpen(false);
@@ -532,6 +564,24 @@ export function AnnouncementsPage() {
                   className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Tanggal Terbit <span className="font-normal text-muted-foreground">(opsional)</span>
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.publishedAt}
+                onChange={(e) =>
+                  setFormData({ ...formData, publishedAt: e.target.value })
+                }
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-primary sm:max-w-xs"
+              />
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Kosongkan untuk memakai waktu sekarang saat menerbitkan. Saat mengubah
+                berita, kosongkan bila tanggal terbit tidak perlu diubah.
+              </p>
             </div>
 
             <div className="space-y-1.5">

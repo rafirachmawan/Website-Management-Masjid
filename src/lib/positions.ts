@@ -68,6 +68,16 @@ export function normalizePosition(role: string): string {
   return BY_LOWER.get(lower)?.value ?? LEGACY_ROLE_MAP[lower] ?? "Anggota Takmir";
 }
 
+/** True bila jabatan dikenal (termasuk nama lama yang masih dipetakan).
+ *  Dipakai validator agar typo tidak diam-diam berubah jadi "Anggota Takmir". */
+export function isKnownPosition(role: string): boolean {
+  const trimmed = role.trim();
+  if (!trimmed) return false;
+  if (BY_VALUE.has(trimmed)) return true;
+  const lower = trimmed.toLowerCase();
+  return BY_LOWER.has(lower) || LEGACY_ROLE_MAP[lower] !== undefined;
+}
+
 const FALLBACK: Position = { value: "Anggota Takmir", level: 2, rank: 9 };
 
 export function positionOf(role: string): Position {

@@ -3,6 +3,8 @@
 
 import { cache } from "react";
 import { db } from "../db";
+import { NotFoundError } from "../api-helpers";
+import { deleteUploadIfUnused } from "./uploads";
 import type { MosqueProfile } from "@/types";
 import type { MosqueProfileInput, MosqueProfileUpdate } from "../schemas";
 
@@ -48,7 +50,18 @@ export const getMosqueProfile = cache(async function getMosqueProfile(): Promise
   return row ? toProfile(row) : null;
 });
 
+function heroList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+
+async function cleanupRemovedImages(before: string[], after: string[]): Promise<void> {
+  const kept = new Set(after);
+  const removed = before.filter((url) => url && !kept.has(url));
+  await Promise.all(removed.map((url) => deleteUploadIfUnused(url)));
+}
+
 export async function updateMosqueProfile(input: MosqueProfileInput): Promise<MosqueProfile> {
+  const existing = await db.mosqueProfile.findUnique({ where: { id: "main" } });
   const data = {
     name: input.name,
     shortName: input.shortName,
@@ -69,6 +82,16 @@ export async function updateMosqueProfile(input: MosqueProfileInput): Promise<Mo
     create: { id: "main", ...data },
     update: data,
   });
+  if (existing) {
+    await cleanupRemovedImages(
+      [existing.logoUrl, existing.coverImageUrl, ...heroList(existing.heroImages)].filter(
+        (v): v is string => typeof v === "string",
+      ),
+      [row.logoUrl, row.coverImageUrl, ...heroList(row.heroImages)].filter(
+        (v): v is string => typeof v === "string",
+      ),
+    );
+  }
   return toProfile(row);
 }
 
@@ -77,7 +100,7 @@ export async function updateMosqueProfile(input: MosqueProfileInput): Promise<Mo
 export async function patchMosqueProfile(input: MosqueProfileUpdate): Promise<MosqueProfile> {
   const existing = await db.mosqueProfile.findUnique({ where: { id: "main" } });
   if (!existing) {
-    throw new Error("Profil masjid belum ada — kirim profil lengkap terlebih dahulu (PUT).");
+    throw new NotFoundError("Profil masjid belum ada — kirim profil lengkap terlebih dahulu (PUT).");
   }
   const data: Record<string, unknown> = {};
   if (input.name !== undefined) data.name = input.name;
@@ -95,5 +118,13 @@ export async function patchMosqueProfile(input: MosqueProfileUpdate): Promise<Mo
     data.coverImageUrl = input.coverImageUrl?.trim() ? input.coverImageUrl.trim() : null;
   if (input.heroImages !== undefined) data.heroImages = input.heroImages;
   const row = await db.mosqueProfile.update({ where: { id: "main" }, data });
+  await cleanupRemovedImages(
+    [existing.logoUrl, existing.coverImageUrl, ...heroList(existing.heroImages)].filter(
+      (v): v is string => typeof v === "string",
+    ),
+    [row.logoUrl, row.coverImageUrl, ...heroList(row.heroImages)].filter(
+      (v): v is string => typeof v === "string",
+    ),
+  );
   return toProfile(row);
 }

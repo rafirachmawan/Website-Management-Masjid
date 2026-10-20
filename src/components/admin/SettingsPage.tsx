@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApi, apiSend } from "@/lib/api";
-import { downloadTextFile } from "@/lib/utils";
+import { downloadTextFile, todayISO, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import type { MosqueProfile, AppConfig } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
@@ -65,19 +66,29 @@ import {
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const { data: fetchedProfile, error: profileLoadError, refresh: refreshProfile } = useApi<MosqueProfile>(
-    "/api/mosque-profile",
-  );
-  const { data: fetchedConfig, refresh: refreshConfig } = useApi<AppConfig>("/api/config");
+  const {
+    data: fetchedProfile,
+    error: profileLoadError,
+    errorStatus: profileLoadStatus,
+    refresh: refreshProfile,
+  } = useApi<MosqueProfile>("/api/mosque-profile");
+  const {
+    data: fetchedConfig,
+    error: configLoadError,
+    errorStatus: configLoadStatus,
+    refresh: refreshConfig,
+  } = useApi<AppConfig>("/api/config");
   // Pola "draft atau data server": sebelum pengurus mengubah apa pun, form
   // memakai data terbaru dari server; begitu ada perubahan, draft mengambil
   // alih. Tidak ada effect yang menyalin data ke state → tidak ada render ganda
   // dan tidak ada nilai basi saat server mengirim versi baru.
   const [profileDraft, setProfileDraft] = useState<MosqueProfile | null>(null);
-  // Bila profil belum pernah diisi (404), form tampil kosong supaya pengurus
-  // bisa langsung mengisi data pertama.
-  const blankProfile = profileLoadError !== null && fetchedProfile === null;
+  // HANYA 404 yang berarti "profil belum pernah diisi". Galat lain (401, 500,
+  // jaringan putus) tidak boleh menampilkan form kosong — kalau disimpan, form
+  // kosong itu bisa menimpa data yang sebenarnya masih ada.
+  const blankProfile = profileLoadStatus === 404;
   const profile = profileDraft ?? fetchedProfile ?? (blankProfile ? { ...EMPTY_PROFILE } : null);
+  const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
   const setProfile = setProfileDraft;
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -151,7 +162,7 @@ export function SettingsPage() {
         if (!res.ok && res.status !== 404) throw new Error(`Gagal mengambil data ${p}.`);
         backup[p] = res.ok ? data : null;
       }
-      const date = new Date().toISOString().slice(0, 10);
+      const date = todayISO(timeZone);
       downloadTextFile(`backup-masjid-${date}.json`, JSON.stringify(backup, null, 2), "application/json");
     } catch (err) {
       setBackupError(err instanceof Error ? err.message : "Gagal mengekspor cadangan.");
@@ -340,6 +351,36 @@ export function SettingsPage() {
       setIsRevokingSessions(false);
     }
   };
+
+  if (profileLoadError && !blankProfile) {
+    const needsLogin = profileLoadStatus === 401 || profileLoadStatus === 403;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Pengaturan" description="Profil masjid, rekening, dan preferensi" />
+        <AdminErrorState
+          title="Gagal memuat profil masjid"
+          message={profileLoadError}
+          actionHref={needsLogin ? "/admin/login?next=/admin/settings" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
+        />
+      </div>
+    );
+  }
+
+  if (configLoadError) {
+    const needsLogin = configLoadStatus === 401 || configLoadStatus === 403;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Pengaturan" description="Profil masjid, rekening, dan preferensi" />
+        <AdminErrorState
+          title="Gagal memuat konfigurasi"
+          message={configLoadError}
+          actionHref={needsLogin ? "/admin/login?next=/admin/settings" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
+        />
+      </div>
+    );
+  }
 
   if (!profile) {
     return (

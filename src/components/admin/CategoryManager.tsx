@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import type { Category } from "@/types";
 import { cn } from "@/lib/utils";
+import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,7 +34,13 @@ const TYPE_META: Record<CatType, { label: string; noun: string }> = {
 };
 
 export function CategoryManager() {
-  const { data: fetched, refresh } = useApi<Category[]>("/api/categories");
+  const {
+    data: fetched,
+    error: loadError,
+    errorStatus: loadErrorStatus,
+    isLoading,
+    refresh,
+  } = useApi<Category[]>("/api/categories");
   const categories = fetched ?? [];
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -153,6 +161,20 @@ export function CategoryManager() {
       </section>
     );
   };
+
+  if (loadError) {
+    const needsLogin = loadErrorStatus === 401 || loadErrorStatus === 403;
+    return (
+      <AdminErrorState
+        title="Gagal memuat kategori"
+        message={loadError}
+        actionHref={needsLogin ? "/admin/login?next=/admin/categories" : undefined}
+        actionLabel={needsLogin ? "Masuk kembali" : undefined}
+      />
+    );
+  }
+
+  if (isLoading) return <DataSkeleton lines={4} />;
 
   return (
     <div className="space-y-4">

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useApi } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import type {
   Transaction,
   Category,
@@ -380,6 +381,21 @@ function CategorySummaryTable({
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [filteredTxns, type]);
 
+  // Jangan tampilkan baris "Total" 100% saat memang belum ada transaksi —
+  // angka nol bisa disalahartikan sebagai komposisi yang sudah dihitung.
+  if (filtered.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-8 text-center">
+        <p className="text-sm font-semibold text-foreground">
+          Belum ada {type === "income" ? "pemasukan" : "pengeluaran"} pada periode ini
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Rincian per kategori akan muncul setelah transaksi dicatat.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto border border-border/60 rounded-lg">
       <Table className="border-collapse">
@@ -550,10 +566,26 @@ type PeriodType = "monthly" | "yearly";
 type ChartType = "area" | "bar";
 
 export function ReportsPage() {
-  const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
-  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
-  const { data: fetchedSummary } = useApi<FinancialSummary>("/api/financial-summary");
-  const { data: fetchedProfile } = useApi<MosqueProfile>("/api/mosque-profile");
+  const {
+    data: fetchedTransactions,
+    error: transactionsError,
+    errorStatus: transactionsErrorStatus,
+  } = useApi<Transaction[]>("/api/transactions");
+  const {
+    data: fetchedCategories,
+    error: categoriesError,
+    errorStatus: categoriesErrorStatus,
+  } = useApi<Category[]>("/api/categories");
+  const {
+    data: fetchedSummary,
+    error: summaryError,
+    errorStatus: summaryErrorStatus,
+  } = useApi<FinancialSummary>("/api/financial-summary");
+  const {
+    data: fetchedProfile,
+    error: profileError,
+    errorStatus: profileErrorStatus,
+  } = useApi<MosqueProfile>("/api/mosque-profile");
 
   const transactions = useMemo(() => fetchedTransactions ?? [], [fetchedTransactions]);
   const categories = useMemo(() => fetchedCategories ?? [], [fetchedCategories]);
@@ -580,7 +612,11 @@ export function ReportsPage() {
   // Grafik khusus tahun terpilih: 12 bulan penuh (Jan–Des). Wajib memakai
   // `?year=`, sebab `/api/chart` tanpa parameter hanya memuat 12 bulan
   // terakhir → memilih tahun lama dulu tampil kosong/0.
-  const { data: fetchedChart } = useApi<ChartDataPoint[]>(`/api/chart?year=${activeYear}`);
+  const {
+    data: fetchedChart,
+    error: chartError,
+    errorStatus: chartErrorStatus,
+  } = useApi<ChartDataPoint[]>(`/api/chart?year=${activeYear}`);
   const chartData = useMemo(() => fetchedChart ?? [], [fetchedChart]);
 
   // Filter transactions by period — string prefix (zona-masjid), bukan new Date().
@@ -670,6 +706,32 @@ export function ReportsPage() {
         fill: PIE_COLORS_EXPENSE[i % PIE_COLORS_EXPENSE.length],
       }));
   }, [filteredTxns]);
+
+  const loadError =
+    transactionsError ?? categoriesError ?? summaryError ?? profileError ?? chartError;
+  if (loadError) {
+    const status =
+      transactionsErrorStatus ??
+      categoriesErrorStatus ??
+      summaryErrorStatus ??
+      profileErrorStatus ??
+      chartErrorStatus;
+    const needsLogin = status === 401 || status === 403;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Laporan Keuangan"
+          description="Ringkasan dan analisis keuangan masjid"
+        />
+        <AdminErrorState
+          title="Gagal memuat laporan"
+          message={loadError}
+          actionHref={needsLogin ? "/admin/login?next=/admin/reports" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
+        />
+      </div>
+    );
+  }
 
   if (!fetchedTransactions || !fetchedCategories || !fetchedChart || !financialSummary || !mosqueProfile) {
     return (

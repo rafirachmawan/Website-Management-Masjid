@@ -6,11 +6,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+/** Galat HTTP dengan status asli — dipakai UI untuk membedakan 401/403/404. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error ?? `Gagal memuat ${path}`);
+    throw new ApiError(body?.error ?? `Gagal memuat ${path}`, res.status);
   }
   return res.json() as Promise<T>;
 }
@@ -23,7 +34,7 @@ export async function apiSend<T>(path: string, method: "POST" | "PUT" | "DELETE"
   });
   if (!res.ok) {
     const data = await res.json().catch(() => null);
-    throw new Error(data?.error ?? `Gagal ${method} ${path}`);
+    throw new ApiError(data?.error ?? `Gagal ${method} ${path}`, res.status);
   }
   return res.json() as Promise<T>;
 }
@@ -38,6 +49,7 @@ interface Sourced<T> {
 interface SourcedFailure {
   source: string;
   message: string;
+  status: number | null;
 }
 
 export function useApi<T>(path: string | null) {
@@ -60,8 +72,13 @@ export function useApi<T>(path: string | null) {
       .then((d) => {
         if (live) setResult({ path, value: d });
       })
-      .catch((e: Error) => {
-        if (live) setFailure({ source: key, message: e.message });
+      .catch((e: unknown) => {
+        if (!live) return;
+        setFailure({
+          source: key,
+          message: e instanceof Error ? e.message : "Gagal memuat data.",
+          status: e instanceof ApiError ? e.status : null,
+        });
       });
     return () => {
       live = false;
@@ -71,7 +88,9 @@ export function useApi<T>(path: string | null) {
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
   const data = result && result.path === path ? result.value : null;
-  const error = failure?.source === source ? failure.message : null;
+  const currentFailure = failure?.source === source ? failure : null;
+  const error = currentFailure?.message ?? null;
+  const errorStatus = currentFailure?.status ?? null;
 
-  return { data, error, isLoading: data === null && error === null, refresh };
+  return { data, error, errorStatus, isLoading: data === null && error === null, refresh };
 }

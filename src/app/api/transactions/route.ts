@@ -4,10 +4,18 @@ import {
   createTransaction,
 } from "@/server/services/finance";
 import { transactionInputSchema } from "@/server/schemas";
-import { ok, fail, requireAdminSession, unauthorized } from "@/server/api-helpers";
+import { getAppConfig } from "@/server/services/config";
+import { ok, fail, forbidden, requireAdminSession, unauthorized } from "@/server/api-helpers";
 
 export async function GET(req: Request) {
   try {
+    // Rincian transaksi adalah data publik HANYA bila pengurus mengizinkan.
+    // Tanpa cek ini, mematikan `publicTransparency` cuma menyembunyikan UI —
+    // API-nya tetap bisa dibaca siapa pun lewat curl/DevTools.
+    const config = await getAppConfig();
+    if (!config.publicTransparency && !(await requireAdminSession(req))) {
+      return forbidden("Rincian transaksi tidak dipublikasikan oleh pengurus.");
+    }
     const url = new URL(req.url);
     const hasPaging =
       url.searchParams.has("page") ||

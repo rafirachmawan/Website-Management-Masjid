@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { formatCurrency, formatDate, DEFAULT_TIME_ZONE } from "@/lib/utils";
 import { useApi } from "@/lib/api";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { DataSkeleton } from "@/components/DataSkeleton";
 import type {
   MosqueProfile,
@@ -417,7 +418,11 @@ function pctChange(current: number, prev: number): number | undefined {
 }
 
 export function DashboardOverview() {
-  const { data: mosqueProfile, error: profileError } = useApi<MosqueProfile>("/api/mosque-profile");
+  const {
+    data: mosqueProfile,
+    error: profileError,
+    errorStatus: profileErrorStatus,
+  } = useApi<MosqueProfile>("/api/mosque-profile");
   const { data: financialSummary } = useApi<FinancialSummary>("/api/financial-summary");
   const { data: fetchedTransactions } = useApi<Transaction[]>("/api/transactions");
   const { data: chartData } = useApi<ChartDataPoint[]>("/api/chart");
@@ -429,6 +434,19 @@ export function DashboardOverview() {
   // Tanpa cabang ini, dashboard terjebak di skeleton selamanya pada instalasi
   // baru. Tampilkan arahan, bukan loading tanpa akhir.
   if (profileError) {
+    if (profileErrorStatus === 401 || profileErrorStatus === 403) {
+      return (
+        <div className="space-y-6">
+          <PageHeader title="Dashboard" description="Sesi admin diperlukan" />
+          <AdminErrorState
+            title="Sesi admin berakhir"
+            message={profileError}
+            actionHref="/admin/login?next=/admin"
+            actionLabel="Masuk kembali"
+          />
+        </div>
+      );
+    }
     return (
       <div className="space-y-6">
         <PageHeader title="Dashboard" description="Profil masjid belum lengkap" />

@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { mkdir, readdir, stat, writeFile } from "fs/promises";
 import { join } from "path";
 import { ok, fail, BadRequestError, requireAdminSession, unauthorized } from "@/server/api-helpers";
+import { deleteUploadIfUnused, uploadFileNameFromUrl } from "@/server/services/uploads";
 
 // Unggah gambar (mis. banner hero) dari halaman /admin.
 // Disimpan lokal di `public/uploads/` sehingga bisa dipakai offline,
@@ -84,6 +85,27 @@ export async function POST(req: Request) {
     await writeFile(join(dir, name), buffer);
 
     return ok({ url: `/uploads/${name}` }, 201);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// Hapus satu berkas yang tidak lagi dipakai. URL divalidasi ketat agar tidak
+// bisa menghapus file di luar `public/uploads/`.
+export async function DELETE(req: Request) {
+  try {
+    if (!(await requireAdminSession(req))) return unauthorized();
+    const url = new URL(req.url).searchParams.get("url");
+    if (!url || !uploadFileNameFromUrl(url)) {
+      throw new BadRequestError("URL gambar tidak valid.");
+    }
+    const deleted = await deleteUploadIfUnused(url);
+    return ok({
+      deleted,
+      message: deleted
+        ? "Berkas dihapus."
+        : "Berkas tidak dihapus karena masih dipakai atau sudah tidak ada.",
+    });
   } catch (e) {
     return fail(e);
   }

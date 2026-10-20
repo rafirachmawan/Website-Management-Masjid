@@ -49,6 +49,7 @@ export function TransactionFormDialog({
   onSaved,
   editing,
   defaultType = "income",
+  timeZone,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,12 +57,14 @@ export function TransactionFormDialog({
   onSaved: () => void;
   editing?: Transaction | null;
   defaultType?: TxnType;
+  /** Zona masjid untuk tanggal default (opsional; fallback WIB). */
+  timeZone?: string;
 }) {
   // Isian awal diambil dari props saat komponen dipasang. Parent memberi `key`
   // yang berubah tiap dialog dibuka, jadi form selalu mulai bersih (atau
   // terisi data lama saat mengubah) tanpa effect sinkronisasi.
   const [type, setType] = useState<TxnType>(editing ? (editing.type as TxnType) : defaultType);
-  const [date, setDate] = useState(editing ? editing.date : todayISO());
+  const [date, setDate] = useState(editing ? editing.date : todayISO(timeZone));
   const [categoryId, setCategoryId] = useState(editing ? editing.categoryId : "");
   const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
   const [description, setDescription] = useState(editing ? editing.description : "");

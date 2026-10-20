@@ -34,7 +34,7 @@ export default async function KeuanganPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur">
+      <header className="sticky top-0 z-40">
         <Navbar profile={profile} />
       </header>
 

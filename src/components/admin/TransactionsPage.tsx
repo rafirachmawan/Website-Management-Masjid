@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useApi, apiSend } from "@/lib/api";
 import { DataSkeleton } from "@/components/DataSkeleton";
-import { formatCurrency, formatDate, cn, toCsvRow, downloadTextFile } from "@/lib/utils";
+import { formatCurrency, formatDate, cn, toCsvRow, downloadTextFile, DEFAULT_TIME_ZONE } from "@/lib/utils";
+import { AdminErrorState } from "@/components/admin/AdminErrorState";
 import { TransactionFormDialog } from "@/components/admin/TransactionFormDialog";
 import { PageHeader } from "@/components/admin/PageHeader";
 import {
@@ -67,7 +68,7 @@ import {
   Image as ImageIcon,
   Warning,
 } from "@phosphor-icons/react";
-import type { Transaction, Category } from "@/types";
+import type { Transaction, Category, MosqueProfile } from "@/types";
 
 // ─── Stat Cards ──────────────────────────────────────────────────────────────
 
@@ -535,8 +536,20 @@ type SortField = "date" | "amount" | "category";
 type SortDirection = "asc" | "desc";
 
 export function TransactionsPage() {
-  const { data: fetchedTransactions, refresh } = useApi<Transaction[]>("/api/transactions");
-  const { data: fetchedCategories } = useApi<Category[]>("/api/categories");
+  const {
+    data: fetchedTransactions,
+    error: transactionsError,
+    errorStatus: transactionsErrorStatus,
+    refresh,
+  } = useApi<Transaction[]>("/api/transactions");
+  const {
+    data: fetchedCategories,
+    error: categoriesError,
+    errorStatus: categoriesErrorStatus,
+  } = useApi<Category[]>("/api/categories");
+  const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
+  // Zona masjid untuk tanggal default form (bukan asumsi WIB).
+  const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
   // Di-`useMemo` supaya identitas array-nya stabil antar-render: tanpa ini,
   // semua `useMemo` di bawahnya ikut dihitung ulang setiap render
   // (peringatan react-hooks/exhaustive-deps).
@@ -571,14 +584,18 @@ export function TransactionsPage() {
       result = result.filter((t) => t.categoryId === categoryFilter);
     }
 
-    // Search
+    // Search — nominal dicocokkan lewat digit murni, sehingga "2500000" dan
+    // "2.500.000" sama-sama menemukan transaksi Rp 2.500.000. (Dulu hanya
+    // format "Rp 2.500.000" yang bisa dicari.)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.trim().toLowerCase();
+      const digits = q.replace(/\D/g, "");
       result = result.filter(
         (t) =>
           t.description.toLowerCase().includes(q) ||
           t.category.toLowerCase().includes(q) ||
-          formatCurrency(t.amount).toLowerCase().includes(q)
+          t.recordedBy.toLowerCase().includes(q) ||
+          (digits.length > 0 && String(t.amount).includes(digits))
       );
     }
 
@@ -689,6 +706,26 @@ export function TransactionsPage() {
     setFormSeq((n) => n + 1);
     setFormOpen(true);
   };
+
+  const loadError = transactionsError ?? categoriesError;
+  if (loadError) {
+    const status = transactionsErrorStatus ?? categoriesErrorStatus;
+    const needsLogin = status === 401 || status === 403;
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Transaksi Kas"
+          description="Kelola catatan pemasukan dan pengeluaran kas masjid"
+        />
+        <AdminErrorState
+          title="Gagal memuat transaksi"
+          message={loadError}
+          actionHref={needsLogin ? "/admin/login?next=/admin/transactions" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
+        />
+      </div>
+    );
+  }
 
   if (!fetchedTransactions || !fetchedCategories) {
     return (
@@ -1028,6 +1065,7 @@ export function TransactionsPage() {
         categories={categories}
         editing={editing}
         defaultType={newType}
+        timeZone={timeZone}
         onSaved={refresh}
       />
     </div>

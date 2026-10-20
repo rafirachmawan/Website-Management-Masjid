@@ -56,7 +56,12 @@ function activityStatus(dateStr: string, todayStr: string) {
 }
 
 export function ActivitiesPage() {
-  const { data: activities, error: loadError, refresh } = useApi<Activity[]>("/api/activities");
+  const {
+    data: activities,
+    error: loadError,
+    errorStatus: loadErrorStatus,
+    refresh,
+  } = useApi<Activity[]>("/api/activities");
   // Zona masjid untuk label jam & penentuan "hari ini" (bukan asumsi WIB).
   const { data: profile } = useApi<MosqueProfile>("/api/mosque-profile");
   const timeZone = profile?.timezone?.trim() || DEFAULT_TIME_ZONE;
@@ -75,7 +80,7 @@ export function ActivitiesPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    date: todayISO(),
+    date: todayISO(timeZone),
     time: "",
     location: "",
     organizer: "",
@@ -108,6 +113,7 @@ export function ActivitiesPage() {
 
   // Gagal memuat ≠ "belum ada agenda" — beri penjelasan, bukan daftar kosong.
   if (loadError) {
+    const needsLogin = loadErrorStatus === 401 || loadErrorStatus === 403;
     return (
       <div className="space-y-6">
         <PageHeader
@@ -116,7 +122,9 @@ export function ActivitiesPage() {
         />
         <AdminErrorState
           title="Gagal memuat agenda"
-          message="Daftar kegiatan tidak dapat dimuat dari server."
+          message={needsLogin ? loadError : "Daftar kegiatan tidak dapat dimuat dari server."}
+          actionHref={needsLogin ? "/admin/login?next=/admin/activities" : undefined}
+          actionLabel={needsLogin ? "Masuk kembali" : undefined}
           code={loadError}
         />
       </div>

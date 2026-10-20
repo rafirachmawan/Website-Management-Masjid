@@ -36,6 +36,10 @@ model Category {
   icon         String?
   color        String?
   transactions Transaction[]
+
+  // Pengaman terakhir saat dua permintaan menambah kategori bersamaan.
+  // Cek aplikasi tetap menangani variasi huruf besar/kecil.
+  @@unique([name, type])
 }
 
 model Transaction {

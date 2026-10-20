@@ -4,12 +4,17 @@ import {
   deleteTransaction,
 } from "@/server/services/finance";
 import { transactionUpdateSchema } from "@/server/schemas";
-import { ok, fail, requireAdminSession, unauthorized } from "@/server/api-helpers";
+import { getAppConfig } from "@/server/services/config";
+import { ok, fail, forbidden, requireAdminSession, unauthorized } from "@/server/api-helpers";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   try {
+    const config = await getAppConfig();
+    if (!config.publicTransparency && !(await requireAdminSession(req))) {
+      return forbidden("Rincian transaksi tidak dipublikasikan oleh pengurus.");
+    }
     const { id } = await params;
     const txn = await getTransactionById(id);
     if (!txn) return ok({ error: "Transaksi tidak ditemukan." }, 404);
