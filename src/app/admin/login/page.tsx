@@ -122,7 +122,7 @@ function LoginForm() {
   const phone = profile?.phone?.trim() || "";
 
   return (
-    <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-background">
+    <div className="relative isolate flex min-h-svh flex-col overflow-x-clip bg-background">
       {/* ─── Foto masjid latar — slider sama seperti Hero web publik (1=diam, >1=otomatis) ─── */}
       {images.length > 0 ? (
         <div className="pointer-events-none absolute inset-0 -z-10 select-none overflow-hidden" aria-hidden="true">
@@ -146,7 +146,7 @@ function LoginForm() {
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background to-transparent" />
         </div>
       ) : (
-        <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
           <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/60 to-background" />
           <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
           <div className="absolute -right-24 -bottom-24 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
@@ -193,7 +193,7 @@ function LoginForm() {
       </div>
 
       {/* ─── Isi: sambutan ala Hero + kartu kaca ─── */}
-      <main className="container mx-auto flex w-full flex-1 flex-col justify-center px-4 py-6 md:px-6 md:py-10 lg:px-8">
+      <main className="container mx-auto flex w-full flex-1 flex-col justify-center px-4 py-6 md:px-6 md:py-8 lg:px-8">
         <div className="grid w-full items-center gap-8 lg:grid-cols-12 lg:gap-12">
           {/* Kolom kiri: gaya Hero web — hanya desktop agar mobile tetap ringkas */}
           <div className="hidden max-w-2xl flex-col items-start lg:col-span-7 lg:flex">
@@ -202,7 +202,7 @@ function LoginForm() {
                 lang="ar"
                 dir="rtl"
                 aria-label="Bismillahirrahmanirrahim"
-                className="font-arabic text-xl font-normal text-primary/85 xl:text-2xl"
+                className="font-arabic text-xl font-normal text-primary/85"
               >
                 بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
               </span>
@@ -214,20 +214,20 @@ function LoginForm() {
                 Khusus Pengurus Takmir
               </span>
             </p>
-            <h1 className="font-display mt-4 text-4xl leading-[1.06] font-bold tracking-[-0.02em] text-balance text-foreground xl:text-[3.4rem]">
+            <h1 className="font-display mt-3 text-4xl leading-[1.06] font-bold tracking-[-0.02em] text-balance text-foreground xl:text-[3rem]">
               Kelola amanah umat dengan tertib & transparan.
             </h1>
             {address ? (
-              <p className="mt-4 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/80 bg-background/80 px-3.5 py-1.5 text-sm font-medium text-foreground backdrop-blur-sm">
+              <p className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full border border-border/80 bg-background/80 px-3.5 py-1.5 text-sm font-medium text-foreground backdrop-blur-sm">
                 <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span className="truncate">{address}</span>
               </p>
             ) : null}
-            <p className="mt-4 max-w-xl text-[15px] leading-[1.75] text-pretty text-muted-foreground sm:text-base">
+            <p className="mt-3 max-w-xl text-[15px] leading-[1.7] text-pretty text-muted-foreground sm:text-base">
               Satu pintu untuk mencatat kas, menerbitkan laporan, serta mengelola jadwal,
               pengumuman, dan profil masjid — mudah dipakai takmir, terbuka untuk jamaah.
             </p>
-            <ul className="mt-7 grid w-full max-w-xl gap-2">
+            <ul className="mt-5 grid w-full max-w-xl gap-1.5">
               {[
                 { icon: ChartBar, text: "Arus kas & laporan terverifikasi publik" },
                 { icon: ShieldCheck, text: "Akses khusus pengurus, tercatat aman" },
@@ -235,17 +235,17 @@ function LoginForm() {
               ].map(({ icon: Icon, text }) => (
                 <li
                   key={text}
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/40 bg-white/55 px-3.5 py-2.5 text-sm font-medium text-foreground shadow-sm backdrop-blur-lg dark:border-white/10 dark:bg-zinc-900/55"
+                  className="flex items-center gap-2.5 rounded-2xl border border-white/40 bg-white/55 px-3 py-2 text-[13px] font-medium text-foreground shadow-sm backdrop-blur-lg dark:border-white/10 dark:bg-zinc-900/55"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   {text}
                 </li>
               ))}
             </ul>
             {(phone || profile?.establishedYear) && (
-              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 {phone && (
                   <span className="flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
@@ -392,24 +392,26 @@ function LoginForm() {
               </div>
             </div>
 
-            <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
-              Bukan pengurus?{" "}
-              <Link href="/" className="font-semibold text-primary hover:underline">
-                Lihat laporan keuangan publik
-              </Link>
-              .
-            </p>
-            {address ? (
-              <p className="mx-auto mt-2 flex max-w-md items-start justify-center gap-1.5 text-center text-[11px] leading-relaxed text-muted-foreground">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-                <span className="line-clamp-2">{address}</span>
+            <div className="mt-3 rounded-2xl border border-white/40 bg-background/55 px-4 py-3 text-center backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/50">
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Bukan pengurus?{" "}
+                <Link href="/" className="font-semibold text-primary hover:underline">
+                  Lihat laporan keuangan publik
+                </Link>
+                .
               </p>
-            ) : null}
+              {address ? (
+                <p className="mx-auto mt-1.5 flex max-w-md items-start justify-center gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span className="line-clamp-2">{address}</span>
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       </main>
 
-      <footer className="container mx-auto w-full px-4 pb-5 md:px-6 lg:px-8">
+      <footer className="container mx-auto w-full px-4 pb-4 md:px-6 lg:px-8">
         <p className="text-center text-[11px] text-muted-foreground">
           © {new Date().getFullYear()} {brandName} • Keuangan terbuka, jamaah percaya
         </p>
